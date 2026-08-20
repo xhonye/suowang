@@ -219,9 +219,9 @@ if (typeof document !== 'undefined') {
   const timelineGroups = byId('timeline-groups');
   const toast = byId('toast');
   const statusLabels = {
-    candidate: '候选',
-    recommended: '推荐',
-    active: '当前',
+    candidate: '待选择',
+    recommended: '修复中',
+    active: '进行中',
     reviewing: '复盘中',
     complete: '已完成',
     paused: '已暂停',
@@ -262,10 +262,6 @@ if (typeof document !== 'undefined') {
 
   function renderDetails() {
     const selected = getPath(state);
-    const active = getPath(state, state.activePathId);
-    byId('side-active-title').textContent = active.title;
-    byId('active-path-title').textContent = active.title;
-    byId('active-path-summary').textContent = active.summary;
     byId('detail-title').textContent = selected.title;
     byId('detail-summary').textContent = selected.summary;
     byId('detail-reason').textContent = selected.reason;
@@ -282,7 +278,7 @@ if (typeof document !== 'undefined') {
       month: [`${new Date().getMonth() + 1}月25日`, `${new Date().getMonth() + 1}月30日`, `${new Date().getMonth() + 1}月31日`],
       later: ['下次复盘'],
     };
-    timelineGroups.innerHTML = Object.entries(labels).map(([horizon, [label, range]]) => {
+    timelineGroups.innerHTML = Object.entries(labels).filter(([horizon]) => horizon !== 'later').map(([horizon, [label, range]]) => {
       const items = getTimelineItems(selected, horizon);
       return `<section class="time-group">
         <div class="time-label"><strong>${label}</strong><span>${range}</span></div>
@@ -345,6 +341,21 @@ if (typeof document !== 'undefined') {
     showToast(`开始：${current.title}。做到完成定义就停。`);
     byId('start-button').classList.add('started');
     byId('start-button').querySelector('span').textContent = '这一步已开始';
+  });
+
+  byId('notification-button').addEventListener('click', () => showToast('暂无新通知'));
+  byId('user-menu').addEventListener('click', () => showToast('当前为视觉演示用户 Alex'));
+  byId('reflection-button').addEventListener('click', () => showToast('想法记录将在后续版本接入本地存储'));
+  byId('rail-collapse').addEventListener('click', () => {
+    const collapsed = document.body.classList.toggle('rail-collapsed');
+    byId('rail-collapse').setAttribute('aria-label', collapsed ? '展开侧边栏' : '收起侧边栏');
+  });
+
+  byId('panel-collapse').addEventListener('click', () => {
+    const workspace = byId('timeline');
+    const collapsed = workspace.classList.toggle('collapsed');
+    byId('panel-collapse').setAttribute('aria-expanded', String(!collapsed));
+    byId('panel-collapse').innerHTML = collapsed ? '展开 <span aria-hidden="true">⌄</span>' : '收起 <span aria-hidden="true">⌃</span>';
   });
 
   const editDialog = byId('edit-dialog');

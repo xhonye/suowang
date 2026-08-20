@@ -1,6 +1,6 @@
 # SUOWANG Visual Contract
 
-The concept image at `docs/assets/early-mainline-concept.png` is an early spatial reference for the first prototype at a `1672 × 941` desktop viewport. It is not implementation evidence. Its stable left rail is retained; placeholder branding, profile identity, membership badge, and peripheral controls are not requirements.
+The concept image at `docs/assets/early-mainline-concept.png` is the composition reference for the first prototype at a `1672 × 941` desktop viewport. Preserve its stable left rail, demo-user area, quiet top chrome, quote placement, panel collapse affordance, and first-screen footer. Replace its legacy brand with SUOWANG. The membership badge, real identity, operating-system behavior, and background notification delivery are not requirements.
 
 ## Direction
 
@@ -24,6 +24,6 @@ Typography uses `Segoe UI Variable` / `Microsoft YaHei UI` throughout so Chinese
 
 ## Spatial memory
 
-Desktop order is fixed: stable left rail, road, current-mainline context, timeline on the left, NOW on the right. Mobile collapses the rail into a compact top bar and changes content columns into a vertical sequence while preserving the same reading order.
+Desktop order is fixed: stable left rail, quiet top chrome, road, current-mainline context, timeline on the left, NOW on the right, and the supportive footer within the first `1672 × 941` screen. Mobile collapses the rail into a compact top bar, hides decorative window framing, and changes content columns into a vertical sequence while preserving the same reading order.
 
 Avoid dashboard grids, KPI decoration, RPG language, persistent chat, ornamental gradients outside the road scene, and more than three simultaneous route choices.

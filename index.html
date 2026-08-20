@@ -37,18 +37,29 @@
       </nav>
       <div class="side-profile">
         <span class="profile-orb" aria-hidden="true"></span>
-        <div><strong>我的主线</strong><small id="side-active-title">工作推进</small></div>
+        <div><strong>Alex</strong><small>专注中 · 23 天</small></div>
       </div>
+      <button class="rail-collapse" id="rail-collapse" type="button" aria-label="收起侧边栏">‹</button>
     </header>
 
     <main id="main-content">
       <section class="road-section" id="top" aria-labelledby="road-title">
+        <div class="top-chrome" aria-label="用户与窗口控制">
+          <span class="greeting"><span aria-hidden="true">☀️</span> 上午好，</span>
+          <button class="user-menu" id="user-menu" type="button">Alex <span aria-hidden="true">⌄</span></button>
+          <span class="chrome-divider" aria-hidden="true"></span>
+          <button class="notification-button" id="notification-button" type="button" aria-label="通知">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M10 20h4"/></svg>
+          </button>
+          <span class="chrome-divider" aria-hidden="true"></span>
+          <div class="window-buttons" aria-hidden="true"><span>−</span><span>□</span><span>×</span></div>
+        </div>
         <div class="road-utility">
           <blockquote>方向比速度更重要，<br />你正在走向更好的自己。<cite>— 所往</cite></blockquote>
         </div>
         <div class="road-copy">
-          <h1 id="road-title">我的主线</h1>
-          <p>知所往，择其径，行其事。</p>
+          <h1 id="road-title">人生主线</h1>
+          <p>聚焦当下，选择一条路，坚定向前走。</p>
           <div class="path-intro">
             <strong>三条可选路径</strong>
             <span>根据你当前的状态与目标，选择最需要聚焦的主线。</span>
@@ -71,6 +82,7 @@
           <nav class="panel-view-tabs" aria-label="路径展开方式">
             <button type="button" aria-selected="true" data-view="timeline">展开时间线</button>
             <button type="button" aria-selected="false" data-view="details">具体事项</button>
+            <button class="panel-collapse" id="panel-collapse" type="button" aria-expanded="true">收起 <span aria-hidden="true">⌃</span></button>
           </nav>
           <div class="panel-heading">
             <div>
@@ -126,10 +138,10 @@
           </div>
         </aside>
         <footer class="journey-footer">
-          <span>♥ 慢一点也没关系，方向仍在。</span>
-          <span>当前主线 · <strong id="active-path-title">工作推进</strong></span>
-          <span id="active-path-summary">聚焦关键工作，形成一个可以被看见的高价值成果。</span>
-          <span>下次复盘 · 9月1日</span>
+          <span>♥ 慢一点也没关系，重要的是不要停下。</span>
+          <span>你已经坚持 <strong>23 天</strong></span>
+          <span>累计专注 <strong>68.5 小时</strong></span>
+          <button class="reflection-button" id="reflection-button" type="button">✎　写下此刻的想法</button>
         </footer>
       </section>
     </main>

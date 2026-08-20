@@ -60,11 +60,11 @@ The mainline surface has four persistent layers:
 3. A narrative timeline for today, this week, this month, and later.
 4. A fixed `现在最值得做` card that all planning converges on.
 
-On desktop, a stable left rail anchors the product brand and primary navigation. On narrow screens, it collapses into a compact top bar without changing the mainline reading order.
+On desktop, a stable left rail anchors the product brand, primary navigation, and lightweight demo-user context. A quiet top chrome preserves greeting, user, notification, and window framing from the reference. These are visual prototype controls, not evidence of authentication, background notification delivery, or native window integration. On narrow screens, the rail and chrome simplify without changing the mainline reading order.
 
 The road is a functional navigation component, not background decoration. The active path is visually strongest; alternatives remain visible but quieter.
 
-The early visual reference at `docs/assets/early-mainline-concept.png` establishes direction only. It is not implementation evidence. Its left rail is an intentional spatial anchor; placeholder branding, notification systems, membership badges, broad task management, and decorative complexity are not requirements.
+The early visual reference at `docs/assets/early-mainline-concept.png` establishes the intended desktop composition and visual density. Preserve its left rail, demo-user area, top chrome, quote placement, panel collapse affordance, and first-screen footer. Replace legacy branding with SUOWANG and do not inherit membership badges, real personal data, background notification systems, or unrelated product architecture.
 
 ## Path contract
 
@@ -168,7 +168,7 @@ V0.1 must not include:
 - large dashboards, domain scorecards, RPG attributes, or engagement loops
 - coupling to a legacy repository, runtime, Skill, or private data store
 
-The visual prototype was migrated from an implementation donor. Only reviewed pieces that satisfy this contract belong here; legacy naming, unused assets, notification controls, membership badges, and unrelated architecture stay outside this repository.
+The visual prototype was migrated from an implementation donor. Only reviewed pieces that satisfy this contract belong here; legacy naming, unused assets, membership badges, real user data, background notification infrastructure, and unrelated architecture stay outside this repository.
 
 ## Current source layout
 
