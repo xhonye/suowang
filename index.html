@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#eaf6ff" />
+    <meta name="description" content="所往 SUOWANG · 人生主线导航器" />
+    <title>所往 SUOWANG · 我的主线</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到当前行动</a>
+    <header class="app-header" aria-label="SUOWANG 主导航">
+      <a class="brand" href="#top" aria-label="所往首页">
+        <svg class="brand-mark" viewBox="0 0 44 44" aria-hidden="true">
+          <defs>
+            <linearGradient id="brand-blue" x1="5" y1="3" x2="38" y2="41" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#9BC1FF" />
+              <stop offset="0.48" stop-color="#5A94F3" />
+              <stop offset="1" stop-color="#2E6EDF" />
+            </linearGradient>
+          </defs>
+          <rect x="1" y="1" width="42" height="42" rx="13" fill="url(#brand-blue)" />
+          <circle cx="22" cy="22" r="11" fill="none" stroke="white" stroke-width="4.5" stroke-opacity="0.92" />
+        </svg>
+        <span><strong>所往 SUOWANG</strong><small>行有所往。</small></span>
+      </a>
+      <button class="header-history-button" id="history-button" type="button">主线历史</button>
+    </header>
+
+    <main id="main-content">
+      <section class="road-section" id="top" aria-labelledby="road-title">
+        <div class="road-utility">
+          <blockquote>行有所往。<cite>— 所往 SUOWANG</cite></blockquote>
+        </div>
+        <div class="road-copy">
+          <h1 id="road-title">我的主线</h1>
+          <p>知所往，择其径，行其事。</p>
+          <div class="path-intro">
+            <strong>三条可选路径</strong>
+            <span>根据你当前的状态与目标，选择最需要聚焦的主线。</span>
+          </div>
+        </div>
+
+        <div class="road-scene" role="img" aria-label="一条从近处延伸至地平线的大道，左中右三条半透明蓝色候选路线在前方分开。">
+          <img class="road-scene-image road-scene-base" src="/assets/mainline-scene-neutral-v1.webp" alt="" decoding="async" />
+          <img class="road-scene-image road-scene-state" data-route-scene="restore" src="/assets/mainline-scene-restore-v1.webp" alt="" decoding="async" />
+          <img class="road-scene-image road-scene-state" data-route-scene="work" src="/assets/mainline-scene-work-v1.webp" alt="" decoding="async" />
+          <img class="road-scene-image road-scene-state" data-route-scene="system" src="/assets/mainline-scene-system-v1.webp" alt="" decoding="async" />
+          <span class="road-scene-wash" aria-hidden="true"></span>
+        </div>
+
+        <div class="path-choices" id="path-choices" aria-label="三条候选路径"></div>
+      </section>
+
+      <section class="workspace" id="timeline" aria-label="当前路径详情">
+        <article class="timeline-panel" aria-live="polite">
+          <nav class="panel-view-tabs" aria-label="路径展开方式">
+            <button type="button" aria-selected="true" data-view="timeline">展开时间线</button>
+            <button type="button" aria-selected="false" data-view="details">具体事项</button>
+          </nav>
+          <div class="panel-heading">
+            <div>
+              <h2 id="detail-title">工作推进</h2>
+              <p id="detail-summary">聚焦关键工作，提升产出，积累成就与突破。</p>
+            </div>
+            <div class="panel-actions">
+              <button class="quiet-button" id="edit-button" type="button">编辑</button>
+              <button class="commit-button" id="activate-button" type="button">设为当前主线</button>
+            </div>
+          </div>
+
+          <div id="timeline-view">
+            <div class="timeline-groups" id="timeline-groups"></div>
+          </div>
+          <div id="details-view" hidden>
+            <div class="decision-grid">
+              <div><span>为什么现在</span><p id="detail-reason"></p></div>
+              <div><span>走完的标志</span><p id="detail-success"></p></div>
+              <div class="cost"><span>这意味着先放下</span><p id="detail-cost"></p></div>
+              <div><span>再往前</span><p id="detail-later"></p></div>
+            </div>
+          </div>
+        </article>
+
+        <aside class="now-card" aria-labelledby="now-heading">
+          <h2 class="now-heading" id="now-heading">现在最值得做</h2>
+          <div class="next-action-card">
+            <p class="next-label">下一步 <span aria-hidden="true">✧</span></p>
+            <h3 id="now-title"></h3>
+            <div class="now-meta">
+              <span><small>预计</small><strong id="now-duration"></strong></span>
+              <span><small>优先级</small><strong id="now-energy"></strong></span>
+            </div>
+            <button class="start-button" id="start-button" type="button">
+              <span>开始专注</span>
+            </button>
+          </div>
+          <div class="why-card">
+            <span class="why-icon" aria-hidden="true">◉</span>
+            <div><strong>为什么这一步重要？</strong><p class="now-why" id="now-why"></p></div>
+          </div>
+          <details class="done-definition">
+            <summary>完成标准</summary>
+            <p id="now-done"></p>
+          </details>
+          <button class="fallback-button" id="fallback-button" type="button" aria-expanded="false">
+            今天做不动？看更小一步
+          </button>
+          <div class="fallback" id="fallback" hidden>
+            <small>低能量版本</small>
+            <p id="now-fallback"></p>
+          </div>
+        </aside>
+        <footer class="journey-footer">
+          <span>♥ 慢一点也没关系，方向仍在。</span>
+          <span>当前主线 · <strong id="active-path-title">工作推进</strong></span>
+          <span id="active-path-summary">聚焦关键工作，形成一个可以被看见的高价值成果。</span>
+          <span>下次复盘 · 9月1日</span>
+        </footer>
+      </section>
+    </main>
+
+    <dialog id="edit-dialog">
+      <form method="dialog" id="edit-form">
+        <div class="dialog-heading">
+          <div><small>编辑当前展开路径</small><h2>让内容更贴近现实</h2></div>
+          <button class="icon-button" value="cancel" aria-label="关闭">×</button>
+        </div>
+        <label>路径名称<input id="edit-title" maxlength="18" required /></label>
+        <label>一句话说明<textarea id="edit-summary" rows="2" maxlength="90" required></textarea></label>
+        <label>现在最值得做<input id="edit-now" maxlength="50" required /></label>
+        <div class="dialog-actions">
+          <button class="quiet-button" value="cancel">取消</button>
+          <button class="commit-button" id="save-edit" value="default">保存修改</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="history-dialog">
+      <div class="dialog-heading">
+        <div><small>路线记录</small><h2>过去为什么转向</h2></div>
+        <button class="icon-button" id="close-history" aria-label="关闭">×</button>
+      </div>
+      <div id="history-list" class="history-list"></div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <script type="module" src="/src/app.js"></script>
+  </body>
+</html>

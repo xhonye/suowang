@@ -166,7 +166,28 @@ V0.1 must not include:
 - large dashboards, domain scorecards, RPG attributes, or engagement loops
 - coupling to a legacy repository, runtime, Skill, or private data store
 
-The old demo may be used later as an implementation donor. Copy only reviewed pieces that satisfy this contract; do not preserve old naming or architecture by default.
+The visual prototype was migrated from an implementation donor. Only reviewed pieces that satisfy this contract belong here; legacy naming, unused assets, peripheral navigation, and unrelated architecture stay outside this repository.
+
+## Current source layout
+
+- `index.html`: semantic application shell and stable mainline surface.
+- `src/styles.css`: responsive visual system and road-scene presentation.
+- `src/app.js`: demo paths, explicit activation, history, editing, and browser-local persistence.
+- `assets/mainline-scene-*-v1.webp`: locked road master and three route-highlight states.
+- `scripts/serve.mjs`: dependency-free local server and health endpoint.
+- `scripts/start.ps1`: double-click Windows entrypoint.
+- `tests/`: repeatable state and server contracts.
+- `docs/visual-contract.md`: visual boundaries derived from the early concept.
+
+Run from `A:/2Workspace/Projects/suowang`:
+
+```powershell
+npm test
+npm run check
+npm start
+```
+
+The local URL is `http://127.0.0.1:2037/`; health is `http://127.0.0.1:2037/health`.
 
 ## Accessibility and interaction quality
 
