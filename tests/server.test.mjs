@@ -20,10 +20,13 @@ test('server exposes health and the prototype shell', async (context) => {
   const html = await home.text();
   assert.match(html, /所往 SUOWANG/);
   assert.match(html, /三条候选路径|我的主线/);
+  assert.match(html, /class="side-nav"/);
+  assert.match(html, /方向比速度更重要/);
+  assert.match(html, /你正在走向更好的自己/);
   assert.equal(html.match(/data-route-scene=/g)?.length, 3);
   assert.match(html, /mainline-scene-neutral-v1\.webp/);
   assert.doesNotMatch(html, /<mask|route-vector|mainline-arrows-(?:base|highlight)-v2/);
-  assert.doesNotMatch(html, /side-nav|side-profile|aria-label="通知"|state-panel/);
+  assert.doesNotMatch(html, /aria-label="通知"|state-panel|>Pro</);
 });
 
 test('server rejects traversal and missing files', async (context) => {

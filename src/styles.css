@@ -17,16 +17,24 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .skip-link { position: fixed; top: 8px; left: 8px; z-index: 100; transform: translateY(-160%); padding: 10px 14px; color: #fff; background: var(--blue); border-radius: 10px; }
 .skip-link:focus { transform: none; }
 
-/* Stable product header */
-.app-header { position: relative; z-index: 30; display: flex; align-items: center; min-height: 72px; padding: 0 clamp(18px, 3vw, 48px); background: rgba(249, 252, 255, 0.94); border-bottom: 1px solid rgba(86, 117, 162, 0.14); box-shadow: 0 10px 30px rgba(49, 77, 112, 0.04); backdrop-filter: blur(24px) saturate(1.08); }
-.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
+/* Stable left rail */
+.app-header { position: fixed; z-index: 30; inset: 0 auto 0 0; width: 230px; display: flex; flex-direction: column; padding: 25px 0 22px; background: rgba(249, 252, 255, 0.94); border-right: 1px solid rgba(86, 117, 162, 0.14); box-shadow: 10px 0 30px rgba(49, 77, 112, 0.04); backdrop-filter: blur(24px) saturate(1.08); }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 23px; color: var(--ink); text-decoration: none; }
 .brand-mark { width: 36px; height: 36px; flex: 0 0 auto; filter: drop-shadow(0 4px 8px rgba(49, 111, 216, 0.15)); }
-.brand span { display: grid; gap: 1px; }
 .brand strong { font-size: 19px; font-weight: 650; letter-spacing: -0.03em; }
-.brand small { color: #748199; font-size: 11px; letter-spacing: 0.08em; }
-.header-history-button { margin-left: auto; padding: 9px 14px; color: #38506f; background: rgba(236, 244, 255, 0.8); border: 1px solid rgba(73, 115, 177, 0.16); border-radius: 999px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.side-nav { display: grid; gap: 5px; margin-top: 34px; }
+.side-nav a, .side-nav button { position: relative; display: grid; grid-template-columns: 24px 1fr; align-items: center; gap: 14px; min-height: 58px; padding: 0 34px; color: #40506a; text-align: left; text-decoration: none; background: transparent; border: 0; cursor: pointer; font-size: 16px; font-weight: 500; }
+.side-nav svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; }
+.side-nav button:disabled { cursor: default; opacity: 0.9; }
+.side-nav a.active { color: #236ee8; background: linear-gradient(90deg, rgba(48, 122, 242, 0.13), rgba(71, 135, 237, 0.055)); border-radius: 0 14px 14px 0; font-weight: 650; }
+.side-nav a.active::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; background: #2878ed; }
+.side-profile { display: flex; align-items: center; gap: 11px; margin: auto 22px 0; }
+.profile-orb { width: 54px; height: 54px; flex: 0 0 auto; border: 3px solid #fff; border-radius: 50%; background: linear-gradient(165deg, transparent 0 56%, #24486f 57%), linear-gradient(18deg, #b6d1ec 0 36%, #6f91b2 37% 54%, #e8f2fa 55%); box-shadow: 0 5px 18px rgba(24, 55, 91, 0.16); }
+.side-profile strong, .side-profile small { display: block; }
+.side-profile strong { font-size: 16px; font-weight: 620; }
+.side-profile small { margin-top: 4px; color: #718099; font-size: 13px; }
 
-main { min-height: calc(100vh - 72px); }
+main { margin-left: 230px; min-height: 100vh; }
 .road-section { position: relative; height: 454px; min-height: 454px; overflow: hidden; background: #eaf4ff; }
 .road-scene { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; }
 .road-scene-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; filter: saturate(0.78) contrast(0.9) brightness(1.06); }
@@ -39,12 +47,12 @@ main { min-height: calc(100vh - 72px); }
 .path-intro { display: grid; gap: 3px; margin-top: 52px; }
 .path-intro strong { color: #1a2a45; font-size: 20px; font-weight: 680; }
 .path-intro span { color: #586982; font-size: 13px; }
-.road-utility { position: absolute; z-index: 10; top: 14px; right: 48px; display: grid; justify-items: end; gap: 16px; }
+.road-utility { position: absolute; z-index: 10; top: 14px; right: 141px; display: grid; justify-items: end; gap: 16px; }
 .road-utility blockquote { position: relative; width: 272px; min-height: 104px; margin: 0; padding: 17px 18px 14px 46px; color: #35445e; background: rgba(248, 251, 255, 0.68); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 17px; box-shadow: 0 8px 30px rgba(63, 92, 125, 0.08), inset 0 0 0 1px rgba(110, 143, 183, 0.09); backdrop-filter: blur(17px) saturate(1.08); font-size: 14px; font-weight: 600; line-height: 1.65; }
 .road-utility blockquote::before { content: "“"; position: absolute; top: 12px; left: 17px; color: #6b9ff0; font-family: Georgia, serif; font-size: 32px; font-weight: 700; line-height: 1; }
 .road-utility cite { display: block; margin-top: 3px; color: #77859b; font-size: 11px; font-style: normal; font-weight: 450; text-align: right; }
 
-.path-choices { position: absolute; z-index: 8; left: 48px; right: 48px; bottom: 7px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr); gap: 70px; }
+.path-choices { position: absolute; z-index: 8; left: 64px; right: 120px; bottom: 7px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr); gap: 70px; }
 .path-card { position: relative; display: grid; grid-template-columns: 82px 1fr 26px; align-items: center; min-width: 0; height: 148px; padding: 18px 22px 17px 16px; text-align: left; background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(255, 255, 255, 0.94); border-radius: 20px; box-shadow: 0 13px 34px rgba(52, 75, 105, 0.14), inset 0 0 0 1px rgba(82, 114, 157, 0.07); backdrop-filter: blur(17px) saturate(1.08); cursor: pointer; transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
 .path-card:hover { transform: translateY(-2px); box-shadow: 0 17px 38px rgba(48, 78, 119, 0.18), inset 0 0 0 1px rgba(82, 114, 157, 0.08); }
 .path-card.selected { border-color: #377cf0; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92), 0 0 0 4px rgba(54, 125, 240, 0.32), 0 15px 38px rgba(38, 98, 191, 0.2); }
@@ -64,7 +72,7 @@ main { min-height: calc(100vh - 72px); }
 .path-card.selected .path-open::after { color: #2773ed; }
 
 /* Main planning surface */
-.workspace { position: relative; z-index: 12; display: grid; grid-template-columns: minmax(0, 1fr) 403px; width: calc(100% - 64px); max-width: 1342px; min-height: 474px; margin: 0 auto 20px; background: rgba(252, 254, 255, 0.95); border: 1px solid rgba(94, 129, 176, 0.16); border-radius: 20px; box-shadow: 0 14px 42px rgba(56, 82, 116, 0.12); overflow: hidden; }
+.workspace { position: relative; z-index: 12; display: grid; grid-template-columns: minmax(0, 1fr) 403px; width: calc(100% - 64px); max-width: 1342px; min-height: 474px; margin: 0 auto 20px 33px; background: rgba(252, 254, 255, 0.95); border: 1px solid rgba(94, 129, 176, 0.16); border-radius: 20px; box-shadow: 0 14px 42px rgba(56, 82, 116, 0.12); overflow: hidden; }
 .timeline-panel { min-width: 0; border-right: 1px solid rgba(89, 118, 158, 0.12); }
 .panel-view-tabs { display: flex; align-items: end; height: 61px; padding: 0 20px; gap: 36px; border-bottom: 1px solid rgba(85, 114, 154, 0.14); }
 .panel-view-tabs button { position: relative; height: 61px; padding: 0 27px; color: #68748a; background: transparent; border: 0; cursor: pointer; font-size: 16px; font-weight: 570; }
@@ -159,7 +167,12 @@ dialog::backdrop { background: rgba(25, 42, 65, 0.27); backdrop-filter: blur(4px
   .journey-footer span:nth-child(3) { display: none; }
 }
 @media (max-width: 900px) {
-  .app-header { min-height: 70px; padding: 0 17px; }
+  .app-header { position: relative; width: 100%; height: 70px; flex-direction: row; align-items: center; padding: 0 17px; }
+  .brand { padding: 0; }
+  .side-nav { display: none; }
+  .side-profile { margin: 0 0 0 auto; }
+  .side-profile .profile-orb, .side-profile small { display: none; }
+  main { margin-left: 0; }
   .road-section { height: 762px; }
   .road-copy { top: 28px; left: 24px; width: calc(100% - 48px); }
   .road-copy h1 { font-size: 36px; }
@@ -176,11 +189,10 @@ dialog::backdrop { background: rgba(25, 42, 65, 0.27); backdrop-filter: blur(4px
   .journey-footer span:nth-child(3) { display: none; }
 }
 @media (max-width: 540px) {
-  .app-header { min-height: 62px; }
+  .app-header { height: 62px; }
   .brand-mark { width: 33px; height: 33px; }
   .brand strong { font-size: 17px; }
-  .brand small { display: none; }
-  .header-history-button { padding: 8px 11px; font-size: 12px; }
+  .side-profile strong { font-size: 14px; }
   .road-section { height: 696px; }
   .road-copy { top: 22px; left: 16px; width: calc(100% - 32px); }
   .road-copy h1 { font-size: 31px; }

@@ -1,6 +1,6 @@
 # SUOWANG Visual Contract
 
-The concept image at `docs/assets/early-mainline-concept.png` is an early spatial reference for the first prototype at a `1672 × 941` desktop viewport. It is not implementation evidence, and its placeholder brand, copy, side navigation, profile, and peripheral controls are not requirements.
+The concept image at `docs/assets/early-mainline-concept.png` is an early spatial reference for the first prototype at a `1672 × 941` desktop viewport. It is not implementation evidence. Its stable left rail is retained; placeholder branding, profile identity, membership badge, and peripheral controls are not requirements.
 
 ## Direction
 
@@ -24,6 +24,6 @@ Typography uses `Segoe UI Variable` / `Microsoft YaHei UI` throughout so Chinese
 
 ## Spatial memory
 
-Desktop order is fixed: compact product header, road, current-mainline context, timeline on the left, NOW on the right. Mobile changes columns into a vertical sequence but preserves the same reading order.
+Desktop order is fixed: stable left rail, road, current-mainline context, timeline on the left, NOW on the right. Mobile collapses the rail into a compact top bar and changes content columns into a vertical sequence while preserving the same reading order.
 
 Avoid dashboard grids, KPI decoration, RPG language, persistent chat, ornamental gradients outside the road scene, and more than three simultaneous route choices.

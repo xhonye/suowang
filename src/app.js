@@ -263,6 +263,7 @@ if (typeof document !== 'undefined') {
   function renderDetails() {
     const selected = getPath(state);
     const active = getPath(state, state.activePathId);
+    byId('side-active-title').textContent = active.title;
     byId('active-path-title').textContent = active.title;
     byId('active-path-summary').textContent = active.summary;
     byId('detail-title').textContent = selected.title;
