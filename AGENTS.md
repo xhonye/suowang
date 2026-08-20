@@ -62,7 +62,7 @@ The mainline surface has four persistent layers:
 
 The road is a functional navigation component, not background decoration. The active path is visually strongest; alternatives remain visible but quieter.
 
-The early visual reference establishes direction only. Do not inherit unrelated side navigation, notification systems, broad task management, or decorative complexity from a mockup unless the product contract independently requires them.
+The early visual reference at `docs/assets/early-mainline-concept.png` establishes direction only. It is not implementation evidence. Do not inherit its placeholder brand, copy, side navigation, notification systems, broad task management, or decorative complexity unless the product contract independently requires them.
 
 ## Path contract
 
