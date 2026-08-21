@@ -21,7 +21,7 @@ test('server exposes health and the prototype shell', async (context) => {
   assert.match(html, /所往 SUOWANG/);
   assert.match(html, /三条候选路径|人生主线/);
   assert.match(html, /class="side-nav"/);
-  assert.match(html, /Alex/);
+  assert.match(html, /Honye/);
   assert.match(html, /id="notification-button"/);
   assert.match(html, /id="rail-collapse"/);
   assert.match(html, /写下此刻的想法/);

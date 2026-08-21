@@ -1,187 +1,224 @@
-# SUOWANG Project Contract
+# SUOWANG 项目合同
 
-This file is the execution contract for `A:/2Workspace/Projects/suowang`.
-It is intentionally versioned and should be committed and pushed with the repository.
-It must never contain private life data, credentials, tokens, machine-specific secrets, or hidden instructions for consequential actions.
+本文件是 `A:/2Workspace/Projects/suowang` 的执行合同。
+它有意纳入版本控制，应随仓库一同提交和推送。
+其中绝不能包含私人生活数据、凭据、令牌、机器专属秘密，或暗中引导重大行动的指令。
 
-## Product identity
+## 产品身份
 
-- Brand: **所往 SUOWANG**
-- Slogan: **行有所往。**
-- Category: **人生主线导航器** / **Visual Mainline Navigator for Life**
-- Philosophy: **知所往 · 择其径 · 行其事**
-- Core concept: **主线 / Mainline**
-- Product promise: when the user's cognitive capacity is low, the product makes direction clear within three seconds and the next useful action clear within ten seconds.
+- 品牌：**所往 SUOWANG**
+- 口号：**行有所往。**
+- 品类：**人生主线导航器** / **Visual Mainline Navigator for Life**
+- 理念：**知所往 · 择其径 · 行其事**
+- 核心概念：**主线 / Mainline**
+- 产品承诺：即使用户认知余量很低，也能在三秒内看清方向，在十秒内知道下一步最值得做什么。
 
-The slogan is a product contract, not decoration. Every meaningful interaction should help the user see where they are going or take one useful step in that direction.
+口号是产品合同，不是装饰。每一次有意义的交互，都应该帮助用户看见自己正在往哪里走，或沿着那个方向迈出有用的一步。
 
-## Mission
+## 使命
 
-SUOWANG is a stable external cognitive interface. It answers three questions with minimal thought:
+SUOWANG 是一个位置稳定的外部认知界面。它让人用最低的思考成本回答三个问题：
 
-1. Where am I now?
-2. Which direction am I taking?
-3. What is the next useful action?
+1. 我现在在哪里？
+2. 我正在往哪里走？
+3. 现在最值得做什么？
 
-It is not a Todo List, goal-management suite, project-management dashboard, RPG system, KPI cockpit, or AI chat product.
+它不是 Todo List、目标管理套件、项目管理仪表盘、RPG 系统、KPI 驾驶舱或 AI 聊天产品。
 
-## Product philosophy
+## 根本纲领
+
+### 无限游戏
+
+人生是一场无限游戏。目标是充分参与这一次人生，而不是抵达一个一劳永逸的终局。主线是有限的，可以完成、复盘、暂停或替换；任何一条路结束以后，参与本身仍在继续。
+
+因此，SUOWANG 不把人生变成游戏系统、分数或无所不包的优化模型。它在开放的人生里提供一段时间内的方向：
+
+> **人生是一场无限游戏，但我们总需要一条当前主线。**
+
+### 最低阻力的参与方式
+
+最低限度的有效参与，不是维护一套完整的人生数据库。日常使用时，用户打开 SUOWANG，应该很快知道：
+
+1. 自己正在走哪条主线
+2. 沿着这条主线，下一步最值得做什么
+
+产品应当消化这两个答案背后的复杂性。不能要求用户先给每个事件、念头、任务或项目分类，才能开始行动。
+
+### 产品分层
+
+概念层级必须保持清楚：
+
+1. **无限游戏**：充分参与这一次人生。
+2. **现实**：可观察状态、用户输入的事实、约束，以及明确标注的推断。
+3. **阶段方向**：三种真正不同、存在真实资源取舍的未来方向。
+4. **当前主线**：现阶段明确承诺的一条方向。
+5. **叙事时间线与 NOW**：把承诺压缩成今天、本周、本月、以后，以及此刻可以开始的一步。
+
+上层指导下层，但默认界面只展示当前决策真正需要的信息。
+
+### HERIC 与日常模式
+
+HERIC 是后台的反思框架和长期人生资源地图。它用于生成或复盘路径、发现某个领域长期被忽略，以及检查方向是否失衡。不要把它暴露成强制分类体系，也不要要求用户给每一项内容附上 H/E/R/I/C 标签。
+
+`休息 / 工作 / 生活` 是日常模式或行动过滤器，不是主线。它们可以帮助系统根据用户当下的情境呈现合适的下一步，但不能代表三条路，也不能取代真正存在机会成本的阶段方向。
+
+## 产品哲学
 
 ### 知所往
 
-Show the user's current state, constraints, and a small set of genuinely different future paths. Keep observed facts, user-entered facts, and inference distinct.
+呈现用户的当前状态、约束和三种真正不同的阶段方向。每个方向都代表一种有实质差异的时间、精力或注意力配置。可观察事实、用户输入的事实和推断必须彼此分开。
 
 ### 择其径
 
-Exactly one path may be the current mainline. A candidate path must describe its benefit, completion evidence, time horizon, and cost. If every path can be pursued fully at once, they are categories rather than choices.
+当前主线只能有一条。候选路径必须说明它的收益、完成证据、时间跨度和代价。如果所有路径都能同时充分推进，它们就只是分类，不是选择。
 
-Exploration must remain low-cost. Opening or inspecting a path must never activate it. Activation requires an explicit, clearly labeled user decision.
+探索路径必须保持低成本。打开或查看一条路径，绝不能直接激活它。激活必须来自用户明确作出、文案清楚的决定。
 
 ### 行其事
 
-Compress the current mainline into a narrative timeline and one useful action now. When energy is low, reduce the action's resolution while preserving direction.
+把当前主线压缩成叙事时间线，以及此刻一个有用的行动。能量不足时，降低行动的分辨率，但不离开原来的方向。
 
-The loop is:
+循环如下：
 
 ```text
-know reality -> choose a mainline -> act on the next step
+知现实 -> 择主线 -> 行下一步
      ^                                      |
-     +----------- reality changes <---------+
+     +----------- 现实变化 <----------------+
 ```
 
-## Stable interface contract
+## 稳定界面合同
 
-Information may change; primary spatial relationships should remain stable so repeated use creates spatial memory.
+信息可以变化，主要空间关系应当保持稳定，让用户通过重复使用形成空间记忆。
 
-The mainline surface has four persistent layers:
+主线页面有四个长期稳定的层次：
 
-1. A road and horizon showing three candidate future paths.
-2. A concise summary of the active mainline.
-3. A narrative timeline for today, this week, this month, and later.
-4. A fixed `现在最值得做` card that all planning converges on.
+1. 由大道和地平线呈现的三条候选未来路径。
+2. 当前主线的简明摘要。
+3. 今天、本周、本月和以后的叙事时间线。
+4. 所有规划最终汇聚到的固定 `现在最值得做` 卡片。
 
-On desktop, a stable left rail anchors the product brand, primary navigation, and lightweight demo-user context. A quiet top chrome preserves greeting, user, notification, and window framing from the reference. These are visual prototype controls, not evidence of authentication, background notification delivery, or native window integration. On narrow screens, the rail and chrome simplify without changing the mainline reading order.
+桌面端以稳定的左侧栏锚定产品品牌、主导航和轻量演示用户语境。安静的顶部栏保留参考图中的问候、用户、通知和窗口框架。这些只是视觉原型控件，不代表已经具备身份验证、后台通知投递或原生窗口集成。窄屏上可以简化侧栏和顶部栏，但不能改变主线内容的阅读顺序。
 
-The road is a functional navigation component, not background decoration. The active path is visually strongest; alternatives remain visible but quieter.
+道路是功能性导航组件，不是背景装饰。当前路径在视觉上最强，其他路径继续可见，但更安静。
 
-The early visual reference at `docs/assets/early-mainline-concept.png` establishes the intended desktop composition and visual density. Preserve its left rail, demo-user area, top chrome, quote placement, panel collapse affordance, and first-screen footer. Replace legacy branding with SUOWANG and do not inherit membership badges, real personal data, background notification systems, or unrelated product architecture.
+早期视觉参考 `docs/assets/early-mainline-concept.png` 确立了目标桌面构图和视觉密度。保留其中的左侧栏、演示用户区域、顶部栏、引语位置、面板折叠入口和首屏页脚。将旧品牌替换为 SUOWANG，不继承会员徽章、真实个人数据、后台通知系统或无关的产品架构。
 
-## Path contract
+## 路径合同
 
-Each path should support these fields:
+每条路径应支持以下字段：
 
-- `title`: short route name
-- `one_liner`: plain-language description
-- `status`: `candidate`, `recommended`, `active`, `reviewing`, `complete`, or `paused`
-- `reason`: why this path matters now
-- `success`: observable completion evidence
-- `cost`: what will be paused, reduced, or declined
-- `horizon`: expected duration
-- `timeline`: narrative milestones from now to later
-- `confidence`: optional confidence in a recommendation, never a substitute for user judgment
+- `title`：简短的路径名称
+- `one_liner`：自然语言描述
+- `status`：`candidate`、`recommended`、`active`、`reviewing`、`complete` 或 `paused`
+- `reason`：为什么这条路此刻重要
+- `success`：可观察的完成证据
+- `cost`：选择它意味着暂停、减少或拒绝什么
+- `horizon`：预计持续时间
+- `timeline`：从现在到以后的叙事里程碑
+- `confidence`：可选的推荐置信度，绝不能代替用户判断
 
-State transitions are explicit:
+状态转换必须显式发生：
 
 ```text
 candidate -> recommended -> active -> reviewing -> complete
                                                \-> paused
 ```
 
-Dates do not switch a mainline automatically. A review moment may invite reassessment; the user makes the consequential decision.
+日期不能自动切换主线。复盘时点可以邀请用户重新评估，但具有后果的决定必须由用户作出。
 
-## Narrative timeline contract
+## 叙事时间线合同
 
-- Today: one to three concrete actions.
-- This week: no more than three meaningful nodes.
-- This month: outcome-oriented milestones.
-- Later: broad direction and review points, not detailed tasks.
-- Near-term items are concrete; distant items are intentionally abstract.
-- Do not introduce a Gantt chart, Jira-like board, or fake scheduling precision into the mainline surface.
+- 今天：一至三个具体行动。
+- 本周：不超过三个有意义的节点。
+- 本月：以结果为导向的里程碑。
+- 以后：宽泛的方向和复盘点，不展开详细任务。
+- 越近越具体，越远越抽象。
+- 不要在主线页面中引入甘特图、类似 Jira 的看板或虚假的排期精度。
 
-## NOW contract
+## NOW 合同
 
-`现在最值得做` is the terminal point of the page, not a secondary widget. It includes:
+`现在最值得做` 是页面终点，不是次要小组件。它包括：
 
-- one concrete action
-- expected duration
-- required energy or cognitive load
-- an observable completion definition
-- a lower-energy fallback
-- optionally an ultra-low-energy first move
+- 一个具体行动
+- 预计时长
+- 所需能量或认知负荷
+- 可观察的完成定义
+- 一个低能量降级行动
+- 可选的超低能量起步动作
 
-Fallbacks reduce scope without changing direction. They must not disguise inactivity as completion.
+降级行动只缩小范围，不改变方向。它不能把没有行动伪装成已经完成。
 
-## AI contract
+## AI 合同
 
-AI stays behind the stable interface. The default product surface has no chat box.
+AI 退居稳定界面之后。默认产品页面不放聊天框。
 
-Permitted early AI entry points are deliberately narrow:
+早期允许的 AI 入口应有意保持狭窄：
 
-1. Reassess the three candidate paths.
-2. Explain why a path is recommended.
-3. Replan the narrative timeline after reality changes.
-4. Adjust the next useful action when the user is stuck.
+1. 重新评估三条候选路径。
+2. 解释为什么推荐某条路径。
+3. 在现实变化后重新规划叙事时间线。
+4. 在用户卡住时调整下一步行动。
 
-AI proposes structured state; it does not silently activate paths, rewrite personal facts, claim that work happened, or make consequential decisions.
+AI 提议结构化状态，但不能静默激活路径、改写个人事实、声称某项行动已经发生，或代替用户作出具有后果的决定。
 
-Use this mental model:
+使用这个心智模型：
 
 ```text
-AI is the compiler.
-The stable UI is the compiled artifact.
+AI 是编译器。
+稳定的 UI 是编译后的产物。
 ```
 
-## Versioning and history
+## 版本与历史
 
-Mainline decisions are naturally versioned. A historical record should preserve:
+主线决策天然需要版本化。历史记录应保存：
 
-- the active path at that time
-- the candidate paths considered
-- why the path was chosen
-- its timeline and completion evidence
-- observed outcomes
-- why it was completed, paused, or replaced
+- 当时的当前路径
+- 当时考虑过的候选路径
+- 为什么选择这条路
+- 它的时间线和完成证据
+- 实际观察到的结果
+- 为什么完成、暂停或替换它
 
-History must distinguish what was planned from what actually happened. Never turn a recommendation, scheduled item, opened screen, or elapsed date into evidence of completion.
+历史必须区分计划发生的事与实际发生的事。绝不能把推荐、排期事项、打开过的页面或已经过去的日期，当作完成证据。
 
-## V0.1 boundary
+## V0.1 边界
 
-V0.1 may include:
+V0.1 可以包括：
 
-- road and horizon visual
-- exactly three visible future paths
-- path details and explicit activation
-- current-mainline summary
-- narrative timeline
-- NOW card with fallback action
-- lightweight manual state adjustment
-- local persistence
-- historical versions
-- one reassessment entry point for AI, which may initially be stubbed or omitted
+- 大道与地平线主视觉
+- 恰好三条可见的未来路径
+- 路径详情和显式激活
+- 当前主线摘要
+- 叙事时间线
+- 带降级行动的 NOW 卡片
+- 轻量手动状态调整
+- 本地持久化
+- 历史版本
+- 一个 AI 重新评估入口，初期可以使用占位实现或暂不提供
 
-V0.1 must not include:
+V0.1 不能包括：
 
-- real private life data in the repository
-- automatic decisions or silent mainline switching
-- background monitoring or notifications
-- platform infrastructure unrelated to V0.1 navigation
-- large dashboards, domain scorecards, RPG attributes, or engagement loops
-- coupling to a legacy repository, runtime, Skill, or private data store
+- 仓库中的真实私人生活数据
+- 自动决策或静默切换主线
+- 后台监测或通知
+- 与 V0.1 导航无关的平台基础设施
+- 大型仪表盘、领域评分卡、RPG 属性或促活循环
+- 与旧仓库、旧运行时、Skill 或私人数据存储耦合
 
-The visual prototype was migrated from an implementation donor. Only reviewed pieces that satisfy this contract belong here; legacy naming, unused assets, membership badges, real user data, background notification infrastructure, and unrelated architecture stay outside this repository.
+视觉原型从一个实现供体迁移而来。只有经过审查、符合本合同的部分才属于本项目；旧命名、未使用资产、会员徽章、真实用户数据、后台通知基础设施和无关架构都留在仓库之外。
 
-## Current source layout
+## 当前源码布局
 
-- `index.html`: semantic application shell and stable mainline surface.
-- `src/styles.css`: responsive visual system and road-scene presentation.
-- `src/app.js`: demo paths, explicit activation, history, editing, and browser-local persistence.
-- `assets/mainline-scene-*-v1.webp`: locked road master and three route-highlight states.
-- `scripts/serve.mjs`: dependency-free local server and health endpoint.
-- `scripts/start.ps1`: double-click Windows entrypoint.
-- `tests/`: repeatable state and server contracts.
-- `docs/visual-contract.md`: visual boundaries derived from the early concept.
+- `index.html`：语义化应用外壳和稳定主线页面。
+- `src/styles.css`：响应式视觉系统和道路场景呈现。
+- `src/app.js`：演示路径、显式激活、历史、编辑和浏览器本地持久化。
+- `assets/mainline-scene-*-v1.webp`：锁定的道路母图和三种路径高亮状态。
+- `scripts/serve.mjs`：零依赖本地服务器和健康检查端点。
+- `scripts/start.ps1`：Windows 双击启动入口。
+- `tests/`：可重复执行的状态与服务器合同测试。
+- `docs/visual-contract.md`：从早期概念图提炼的视觉边界。
 
-Run from `A:/2Workspace/Projects/suowang`:
+在 `A:/2Workspace/Projects/suowang` 中运行：
 
 ```powershell
 npm test
@@ -189,45 +226,45 @@ npm run check
 npm start
 ```
 
-The local URL is `http://127.0.0.1:2037/`; health is `http://127.0.0.1:2037/health`.
+本地地址是 `http://127.0.0.1:2037/`；健康检查地址是 `http://127.0.0.1:2037/health`。
 
-## Accessibility and interaction quality
+## 无障碍与交互质量
 
-- The primary surface must remain usable at 320px width.
-- All core decisions must be keyboard accessible.
-- Reduced-motion preferences must be honored.
-- Important state cannot depend on color alone.
-- Focus, hover, selected, recommended, active, and disabled states must remain distinguishable.
-- Visual polish must not reduce text contrast or obscure the road-to-action hierarchy.
+- 主页面在 320px 宽度下必须保持可用。
+- 所有核心决策都必须可以通过键盘操作。
+- 必须尊重减少动态效果的系统偏好。
+- 重要状态不能只依赖颜色表达。
+- 聚焦、悬停、选中、推荐、当前和禁用状态必须可以相互区分。
+- 视觉打磨不能降低文字对比度，也不能模糊从道路到行动的层级。
 
-## Repository and data boundaries
+## 仓库与数据边界
 
-- This repository is a new independent project at `A:/2Workspace/Projects/suowang`.
-- Do not treat similarly named legacy folders, Skills, junctions, or private data stores as project truth.
-- Mutable runtime state, personal data, logs, exports, screenshots with private content, credentials, and local caches do not belong in Git.
-- If durable private runtime data is introduced later, place it outside the repository and document the boundary before implementation.
-- Do not introduce an external API, database, deployment target, analytics service, or telemetry without explicit user direction and a documented privacy impact.
+- 本仓库是位于 `A:/2Workspace/Projects/suowang` 的全新独立项目。
+- 不要把同名或近似名称的旧目录、Skills、junction 或私人数据存储当作项目真源。
+- 可变运行状态、个人数据、日志、导出文件、含私人内容的截图、凭据和本地缓存都不能进入 Git。
+- 如果以后引入需要长期保存的私人运行数据，必须把它放在仓库之外，并在实现前写清边界。
+- 未经用户明确指示并记录隐私影响，不得引入外部 API、数据库、部署目标、分析服务或遥测。
 
-## Change discipline
+## 变更纪律
 
-- Inspect the repository state before editing and preserve unrelated user changes.
-- Deliver one user-visible, independently reversible slice at a time.
-- Add repeatable tests for stable behavior.
-- UI changes require real desktop and 320px browser verification.
-- State-changing behavior requires tests for explicit consent, history, and failure recovery.
-- Prefer plain data contracts and low dependency count during V0.1.
-- Use English for code, filenames, commands, variables, and commit messages. User-facing copy is Simplified Chinese.
-- Do not claim a feature, route, persistence layer, AI integration, or accessibility result exists until it has been implemented and verified.
-- Local commits and explicitly requested private remote pushes are allowed. Public release remains a separate user decision.
+- 编辑前检查仓库状态，保留用户无关的现有改动。
+- 每次交付一个用户可感知、可以独立回滚的切片。
+- 稳定行为必须配有可重复执行的测试。
+- UI 变更必须在真实桌面端和 320px 浏览器宽度下验证。
+- 改变状态的行为必须测试显式同意、历史记录和失败恢复。
+- V0.1 阶段优先使用朴素的数据合同，并保持低依赖数量。
+- 代码、文件名、命令、变量和 commit message 使用英文；面向用户的文案使用简体中文。
+- 功能、路径、持久化层、AI 集成或无障碍结果只有在实际实现并验证后才能声称存在。
+- 允许本地提交，以及用户明确要求的私有远程推送。公开发布仍是另一项需要用户决定的行动。
 
-## Product admission test
+## 产品准入测试
 
-Before adding a feature, answer:
+增加功能前，先回答：
 
-> Does this make “我现在在哪、我要去哪、现在干什么” clearer?
+> 它是否让“我现在在哪、我要去哪、现在干什么”变得更清楚？
 
-If the answer is no, it does not belong on the mainline surface.
+如果答案是否定的，它就不属于主线页面。
 
-The highest-priority design rule is:
+最高优先级的设计规则是：
 
 > **当用户认知能力只剩 30% 时，这个页面仍然必须很好用。**

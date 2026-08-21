@@ -344,7 +344,7 @@ if (typeof document !== 'undefined') {
   });
 
   byId('notification-button').addEventListener('click', () => showToast('暂无新通知'));
-  byId('user-menu').addEventListener('click', () => showToast('当前为视觉演示用户 Alex'));
+  byId('user-menu').addEventListener('click', () => showToast('当前为视觉演示用户 Honye'));
   byId('reflection-button').addEventListener('click', () => showToast('想法记录将在后续版本接入本地存储'));
   byId('rail-collapse').addEventListener('click', () => {
     const collapsed = document.body.classList.toggle('rail-collapsed');
