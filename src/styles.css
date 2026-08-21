@@ -72,19 +72,21 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 .eyebrow { margin: 0; color: var(--signal); font-family: var(--utility-font); font-size: 9px; letter-spacing: 0.18em; }
 .dashboard-heading h1, .page-heading h1 { margin: 0; font-family: var(--display-font); font-size: 25px; font-weight: 710; letter-spacing: -0.035em; }
 .dashboard-heading .eyebrow { order: 2; white-space: nowrap; }
-.state-tabs { display: grid; grid-template-columns: repeat(3, minmax(78px, 112px)); gap: 4px; padding: 4px; background: rgba(255, 255, 255, 0.62); border: 1px solid var(--line); border-radius: 14px; }
-.state-tabs button { min-height: 34px; padding: 0 13px; color: var(--muted); background: transparent; border: 0; border-radius: 10px; cursor: pointer; transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease; }
-.state-tabs button[aria-selected="true"] { color: var(--asphalt); background: var(--paper-strong); box-shadow: 0 5px 14px rgba(43, 68, 77, 0.09); font-weight: 680; }
 
 .road-field { position: relative; min-height: 0; overflow: hidden; background: var(--horizon); border: 1px solid rgba(84, 114, 126, 0.09); border-radius: 18px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 5px 20px rgba(54, 78, 87, 0.035); }
 .road-scene { position: absolute; inset: 0; overflow: hidden; }
 .road-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 61%; }
 .road-state { opacity: 0; transition: opacity 190ms ease; }
 .road-state.selected { opacity: 1; }
-.road-switches { position: absolute; z-index: 3; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
-.road-switch { position: relative; color: rgba(255, 255, 255, 0.78); background: transparent; border: 0; cursor: pointer; }
-.road-switch span { position: absolute; bottom: 14px; left: 50%; padding: 5px 10px; background: rgba(34, 54, 63, 0.42); border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; backdrop-filter: blur(8px); transform: translateX(-50%); font-size: 11px; font-weight: 650; letter-spacing: 0.08em; opacity: 0.72; }
-.road-switch[aria-pressed="true"] span { color: white; background: rgba(43, 93, 114, 0.78); opacity: 1; }
+.route-tabs { position: absolute; z-index: 3; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
+.route-tab { position: relative; min-width: 0; color: rgba(255, 255, 255, 0.84); background: transparent; border: 0; cursor: pointer; transition: background 180ms ease; }
+.route-tab:hover { background: linear-gradient(to top, rgba(25, 48, 57, 0.14), transparent 46%); }
+.route-tab:focus-visible { z-index: 1; outline: 2px solid rgba(255, 255, 255, 0.9); outline-offset: -5px; box-shadow: inset 0 0 0 7px rgba(43, 93, 114, 0.28); }
+.route-tab-label { position: absolute; bottom: 14px; left: 50%; display: inline-flex; min-height: 31px; align-items: center; gap: 7px; padding: 5px 11px; background: rgba(34, 54, 63, 0.42); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 999px; box-shadow: 0 5px 15px rgba(23, 40, 47, 0.08); backdrop-filter: blur(8px); transform: translateX(-50%); white-space: nowrap; opacity: 0.78; }
+.route-tab-label strong { font-size: 11px; font-weight: 680; letter-spacing: 0.08em; }
+.route-tab-label small { padding-left: 7px; border-left: 1px solid rgba(255, 255, 255, 0.34); font-size: 9px; font-weight: 620; letter-spacing: 0.04em; }
+.route-tab[aria-selected="true"] { background: linear-gradient(to top, rgba(37, 74, 88, 0.18), transparent 52%); }
+.route-tab[aria-selected="true"] .route-tab-label { color: white; background: rgba(43, 93, 114, 0.82); border-color: rgba(255, 255, 255, 0.56); box-shadow: 0 7px 20px rgba(27, 56, 68, 0.2); opacity: 1; }
 .state-cue { position: absolute; z-index: 4; top: 17px; left: 20px; max-width: min(420px, 65%); margin: 0; padding: 8px 12px; color: #344a52; background: rgba(251, 253, 252, 0.72); border: 1px solid rgba(255, 255, 255, 0.82); border-radius: 11px; box-shadow: 0 6px 20px rgba(45, 66, 73, 0.06); backdrop-filter: blur(14px); font-size: 12px; }
 
 .mainline-deck { position: relative; display: grid; min-height: 0; grid-template-columns: 126px minmax(0, 1fr); align-items: stretch; gap: 12px; }
@@ -264,11 +266,12 @@ body.busy button, body.busy input, body.busy select { pointer-events: none; }
   .dashboard-heading { display: grid; gap: 10px; }
   .dashboard-heading > div:first-child { justify-content: space-between; }
   .dashboard-heading h1 { font-size: 21px; }
-  .state-tabs { width: 100%; grid-template-columns: repeat(3, 1fr); }
   .road-field { border-radius: 14px; }
   .road-image { object-position: center 62%; }
   .state-cue { top: 10px; left: 10px; max-width: calc(100% - 20px); padding: 6px 9px; font-size: 10px; }
-  .road-switch span { bottom: 8px; padding: 3px 7px; font-size: 9px; }
+  .route-tab-label { bottom: 8px; min-height: 26px; gap: 5px; padding: 3px 7px; }
+  .route-tab-label strong { font-size: 9px; }
+  .route-tab-label small { padding-left: 5px; font-size: 8px; }
   .mainline-deck { display: block; }
   .section-label { flex-direction: row; justify-content: space-between; padding: 4px 2px 7px; }
   .mainline-slots { gap: 6px; }

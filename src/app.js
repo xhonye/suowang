@@ -6,6 +6,7 @@ import {
   greetingForHour,
   priorityTodo,
   stateById,
+  stateIdFromNavigationKey,
   stateName,
   statusLabel,
   todoSource,
@@ -122,16 +123,19 @@ function navigate(page) {
 }
 
 function renderStateControls(state) {
-  byId('state-tabs').innerHTML = ui.snapshot.states.map((item) => `
-    <button type="button" role="tab" data-state-id="${item.id}"
-      aria-selected="${item.id === state.id}">${html(item.name)}</button>
-  `).join('');
-  byId('road-switches').innerHTML = ui.snapshot.states.map((item) => `
-    <button class="road-switch" type="button" data-state-id="${item.id}"
-      aria-pressed="${item.id === state.id}" aria-label="切换到${html(item.name)}状态">
-      <span>${html(item.name)}</span>
+  byId('route-tabs').innerHTML = ui.snapshot.states.map((item) => {
+    const selected = item.id === state.id;
+    return `
+    <button class="route-tab" type="button" role="tab" data-state-id="${item.id}"
+      aria-selected="${selected}" tabindex="${selected ? 0 : -1}"
+      aria-label="${selected ? `${html(item.name)}，当前状态` : `切换到${html(item.name)}状态`}">
+      <span class="route-tab-label">
+        <strong>${html(item.name)}</strong>
+        ${selected ? '<small>当前</small>' : ''}
+      </span>
     </button>
-  `).join('');
+  `;
+  }).join('');
   document.querySelectorAll('[data-road-scene]').forEach((layer) => {
     layer.classList.toggle('selected', layer.dataset.roadScene === state.id);
   });
@@ -311,12 +315,22 @@ function renderAll() {
   navigate(ui.page);
 }
 
-async function selectState(stateId) {
-  if (!stateById(ui.snapshot, stateId) || stateId === ui.activeStateId) return;
+function focusStateTab(stateId) {
+  byId('route-tabs').querySelector(`[data-state-id="${stateId}"]`)?.focus({ preventScroll: true });
+}
+
+async function selectState(stateId, restoreFocus = false) {
+  if (!stateById(ui.snapshot, stateId)) return;
+  if (stateId === ui.activeStateId) {
+    if (restoreFocus) focusStateTab(stateId);
+    return;
+  }
   ui.activeStateId = stateId;
   ui.createSlot = null;
   renderDashboard();
-  await mutate(() => api.updateAppState(stateId));
+  if (restoreFocus) focusStateTab(stateId);
+  const snapshot = await mutate(() => api.updateAppState(stateId));
+  if (snapshot && restoreFocus) focusStateTab(stateId);
 }
 
 function beginInlineEdit(button, value, onSave, maxLength) {
@@ -478,13 +492,17 @@ function setupNavigation() {
 }
 
 function setupDashboardEvents() {
-  byId('state-tabs').addEventListener('click', (event) => {
+  byId('route-tabs').addEventListener('click', (event) => {
     const button = event.target.closest('[data-state-id]');
-    if (button) selectState(button.dataset.stateId);
+    if (button) selectState(button.dataset.stateId, true);
   });
-  byId('road-switches').addEventListener('click', (event) => {
+  byId('route-tabs').addEventListener('keydown', (event) => {
     const button = event.target.closest('[data-state-id]');
-    if (button) selectState(button.dataset.stateId);
+    if (!button) return;
+    const stateId = stateIdFromNavigationKey(ui.snapshot.states, button.dataset.stateId, event.key);
+    if (!stateId) return;
+    event.preventDefault();
+    selectState(stateId, true);
   });
 
   byId('mainline-slots').addEventListener('click', async (event) => {

@@ -5,6 +5,7 @@ import {
   focusDays,
   greetingForHour,
   priorityTodo,
+  stateIdFromNavigationKey,
   todoSource,
 } from '../src/view-model.js';
 
@@ -36,4 +37,15 @@ test('greeting boundaries follow the fixed local-time contract', () => {
 test('focus days count natural local dates and never show zero', () => {
   assert.equal(focusDays('2026-08-21', new Date(2026, 7, 21, 23, 59)), 1);
   assert.equal(focusDays('2026-08-21', new Date(2026, 7, 23, 0, 1)), 3);
+});
+
+test('route tabs navigate in fixed state order and wrap at both ends', () => {
+  const states = [{ id: 'restore' }, { id: 'work' }, { id: 'life' }];
+  assert.equal(stateIdFromNavigationKey(states, 'work', 'ArrowLeft'), 'restore');
+  assert.equal(stateIdFromNavigationKey(states, 'work', 'ArrowRight'), 'life');
+  assert.equal(stateIdFromNavigationKey(states, 'restore', 'ArrowLeft'), 'life');
+  assert.equal(stateIdFromNavigationKey(states, 'life', 'ArrowRight'), 'restore');
+  assert.equal(stateIdFromNavigationKey(states, 'work', 'Home'), 'restore');
+  assert.equal(stateIdFromNavigationKey(states, 'work', 'End'), 'life');
+  assert.equal(stateIdFromNavigationKey(states, 'work', 'Enter'), null);
 });

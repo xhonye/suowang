@@ -2,6 +2,17 @@ export function stateById(snapshot, stateId) {
   return snapshot?.states?.find((state) => state.id === stateId) ?? null;
 }
 
+export function stateIdFromNavigationKey(states, currentStateId, key) {
+  const stateIds = states?.map((state) => state.id) ?? [];
+  if (stateIds.length === 0) return null;
+  const currentIndex = Math.max(0, stateIds.indexOf(currentStateId));
+  if (key === 'Home') return stateIds[0];
+  if (key === 'End') return stateIds.at(-1);
+  if (key === 'ArrowLeft') return stateIds[(currentIndex - 1 + stateIds.length) % stateIds.length];
+  if (key === 'ArrowRight') return stateIds[(currentIndex + 1) % stateIds.length];
+  return null;
+}
+
 export function currentMainline(state) {
   return state?.mainlines?.find((mainline) => mainline.id === state.currentMainlineId) ?? null;
 }
