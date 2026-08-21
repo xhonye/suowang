@@ -66,7 +66,7 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 
 .page-stage { min-width: 0; min-height: 0; overflow: hidden; }
 .page { width: min(100%, 1780px); height: 100%; margin-inline: auto; }
-.dashboard-page { --current-slot: 2; position: relative; display: grid; grid-template-rows: 44px minmax(150px, 22vh) 92px 58px 86px minmax(176px, 1fr); gap: 9px; padding: 14px clamp(20px, 2.5vw, 44px) 16px; }
+.dashboard-page { --current-slot: 2; position: relative; display: grid; grid-template-rows: 44px minmax(230px, 25vh) 92px 58px 86px minmax(176px, 1fr); gap: 9px; padding: 14px clamp(20px, 2.5vw, 44px) 16px; }
 .dashboard-heading { display: flex; align-items: center; justify-content: space-between; gap: 22px; min-width: 0; }
 .dashboard-heading > div:first-child { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
 .eyebrow { margin: 0; color: var(--signal); font-family: var(--utility-font); font-size: 9px; letter-spacing: 0.18em; }
@@ -76,12 +76,12 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 .state-tabs button { min-height: 34px; padding: 0 13px; color: var(--muted); background: transparent; border: 0; border-radius: 10px; cursor: pointer; transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease; }
 .state-tabs button[aria-selected="true"] { color: var(--asphalt); background: var(--paper-strong); box-shadow: 0 5px 14px rgba(43, 68, 77, 0.09); font-weight: 680; }
 
-.road-field { position: relative; min-height: 0; overflow: hidden; background: var(--horizon); border: 1px solid rgba(84, 114, 126, 0.16); border-radius: 20px; box-shadow: 0 12px 34px rgba(54, 78, 87, 0.08); }
+.road-field { position: relative; min-height: 0; overflow: hidden; background: var(--horizon); border: 1px solid rgba(84, 114, 126, 0.09); border-radius: 18px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 5px 20px rgba(54, 78, 87, 0.035); }
 .road-scene { position: absolute; inset: 0; overflow: hidden; }
-.road-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 61%; filter: saturate(0.56) contrast(0.88) brightness(1.08); }
+.road-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 61%; filter: saturate(0.68) contrast(0.94) brightness(1.04); }
 .road-state { opacity: 0; transition: opacity 190ms ease; }
 .road-state.selected { opacity: 1; }
-.road-mist { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(244, 249, 249, 0.14), rgba(242, 247, 247, 0.04) 48%, rgba(233, 241, 241, 0.24)), linear-gradient(90deg, rgba(240, 246, 246, 0.18), transparent 30%, transparent 70%, rgba(240, 246, 246, 0.18)); pointer-events: none; }
+.road-mist { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(244, 249, 249, 0.08), rgba(242, 247, 247, 0.015) 50%, rgba(233, 241, 241, 0.12)), linear-gradient(90deg, rgba(240, 246, 246, 0.08), transparent 28%, transparent 72%, rgba(240, 246, 246, 0.08)); pointer-events: none; }
 .road-switches { position: absolute; z-index: 3; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
 .road-switch { position: relative; color: rgba(255, 255, 255, 0.78); background: transparent; border: 0; cursor: pointer; }
 .road-switch span { position: absolute; bottom: 14px; left: 50%; padding: 5px 10px; background: rgba(34, 54, 63, 0.42); border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; backdrop-filter: blur(8px); transform: translateX(-50%); font-size: 11px; font-weight: 650; letter-spacing: 0.08em; opacity: 0.72; }
@@ -232,7 +232,7 @@ body.dragging-mainline .mainline-slot { outline: 1px dashed rgba(78, 131, 156, 0
 body.busy button, body.busy input, body.busy select { pointer-events: none; }
 
 @media (max-height: 820px) and (min-width: 901px) {
-  .dashboard-page { grid-template-rows: 40px minmax(132px, 20vh) 78px 52px 74px minmax(140px, 1fr); gap: 7px; padding-top: 9px; padding-bottom: 9px; }
+  .dashboard-page { grid-template-rows: 40px minmax(196px, 24vh) 78px 52px 74px minmax(140px, 1fr); gap: 7px; padding-top: 9px; padding-bottom: 9px; }
   .mainline-card, .empty-mainline, .create-mainline-form { min-height: 64px; }
   .priority-zone { border-radius: 14px; }
 }
@@ -261,12 +261,12 @@ body.busy button, body.busy input, body.busy select { pointer-events: none; }
   .topbar-context { font-size: 10px; }
   .page-stage { overflow: visible; }
   .page { height: auto; min-height: calc(100vh - 58px); }
-  .dashboard-page { display: grid; grid-template-rows: auto 145px auto auto auto auto; gap: 9px; padding: 12px 10px 78px; }
+  .dashboard-page { display: grid; grid-template-rows: auto 170px auto auto auto auto; gap: 9px; padding: 12px 10px 78px; }
   .dashboard-heading { display: grid; gap: 10px; }
   .dashboard-heading > div:first-child { justify-content: space-between; }
   .dashboard-heading h1 { font-size: 21px; }
   .state-tabs { width: 100%; grid-template-columns: repeat(3, 1fr); }
-  .road-field { border-radius: 15px; }
+  .road-field { border-radius: 14px; }
   .road-image { object-position: center 62%; }
   .state-cue { top: 10px; left: 10px; max-width: calc(100% - 20px); padding: 6px 9px; font-size: 10px; }
   .road-switch span { bottom: 8px; padding: 3px 7px; font-size: 9px; }
