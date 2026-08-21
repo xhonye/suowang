@@ -52,7 +52,10 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.match(shell, /data-page="history"/);
   assert.match(shell, /data-page="settings"/);
   assert.equal(shell.match(/data-road-scene=/g)?.length, 3);
-  assert.match(shell, /mainline-scene-life-v1\.webp/);
+  assert.match(shell, /mainline-scene-restore-v2\.webp/);
+  assert.match(shell, /mainline-scene-work-v2\.webp/);
+  assert.match(shell, /mainline-scene-life-v2\.webp/);
+  assert.doesNotMatch(shell, /mainline-scene-neutral|road-mist/);
   assert.doesNotMatch(shell, /时间线|开始专注|累计专注|notification-button|data-path-id/);
 });
 

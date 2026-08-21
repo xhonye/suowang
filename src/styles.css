@@ -78,10 +78,9 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 
 .road-field { position: relative; min-height: 0; overflow: hidden; background: var(--horizon); border: 1px solid rgba(84, 114, 126, 0.09); border-radius: 18px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 5px 20px rgba(54, 78, 87, 0.035); }
 .road-scene { position: absolute; inset: 0; overflow: hidden; }
-.road-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 61%; filter: saturate(0.68) contrast(0.94) brightness(1.04); }
+.road-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 61%; }
 .road-state { opacity: 0; transition: opacity 190ms ease; }
 .road-state.selected { opacity: 1; }
-.road-mist { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(244, 249, 249, 0.08), rgba(242, 247, 247, 0.015) 50%, rgba(233, 241, 241, 0.12)), linear-gradient(90deg, rgba(240, 246, 246, 0.08), transparent 28%, transparent 72%, rgba(240, 246, 246, 0.08)); pointer-events: none; }
 .road-switches { position: absolute; z-index: 3; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
 .road-switch { position: relative; color: rgba(255, 255, 255, 0.78); background: transparent; border: 0; cursor: pointer; }
 .road-switch span { position: absolute; bottom: 14px; left: 50%; padding: 5px 10px; background: rgba(34, 54, 63, 0.42); border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 999px; backdrop-filter: blur(8px); transform: translateX(-50%); font-size: 11px; font-weight: 650; letter-spacing: 0.08em; opacity: 0.72; }
