@@ -3,174 +3,213 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#eaf6ff" />
-    <meta name="description" content="所往 SUOWANG · 人生主线导航器" />
-    <title>所往 SUOWANG · 我的主线</title>
+    <meta name="theme-color" content="#f2f6f5" />
+    <meta name="description" content="所往 SUOWANG · 人生主线驾驶舱" />
+    <title>所往 SUOWANG · 人生主线驾驶舱</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <a class="skip-link" href="#main-content">跳到当前行动</a>
-    <header class="app-header" aria-label="SUOWANG 主导航">
-      <a class="brand" href="#top" aria-label="所往首页">
-        <svg class="brand-mark" viewBox="0 0 44 44" aria-hidden="true">
-          <defs>
-            <linearGradient id="brand-blue" x1="5" y1="3" x2="38" y2="41" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#9BC1FF" />
-              <stop offset="0.48" stop-color="#5A94F3" />
-              <stop offset="1" stop-color="#2E6EDF" />
-            </linearGradient>
-          </defs>
-          <rect x="1" y="1" width="42" height="42" rx="13" fill="url(#brand-blue)" />
-          <circle cx="22" cy="22" r="11" fill="none" stroke="white" stroke-width="4.5" stroke-opacity="0.92" />
-        </svg>
-        <span><strong>所往</strong></span>
-      </a>
-      <nav class="side-nav" aria-label="主要页面">
-        <a href="#top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.2 12 4l8.5 7.2v8.1a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7Z"/><path d="M9 21v-6h6v6"/></svg>首页</a>
-        <a class="active" href="#top" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2c4.8 0 8.7 3.9 8.7 8.8s-3.9 8.8-8.7 8.8S3.3 16.9 3.3 12 7.2 3.2 12 3.2Z"/><path d="m9.2 14.7 2.8-6 2.8 6M10.2 12.6h3.6"/></svg>人生主线</a>
-        <a href="#timeline"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.4 2"/></svg>时间线</a>
-        <a href="#now-title"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 2.5 2.5L16 9"/></svg>任务</a>
-        <button id="history-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h5M8 17h7"/></svg>复盘</button>
-        <button type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.2c1 1.3 2.1 1.9 3.5 1.9s2.5-.6 3.5-1.9M9 9.5h.01M15 9.5h.01"/></svg>心情</button>
-        <button type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5h6l1.6 2h9.4v8.8a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7Z"/><path d="M5 7.5V5.7A1.7 1.7 0 0 1 6.7 4h4.6A1.7 1.7 0 0 1 13 5.7v1.8"/></svg>资源库</button>
-        <button type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.2 13.5v-3l-2-.7-.6-1.4.9-1.9-2.1-2.1-1.9.9-1.4-.6-.7-2h-3l-.7 2-1.4.6-1.9-.9-2.1 2.1.9 1.9-.6 1.4-2 .7v3l2 .7.6 1.4-.9 1.9 2.1 2.1 1.9-.9 1.4.6.7 2h3l.7-2 1.4-.6 1.9.9 2.1-2.1-.9-1.9.6-1.4Z"/></svg>设置</button>
-      </nav>
-      <div class="side-profile">
-        <span class="profile-orb" aria-hidden="true"></span>
-        <div><strong>Honye</strong><small>专注中 · 23 天</small></div>
+    <a class="skip-link" href="#dashboard-page">跳到驾驶舱</a>
+
+    <div class="app-shell">
+      <aside class="side-rail" aria-label="SUOWANG 主导航">
+        <a class="brand" href="#dashboard" data-page-link="dashboard" aria-label="所往驾驶舱">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="16"/><path d="M13 26c4-7 9-11 18-12M27 11l4 3-2 5"/></svg>
+          </span>
+          <span class="brand-copy"><strong>所往</strong><small>SUOWANG</small></span>
+        </a>
+
+        <nav class="rail-nav" aria-label="主要页面">
+          <button type="button" data-page="dashboard" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V20H4Z"/><path d="M9 20v-5h6v5"/></svg>
+            <span>驾驶舱</span>
+          </button>
+          <button type="button" data-page="history">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 13h6M8 17h4"/></svg>
+            <span>历史</span>
+          </button>
+          <button type="button" data-page="settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 13.5v-3l-2-.7-.6-1.4.9-1.9-2.1-2.1-1.9.9-1.4-.6-.7-2h-3l-.7 2-1.4.6-1.9-.9-2.1 2.1.9 1.9-.6 1.4-2 .7v3l2 .7.6 1.4-.9 1.9 2.1 2.1 1.9-.9 1.4.6.7 2h3l.7-2 1.4-.6 1.9.9 2.1-2.1-.9-1.9.6-1.4Z"/></svg>
+            <span>设置</span>
+          </button>
+        </nav>
+
+        <div class="rail-profile">
+          <span class="profile-avatar" id="profile-avatar" aria-hidden="true">H</span>
+          <span class="profile-copy">
+            <strong id="profile-name">Honye</strong>
+            <small id="focus-days">专注中 · 1天</small>
+          </span>
+        </div>
+        <p class="brand-slogan">行有所往。</p>
+      </aside>
+
+      <div class="workspace-shell">
+        <header class="topbar">
+          <div class="greeting-block">
+            <span class="daylight-dot" aria-hidden="true"></span>
+            <strong id="greeting">正在打开 SUOWANG</strong>
+          </div>
+          <div class="topbar-context">
+            <time id="local-date"></time>
+            <span aria-hidden="true">·</span>
+            <span>充分参与这一次人生</span>
+          </div>
+        </header>
+
+        <div class="error-banner" id="error-banner" role="alert" hidden>
+          <div><strong id="error-title">操作没有完成</strong><p id="error-message"></p></div>
+          <button type="button" id="dismiss-error">知道了</button>
+        </div>
+
+        <main class="page-stage">
+          <section class="page dashboard-page" id="dashboard-page" data-page-panel="dashboard" aria-labelledby="dashboard-title">
+            <div class="dashboard-heading">
+              <div>
+                <p class="eyebrow">MAINLINE COCKPIT</p>
+                <h1 id="dashboard-title">人生主线驾驶舱</h1>
+              </div>
+              <div class="state-tabs" id="state-tabs" role="tablist" aria-label="当前状态"></div>
+            </div>
+
+            <section class="road-field" aria-label="恢复、工作与生活三条道路">
+              <div class="road-scene" id="road-scene">
+                <img class="road-image road-base" src="/assets/mainline-scene-neutral-v1.webp" alt="三条道路向地平线展开" />
+                <img class="road-image road-state" data-road-scene="restore" src="/assets/mainline-scene-restore-v1.webp" alt="" />
+                <img class="road-image road-state" data-road-scene="work" src="/assets/mainline-scene-work-v1.webp" alt="" />
+                <img class="road-image road-state" data-road-scene="life" src="/assets/mainline-scene-life-v1.webp" alt="" />
+                <span class="road-mist" aria-hidden="true"></span>
+                <div class="road-switches" id="road-switches"></div>
+              </div>
+              <p class="state-cue" id="state-cue"></p>
+            </section>
+
+            <section class="mainline-deck" id="mainline-deck" aria-label="三个进行中主线槽">
+              <div class="section-label"><span>进行中主线</span><small>点击即切换 Current · 拖动可换槽</small></div>
+              <div class="mainline-slots" id="mainline-slots"></div>
+            </section>
+
+            <section class="current-detail" id="current-detail" aria-label="当前主线详情"></section>
+
+            <section class="priority-zone" id="priority-zone" aria-labelledby="priority-heading">
+              <div class="priority-label">
+                <span class="priority-pulse" aria-hidden="true"></span>
+                <div><p>此刻优先处理</p><h2 id="priority-heading">当前优先</h2></div>
+              </div>
+              <div class="priority-content" id="priority-content"></div>
+            </section>
+
+            <section class="todo-grid" aria-label="Todo 工作区">
+              <article class="todo-column" id="mainline-todo-column">
+                <header><div><p>沿当前方向</p><h2>当前主线 Todo</h2></div><span id="mainline-todo-count">0</span></header>
+                <div class="todo-list" id="mainline-todos" data-todo-scope="mainline"></div>
+                <form class="quick-add" id="mainline-todo-form">
+                  <label class="visually-hidden" for="mainline-todo-input">添加当前主线 Todo</label>
+                  <input id="mainline-todo-input" maxlength="160" placeholder="＋ 添加 Todo" autocomplete="off" />
+                  <button type="submit">添加</button>
+                </form>
+              </article>
+
+              <article class="todo-column state-todo-column">
+                <header><div><p>不依附于某条主线</p><h2>状态 Todo</h2></div><span id="state-todo-count">0</span></header>
+                <div class="todo-list" id="state-todos" data-todo-scope="state"></div>
+                <form class="quick-add" id="state-todo-form">
+                  <label class="visually-hidden" for="state-todo-input">添加状态 Todo</label>
+                  <input id="state-todo-input" maxlength="160" placeholder="＋ 添加 Todo" autocomplete="off" />
+                  <button type="submit">添加</button>
+                </form>
+              </article>
+            </section>
+          </section>
+
+          <section class="page history-page" data-page-panel="history" aria-labelledby="history-title" hidden>
+            <header class="page-heading">
+              <p class="eyebrow">ENDED FACTS</p>
+              <h1 id="history-title">历史</h1>
+              <p>这里只保留真正完成或放弃的主线与 Todo。</p>
+            </header>
+            <div class="history-list" id="history-list"></div>
+          </section>
+
+          <section class="page settings-page" data-page-panel="settings" aria-labelledby="settings-title" hidden>
+            <header class="page-heading">
+              <p class="eyebrow">LOCAL &amp; YOURS</p>
+              <h1 id="settings-title">设置</h1>
+              <p>只配置真实存在的本地能力。</p>
+            </header>
+
+            <div class="settings-grid">
+              <section class="settings-card identity-settings">
+                <header><p>个人外壳</p><h2>显示</h2></header>
+                <form id="display-name-form">
+                  <label for="display-name-input">显示名称</label>
+                  <div class="field-action"><input id="display-name-input" maxlength="40" required /><button type="submit">保存</button></div>
+                </form>
+                <form id="avatar-form">
+                  <label for="avatar-input">本地头像</label>
+                  <div class="field-action"><input id="avatar-input" type="file" accept="image/png,image/jpeg,image/webp" /><button type="submit">上传</button></div>
+                  <small>只保存在本机数据目录，最大 5 MB。</small>
+                </form>
+              </section>
+
+              <section class="settings-card cue-settings">
+                <header><p>状态提示</p><h2>Cue</h2></header>
+                <form id="cue-form">
+                  <label>恢复<input data-cue-state="restore" maxlength="120" /></label>
+                  <label>工作<input data-cue-state="work" maxlength="120" /></label>
+                  <label>生活<input data-cue-state="life" maxlength="120" /></label>
+                  <button type="submit">保存三个 Cue</button>
+                </form>
+              </section>
+
+              <section class="settings-card data-settings">
+                <header><p>本地数据</p><h2>备份与恢复</h2></header>
+                <div class="export-actions">
+                  <a class="secondary-action" href="/api/export/sqlite">下载 SQLite 完整备份</a>
+                  <a class="secondary-action" href="/api/export/json">下载 JSON 可读导出</a>
+                </div>
+                <form id="restore-form">
+                  <label for="restore-input">整库恢复</label>
+                  <input id="restore-input" type="file" accept=".db,.sqlite,.sqlite3,application/vnd.sqlite3" />
+                  <button class="danger-action" type="submit">选择文件并恢复</button>
+                  <small>恢复前会自动备份当前数据库；恢复是覆盖，不合并。</small>
+                </form>
+              </section>
+            </div>
+          </section>
+        </main>
       </div>
-      <button class="rail-collapse" id="rail-collapse" type="button" aria-label="收起侧边栏">‹</button>
-    </header>
+    </div>
 
-    <main id="main-content">
-      <section class="road-section" id="top" aria-labelledby="road-title">
-        <div class="top-chrome" aria-label="用户与窗口控制">
-          <span class="greeting"><span aria-hidden="true">☀️</span> 上午好，</span>
-          <button class="user-menu" id="user-menu" type="button">Honye <span aria-hidden="true">⌄</span></button>
-          <span class="chrome-divider" aria-hidden="true"></span>
-          <button class="notification-button" id="notification-button" type="button" aria-label="通知">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M10 20h4"/></svg>
-          </button>
-          <span class="chrome-divider" aria-hidden="true"></span>
-          <div class="window-buttons" aria-hidden="true"><span>−</span><span>□</span><span>×</span></div>
-        </div>
-        <div class="road-utility">
-          <blockquote>方向比速度更重要，<br />你正在走向更好的自己。<cite>— 所往</cite></blockquote>
-        </div>
-        <div class="road-copy">
-          <h1 id="road-title">人生主线</h1>
-          <p>聚焦当下，选择一条路，坚定向前走。</p>
-          <div class="path-intro">
-            <strong>三条可选路径</strong>
-            <span>根据你当前的状态与目标，选择最需要聚焦的主线。</span>
-          </div>
-        </div>
+    <aside class="end-panel" id="end-panel" aria-labelledby="end-panel-title" hidden>
+      <form id="end-mainline-form">
+        <header>
+          <div><p id="end-panel-kicker">结束主线</p><h2 id="end-panel-title">处理剩余 Todo</h2></div>
+          <button class="icon-button" type="button" id="close-end-panel" aria-label="关闭">×</button>
+        </header>
+        <p class="panel-note">未单独处理的 Todo 会标记为已放弃，不会被当作完成。</p>
+        <div class="resolution-list" id="resolution-list"></div>
+        <footer><button type="button" class="quiet-action" id="cancel-end-panel">取消</button><button type="submit" class="primary-action">确认结束主线</button></footer>
+      </form>
+    </aside>
 
-        <div class="road-scene" role="img" aria-label="一条从近处延伸至地平线的大道，左中右三条半透明蓝色候选路线在前方分开。">
-          <img class="road-scene-image road-scene-base" src="/assets/mainline-scene-neutral-v1.webp" alt="" decoding="async" />
-          <img class="road-scene-image road-scene-state" data-route-scene="restore" src="/assets/mainline-scene-restore-v1.webp" alt="" decoding="async" />
-          <img class="road-scene-image road-scene-state" data-route-scene="work" src="/assets/mainline-scene-work-v1.webp" alt="" decoding="async" />
-          <img class="road-scene-image road-scene-state" data-route-scene="system" src="/assets/mainline-scene-system-v1.webp" alt="" decoding="async" />
-          <span class="road-scene-wash" aria-hidden="true"></span>
-        </div>
-
-        <div class="path-choices" id="path-choices" aria-label="三条候选路径"></div>
-      </section>
-
-      <section class="workspace" id="timeline" aria-label="当前路径详情">
-        <article class="timeline-panel" aria-live="polite">
-          <nav class="panel-view-tabs" aria-label="路径展开方式">
-            <button type="button" aria-selected="true" data-view="timeline">展开时间线</button>
-            <button type="button" aria-selected="false" data-view="details">具体事项</button>
-            <button class="panel-collapse" id="panel-collapse" type="button" aria-expanded="true">收起 <span aria-hidden="true">⌃</span></button>
-          </nav>
-          <div class="panel-heading">
-            <div>
-              <h2 id="detail-title">工作推进</h2>
-              <p id="detail-summary">聚焦关键工作，提升产出，积累成就与突破。</p>
-            </div>
-            <div class="panel-actions">
-              <button class="quiet-button" id="edit-button" type="button">编辑</button>
-              <button class="commit-button" id="activate-button" type="button">设为当前主线</button>
-            </div>
-          </div>
-
-          <div id="timeline-view">
-            <div class="timeline-groups" id="timeline-groups"></div>
-          </div>
-          <div id="details-view" hidden>
-            <div class="decision-grid">
-              <div><span>为什么现在</span><p id="detail-reason"></p></div>
-              <div><span>走完的标志</span><p id="detail-success"></p></div>
-              <div class="cost"><span>这意味着先放下</span><p id="detail-cost"></p></div>
-              <div><span>再往前</span><p id="detail-later"></p></div>
-            </div>
-          </div>
-        </article>
-
-        <aside class="now-card" aria-labelledby="now-heading">
-          <h2 class="now-heading" id="now-heading">现在最值得做</h2>
-          <div class="next-action-card">
-            <p class="next-label">下一步 <span aria-hidden="true">✧</span></p>
-            <h3 id="now-title"></h3>
-            <div class="now-meta">
-              <span><small>预计</small><strong id="now-duration"></strong></span>
-              <span><small>优先级</small><strong id="now-energy"></strong></span>
-            </div>
-            <button class="start-button" id="start-button" type="button">
-              <span>开始专注</span>
-            </button>
-          </div>
-          <div class="why-card">
-            <span class="why-icon" aria-hidden="true">◉</span>
-            <div><strong>为什么这一步重要？</strong><p class="now-why" id="now-why"></p></div>
-          </div>
-          <details class="done-definition">
-            <summary>完成标准</summary>
-            <p id="now-done"></p>
-          </details>
-          <button class="fallback-button" id="fallback-button" type="button" aria-expanded="false">
-            今天做不动？看更小一步
-          </button>
-          <div class="fallback" id="fallback" hidden>
-            <small>低能量版本</small>
-            <p id="now-fallback"></p>
-          </div>
-        </aside>
-        <footer class="journey-footer">
-          <span>♥ 慢一点也没关系，重要的是不要停下。</span>
-          <span>你已经坚持 <strong>23 天</strong></span>
-          <span>累计专注 <strong>68.5 小时</strong></span>
-          <button class="reflection-button" id="reflection-button" type="button">✎　写下此刻的想法</button>
-        </footer>
-      </section>
-    </main>
-
-    <dialog id="edit-dialog">
-      <form method="dialog" id="edit-form">
-        <div class="dialog-heading">
-          <div><small>编辑当前展开路径</small><h2>让内容更贴近现实</h2></div>
-          <button class="icon-button" value="cancel" aria-label="关闭">×</button>
-        </div>
-        <label>路径名称<input id="edit-title" maxlength="18" required /></label>
-        <label>一句话说明<textarea id="edit-summary" rows="2" maxlength="90" required></textarea></label>
-        <label>现在最值得做<input id="edit-now" maxlength="50" required /></label>
-        <div class="dialog-actions">
-          <button class="quiet-button" value="cancel">取消</button>
-          <button class="commit-button" id="save-edit" value="default">保存修改</button>
-        </div>
+    <dialog class="action-dialog" id="action-dialog">
+      <form method="dialog" id="action-dialog-form">
+        <header><div><p id="dialog-kicker"></p><h2 id="dialog-title"></h2></div><button class="icon-button" value="cancel" aria-label="关闭">×</button></header>
+        <p id="dialog-message"></p>
+        <div id="dialog-fields"></div>
+        <footer><button class="quiet-action" value="cancel">取消</button><button class="primary-action" id="dialog-confirm" value="default">确认</button></footer>
       </form>
     </dialog>
 
-    <dialog id="history-dialog">
-      <div class="dialog-heading">
-        <div><small>路线记录</small><h2>过去为什么转向</h2></div>
-        <button class="icon-button" id="close-history" aria-label="关闭">×</button>
-      </div>
-      <div id="history-list" class="history-list"></div>
-    </dialog>
-
+    <div class="context-menu" id="context-menu" role="menu" hidden></div>
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <div class="loading-layer" id="loading-layer" aria-live="polite">
+      <span class="loading-compass" aria-hidden="true"></span>
+      <p>正在连接本地驾驶舱</p>
+    </div>
+
     <script type="module" src="/src/app.js"></script>
   </body>
 </html>

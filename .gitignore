@@ -4,6 +4,9 @@ dist/
 coverage/
 outputs/
 tmp/
+task_plan.md
+findings.md
+progress.md
 
 # Local configuration and secrets
 .env
@@ -12,6 +15,11 @@ tmp/
 
 # Logs and caches
 *.log
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
 .cache/
 .pytest_cache/
 __pycache__/

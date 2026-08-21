@@ -1,394 +1,849 @@
-export const STORAGE_KEY = 'suowang.prototype.v1';
+import { api } from './api.js';
+import {
+  currentMainline,
+  focusDays,
+  formatLocalDate,
+  greetingForHour,
+  priorityTodo,
+  stateById,
+  stateName,
+  statusLabel,
+  todoSource,
+  typeLabel,
+} from './view-model.js';
 
-export const DEFAULT_PATHS = [
-  {
-    id: 'restore',
-    icon: 'leaf',
-    title: '恢复精力',
-    summary: '优先照顾身心，恢复能量与稳定的生活节律。',
-    status: 'recommended',
-    horizon: '2–4 周',
-    reason: '睡眠与环境干扰正在占用判断带宽。先降低现实噪声，后面的选择才更可靠。',
-    success: '能稳定睡眠、看清本周重点，并连续三天按清楚的节奏行动。',
-    cost: '暂停非必要的新系统和新项目，只保留维护与真正紧急的事。',
-    timeline: {
-      today: [
-        ['固定今晚的停机时间', '用一个明确时间保护睡眠窗口。'],
-        ['清掉一个最刺眼的现实干扰', '只处理一个，不扩成大整理。'],
-        ['写下明早第一步', '让明天醒来不需要重新做决定。'],
-      ],
-      week: [
-        ['建立可重复的晚间收尾', '连续三天即可，不追求完美。'],
-        ['把噪音事项整理成一个处理入口', '证据、沟通和下一步集中，不在脑中循环。'],
-        ['保留一个无目标恢复时段', '让休息本身拥有合法位置。'],
-      ],
-      month: [
-        ['恢复可预测的日常节律', '大多数早晨知道今天最重要的事。'],
-        ['重新评估工作与系统投入', '在状态较稳时再做阶段选择。'],
-      ],
-      later: [
-        ['9月 · 选择下一阶段主线', '以真实精力和现实进展为证据。'],
-      ],
-    },
-    now: {
-      title: '写下今晚的停机时间',
-      why: '先保护一个可控的睡眠窗口，不需要今天解决所有问题。',
-      duration: '8 分钟',
-      energy: '低',
-      priority: '低负担',
-      done: '确定一个时间，并把它放进今晚能看见的位置。',
-      fallback: '只决定“最晚几点不再开新任务”，写在纸上。',
-    },
-  },
-  {
-    id: 'work',
-    icon: 'briefcase',
-    title: '工作推进',
-    summary: '聚焦关键工作，提升产出，积累成就与突破。',
-    status: 'active',
-    horizon: '4–8 周',
-    reason: '集中投入一个关键成果，可能带来比同时推进多个项目更高的现实回报。',
-    success: '形成可展示、可评审、能推动下一节点的完整工作成果。',
-    cost: '所往与其他工具只做必要维护，暂不继续扩建基础设施。',
-    timeline: {
-      today: [
-        ['完成项目需求评审与关键问题澄清', '明确关键问题与结论。'],
-        ['输出项目计划初稿并发送给相关同事', '形成可评审的共同起点。'],
-        ['完成 30 分钟专注工作（番茄钟）', '只推进当前最重要的一步。'],
-      ],
-      week: [
-        ['推进核心模块开发，完成 80% 进度', '把主要精力投入核心模块。'],
-        ['与产品经理对齐需求变更', '减少后续返工。'],
-        ['整理本周工作复盘与下周计划', '保留下周可直接进入的上下文。'],
-      ],
-      month: [
-        ['完成项目阶段性交付', '获得明确验收结果。'],
-        ['优化工作流程，沉淀 1 份方法文档', '把有效做法变成可复用资产。'],
-        ['学习一项新技能（如：数据分析 / AI 工具）', '只选一项能服务当前工作的能力。'],
-      ],
-      later: [
-        ['10月 · 根据真实结果决定是否延续', '不以忙碌感代替进展。'],
-      ],
-    },
-    now: {
-      title: '完成项目需求评审与关键问题澄清',
-      why: '明确需求能减少返工，节省后续大量时间，让项目更顺利推进。',
-      duration: '45 分钟',
-      energy: '中',
-      priority: '高优先级',
-      done: '关键问题有明确结论，并形成可以发给相关同事的评审记录。',
-      fallback: '只打开评审材料，圈出最不清楚的三个问题。',
-    },
-  },
-  {
-    id: 'system',
-    icon: 'home',
-    title: '生活主线',
-    summary: '经营重要关系与生活质量，构建长期幸福感。',
-    status: 'candidate',
-    horizon: '4 周',
-    reason: '已经积累的工具只有进入稳定日常，才会把过去的投入转化成现实收益。',
-    success: '连续两周每天打开同一个入口，并由它推动至少一个现实行动。',
-    cost: '暂停新的 Agent、Skill 与外围工具探索，先消化现有能力。',
-    timeline: {
-      today: [
-        ['选定唯一日常入口', '入口固定比功能完整更重要。'],
-        ['完成一次真实使用', '用它决定并完成一件现实事项。'],
-      ],
-      week: [
-        ['每天从同一页面开始', '记录哪里仍需要思考。'],
-        ['只修最高频的一个阻力', '不扩成重构。'],
-        ['删掉一个重复入口', '减少选择成本。'],
-      ],
-      month: [
-        ['形成稳定的日常驾驶节奏', '使用先于扩展。'],
-        ['根据使用证据决定下一功能', '没有证据就不增加。'],
-      ],
-      later: [
-        ['9月 · 评估系统是否真的改变行动', '以行为结果而非 token 用量判断。'],
-      ],
-    },
-    now: {
-      title: '用所往完成一次真实导航',
-      why: '先验证这个入口能否减少一次重新思考。',
-      duration: '20 分钟',
-      energy: '低至中',
-      priority: '待选择',
-      done: '从页面选出一件现实行动并完成，不继续开发。',
-      fallback: '只打开页面，读一遍当前主线和 NOW 卡。',
-    },
-  },
-];
+const ui = {
+  snapshot: null,
+  activeStateId: null,
+  page: 'dashboard',
+  createSlot: null,
+  drag: null,
+  endAction: null,
+  dialogAction: null,
+  expandedHistory: new Set(),
+};
 
-export function createDefaultState() {
-  return {
-    paths: structuredClone(DEFAULT_PATHS),
-    activePathId: 'work',
-    selectedPathId: 'work',
-    view: 'timeline',
-    history: [],
-  };
+const byId = (id) => document.getElementById(id);
+const html = (value) => String(value ?? '')
+  .replaceAll('&', '&amp;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;')
+  .replaceAll("'", '&#039;');
+
+function activeState() {
+  return stateById(ui.snapshot, ui.activeStateId);
 }
 
-export function getPath(state, id = state.selectedPathId) {
-  return state.paths.find((path) => path.id === id) ?? state.paths[0];
+function mainlineById(id) {
+  return ui.snapshot.states.flatMap((state) => state.mainlines).find((mainline) => mainline.id === id) ?? null;
 }
 
-export function getTimelineItems(path, horizon) {
-  return path.timeline[horizon] ?? [];
-}
-
-function pathIconSvg(kind) {
-  const icons = {
-    leaf: '<path d="M18.8 5.1C12.4 5 7.4 7.3 5.7 12.2c-1 2.8.1 5.1 2 6.4 1.4 1.1 4 1 5.8-.4 3.6-2.8 4.3-7.6 5.3-13.1Z"/><path d="M4.4 20c2.5-4.2 5.6-7.3 9.5-9.4"/>',
-    briefcase: '<rect x="3.5" y="7.2" width="17" height="12.5" rx="2.2"/><path d="M8.2 7.2V5.6c0-.8.6-1.4 1.4-1.4h4.8c.8 0 1.4.6 1.4 1.4v1.6M3.5 12.2h17M9.7 11.2v2.1h4.6v-2.1"/>',
-    home: '<path d="m3.8 11.2 8.2-7 8.2 7v8.2a1.5 1.5 0 0 1-1.5 1.5H5.3a1.5 1.5 0 0 1-1.5-1.5Z"/><path d="M9.2 20.9v-6.5h5.6v6.5"/>',
-  };
-  return `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[kind] ?? icons.briefcase}</svg>`;
-}
-
-function timelineLabels(now = new Date()) {
-  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-  const mondayOffset = (now.getDay() + 6) % 7;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - mondayOffset);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  return {
-    today: ['今天', `${now.getMonth() + 1}月${now.getDate()}日 · ${weekdays[now.getDay()]}`],
-    week: ['本周', `${monday.getMonth() + 1}月${monday.getDate()}日 – ${sunday.getMonth() + 1}月${sunday.getDate()}日`],
-    month: ['本月', `${now.getMonth() + 1}月1日 – ${now.getMonth() + 1}月${monthEnd.getDate()}日`],
-    later: ['再往前', '下一复盘点'],
-  };
-}
-
-export function activatePath(state, pathId, at = new Date()) {
-  if (state.activePathId === pathId) return state;
-  const previous = getPath(state, state.activePathId);
-  const next = getPath(state, pathId);
-  return {
-    ...state,
-    activePathId: pathId,
-    paths: state.paths.map((path) => ({
-      ...path,
-      status: path.id === pathId ? 'active' : path.id === previous.id ? 'paused' : path.status,
-    })),
-    history: [
-      {
-        id: `${previous.id}-${at.toISOString()}`,
-        title: previous.title,
-        endedAt: at.toISOString(),
-        nextTitle: next.title,
-        path: structuredClone(previous),
-        candidates: state.paths.map(({ id, title, status }) => ({ id, title, status })),
-        observedOutcome: null,
-      },
-      ...state.history,
-    ],
-  };
-}
-
-function loadState() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (!saved?.paths?.length) return createDefaultState();
-    return { ...createDefaultState(), ...saved };
-  } catch {
-    return createDefaultState();
+function todoById(id) {
+  for (const state of ui.snapshot.states) {
+    const stateTodo = state.stateTodos.find((todo) => todo.id === id);
+    if (stateTodo) return stateTodo;
+    for (const mainline of state.mainlines) {
+      const todo = mainline.todos.find((item) => item.id === id);
+      if (todo) return todo;
+    }
   }
+  return null;
 }
 
-function saveState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function setBusy(value) {
+  document.body.classList.toggle('busy', value);
+  document.body.setAttribute('aria-busy', String(value));
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
-
-if (typeof document !== 'undefined') {
-  let state = loadState();
-  const byId = (id) => document.getElementById(id);
-  const pathChoices = byId('path-choices');
-  const timelineGroups = byId('timeline-groups');
+function showToast(message) {
   const toast = byId('toast');
-  const statusLabels = {
-    candidate: '待选择',
-    recommended: '修复中',
-    active: '进行中',
-    reviewing: '复盘中',
-    complete: '已完成',
-    paused: '已暂停',
+  toast.textContent = message;
+  toast.hidden = false;
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => { toast.hidden = true; }, 2600);
+}
+
+function showError(title, error) {
+  byId('error-title').textContent = title;
+  byId('error-message').textContent = error?.message ?? String(error);
+  byId('error-banner').hidden = false;
+}
+
+function applySnapshot(snapshot) {
+  ui.snapshot = snapshot;
+  if (!stateById(snapshot, ui.activeStateId)) {
+    ui.activeStateId = snapshot.settings.lastViewedStateId;
+  }
+  renderAll();
+}
+
+async function mutate(operation, successMessage) {
+  setBusy(true);
+  closeContextMenu();
+  try {
+    const snapshot = await operation();
+    applySnapshot(snapshot);
+    if (successMessage) showToast(successMessage);
+    return snapshot;
+  } catch (error) {
+    showError('操作没有完成', error);
+    return null;
+  } finally {
+    setBusy(false);
+  }
+}
+
+function renderChrome(now = new Date()) {
+  const { settings } = ui.snapshot;
+  byId('greeting').textContent = `${greetingForHour(now.getHours())}，${settings.displayName}`;
+  byId('local-date').textContent = formatLocalDate(now);
+  byId('profile-name').textContent = settings.displayName;
+  byId('focus-days').textContent = `专注中 · ${focusDays(settings.initializedOn, now)}天`;
+  const avatar = byId('profile-avatar');
+  if (settings.avatarUrl) {
+    avatar.innerHTML = `<img src="${settings.avatarUrl}?v=${Date.now()}" alt="" />`;
+  } else {
+    avatar.textContent = settings.displayName.trim().slice(0, 1).toUpperCase() || 'S';
+  }
+}
+
+function navigate(page) {
+  ui.page = page;
+  document.querySelectorAll('[data-page]').forEach((button) => {
+    if (button.dataset.page === page) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+  document.querySelectorAll('[data-page-panel]').forEach((panel) => {
+    panel.hidden = panel.dataset.pagePanel !== page;
+  });
+  if (page === 'history') renderHistory();
+  if (page === 'settings') renderSettings();
+}
+
+function renderStateControls(state) {
+  byId('state-tabs').innerHTML = ui.snapshot.states.map((item) => `
+    <button type="button" role="tab" data-state-id="${item.id}"
+      aria-selected="${item.id === state.id}">${html(item.name)}</button>
+  `).join('');
+  byId('road-switches').innerHTML = ui.snapshot.states.map((item) => `
+    <button class="road-switch" type="button" data-state-id="${item.id}"
+      aria-pressed="${item.id === state.id}" aria-label="切换到${html(item.name)}状态">
+      <span>${html(item.name)}</span>
+    </button>
+  `).join('');
+  document.querySelectorAll('[data-road-scene]').forEach((layer) => {
+    layer.classList.toggle('selected', layer.dataset.roadScene === state.id);
+  });
+  byId('state-cue').textContent = state.cue || `${state.name}状态暂未设置 cue`;
+}
+
+function renderMainlineSlots(state) {
+  const current = currentMainline(state);
+  const deck = byId('mainline-deck');
+  deck.style.setProperty('--current-slot', current?.slotIndex ?? 2);
+  byId('mainline-slots').innerHTML = [1, 2, 3].map((slotIndex) => {
+    const mainline = state.mainlines.find((item) => item.slotIndex === slotIndex);
+    if (mainline) {
+      return `
+        <div class="mainline-slot" data-slot-index="${slotIndex}">
+          <div class="mainline-card ${mainline.id === state.currentMainlineId ? 'current' : ''}"
+            role="button" tabindex="0" draggable="true" data-mainline-id="${mainline.id}"
+            aria-label="${html(mainline.name)}${mainline.id === state.currentMainlineId ? '，当前主线' : '，点击设为当前主线'}">
+            ${mainline.id === state.currentMainlineId ? '<small>CURRENT</small>' : '<small>&nbsp;</small>'}
+            <span class="mainline-name">${html(mainline.name)}</span>
+            <button class="mainline-more" type="button" data-mainline-menu="${mainline.id}" aria-label="${html(mainline.name)}的更多操作">•••</button>
+          </div>
+        </div>
+      `;
+    }
+    if (ui.createSlot === slotIndex) {
+      return `
+        <div class="mainline-slot" data-slot-index="${slotIndex}">
+          <form class="create-mainline-form" data-create-slot="${slotIndex}">
+            <label class="visually-hidden">新主线名称</label>
+            <input maxlength="60" required autocomplete="off" placeholder="主线名称" />
+            <button type="submit">创建</button>
+          </form>
+        </div>
+      `;
+    }
+    return `
+      <div class="mainline-slot" data-slot-index="${slotIndex}">
+        <button class="empty-mainline" type="button" data-empty-slot="${slotIndex}" aria-label="在槽位 ${slotIndex} 创建主线">＋</button>
+      </div>
+    `;
+  }).join('');
+  if (ui.createSlot) {
+    requestAnimationFrame(() => document.querySelector(`[data-create-slot="${ui.createSlot}"] input`)?.focus());
+  }
+}
+
+function renderCurrentDetail(state) {
+  const current = currentMainline(state);
+  const container = byId('current-detail');
+  if (!current) {
+    container.innerHTML = '<p class="detail-empty">创建一条主线，它会自动成为 Current。</p>';
+    return;
+  }
+  const fields = [
+    ['name', '主线名称', current.name, '输入主线名称'],
+    ['goal', '一句话目标', current.goal, '添加一句话目标'],
+    ['successCriteria', '完成标准', current.successCriteria, '添加完成标准'],
+    ['horizon', '阶段跨度', current.horizon, '添加阶段跨度'],
+  ];
+  container.innerHTML = fields.map(([field, label, value, placeholder]) => `
+    <button class="detail-field" type="button" data-edit-mainline="${current.id}" data-field="${field}" data-value="${html(value)}">
+      <small>${label}</small>
+      <span class="${value ? '' : 'placeholder'}">${html(value || placeholder)}</span>
+    </button>
+  `).join('');
+}
+
+function todoRow(todo) {
+  return `
+    <div class="todo-row" draggable="true" tabindex="0" data-todo-id="${todo.id}" aria-label="Todo：${html(todo.title)}">
+      <button class="todo-title" type="button" data-edit-todo="${todo.id}" data-value="${html(todo.title)}">${html(todo.title)}</button>
+      <button class="complete-button" type="button" data-complete-todo="${todo.id}" aria-label="完成 ${html(todo.title)}">✓</button>
+    </div>
+  `;
+}
+
+function renderPriority(state) {
+  const priority = priorityTodo(state);
+  const container = byId('priority-content');
+  if (!priority) {
+    container.innerHTML = '<p class="priority-empty">拖一条 Todo 到这里，明确此刻的下一步。</p>';
+    return;
+  }
+  container.innerHTML = `
+    <div class="priority-card" draggable="true" tabindex="0" data-todo-id="${priority.id}" aria-label="当前优先：${html(priority.title)}">
+      <div class="priority-copy">
+        <button class="priority-title" type="button" data-edit-todo="${priority.id}" data-value="${html(priority.title)}">${html(priority.title)}</button>
+        <small>${html(todoSource(state, priority))}</small>
+      </div>
+      <button class="complete-button" type="button" data-complete-todo="${priority.id}" aria-label="完成 ${html(priority.title)}">✓</button>
+    </div>
+  `;
+}
+
+function renderTodos(state) {
+  const current = currentMainline(state);
+  const mainlineTodos = current?.todos ?? [];
+  byId('mainline-todo-count').textContent = mainlineTodos.length;
+  byId('state-todo-count').textContent = state.stateTodos.length;
+  byId('mainline-todos').dataset.mainlineId = current?.id ?? '';
+  byId('mainline-todos').innerHTML = mainlineTodos.length
+    ? mainlineTodos.map(todoRow).join('')
+    : `<p class="list-empty">${current ? '这条主线还没有 Todo。' : '先创建或选择一条 Current 主线。'}</p>`;
+  byId('state-todos').innerHTML = state.stateTodos.length
+    ? state.stateTodos.map(todoRow).join('')
+    : '<p class="list-empty">这个状态还没有通用 Todo。</p>';
+  byId('mainline-todo-input').disabled = !current;
+  byId('mainline-todo-form').querySelector('button').disabled = !current;
+  byId('mainline-todo-input').placeholder = current ? '＋ 添加 Todo' : '先选择 Current 主线';
+}
+
+function renderDashboard() {
+  const state = activeState();
+  if (!state) return;
+  renderStateControls(state);
+  renderMainlineSlots(state);
+  renderCurrentDetail(state);
+  renderPriority(state);
+  renderTodos(state);
+}
+
+function formatEndedAt(value) {
+  if (!value) return '';
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  }).format(new Date(value));
+}
+
+function renderHistory() {
+  const container = byId('history-list');
+  if (!ui.snapshot.history.length) {
+    container.innerHTML = '<p class="history-empty">还没有完成或放弃的记录。切换 Current 不会制造历史。</p>';
+    return;
+  }
+  container.innerHTML = ui.snapshot.history.map((item) => {
+    const expanded = ui.expandedHistory.has(`${item.type}:${item.id}`);
+    const details = item.type === 'mainline' ? `
+      <div class="history-details" ${expanded ? '' : 'hidden'}>
+        <div><small>一句话目标</small><p>${html(item.goal || '未填写')}</p></div>
+        <div><small>完成标准</small><p>${html(item.successCriteria || '未填写')}</p></div>
+        <div><small>阶段跨度</small><p>${html(item.horizon || '未填写')}</p></div>
+        <div class="history-bound-todos"><small>最终仍绑定的历史 Todo</small>
+          ${item.boundTodos.length ? `<ul>${item.boundTodos.map((todo) => `<li>${html(todo.title)} · ${statusLabel(todo.status)}</li>`).join('')}</ul>` : '<p>没有。</p>'}
+        </div>
+      </div>
+    ` : '';
+    return `
+      <article class="history-item">
+        <div class="history-summary">
+          <strong>${html(item.name)}</strong>
+          <span class="history-meta">${typeLabel(item.type)}</span>
+          <span class="history-status">${statusLabel(item.status)}</span>
+          <span class="history-meta">${html(stateName(ui.snapshot, item.stateId))}</span>
+          <span class="history-meta">${formatEndedAt(item.endedAt)}</span>
+          ${item.type === 'mainline' ? `
+            <button class="history-toggle" type="button" data-history-toggle="${item.type}:${item.id}">${expanded ? '收起' : '展开'}</button>
+            <button class="copy-history" type="button" data-copy-mainline="${item.id}">复制为新主线</button>
+          ` : ''}
+        </div>
+        ${details}
+      </article>
+    `;
+  }).join('');
+}
+
+function renderSettings() {
+  byId('display-name-input').value = ui.snapshot.settings.displayName;
+  document.querySelectorAll('[data-cue-state]').forEach((input) => {
+    input.value = stateById(ui.snapshot, input.dataset.cueState)?.cue ?? '';
+  });
+}
+
+function renderAll() {
+  renderChrome();
+  renderDashboard();
+  navigate(ui.page);
+}
+
+async function selectState(stateId) {
+  if (!stateById(ui.snapshot, stateId) || stateId === ui.activeStateId) return;
+  ui.activeStateId = stateId;
+  ui.createSlot = null;
+  renderDashboard();
+  await mutate(() => api.updateAppState(stateId));
+}
+
+function beginInlineEdit(button, value, onSave, maxLength) {
+  if (button.querySelector('input')) return;
+  const input = document.createElement('input');
+  input.className = 'inline-editor';
+  input.value = value;
+  input.maxLength = maxLength;
+  button.replaceChildren(input);
+  input.focus();
+  input.select();
+  let settled = false;
+  const cancel = () => {
+    if (settled) return;
+    settled = true;
+    renderAll();
   };
-
-  function showToast(message) {
-    toast.textContent = message;
-    toast.hidden = false;
-    clearTimeout(showToast.timer);
-    showToast.timer = setTimeout(() => { toast.hidden = true; }, 2800);
-  }
-
-  function renderPaths() {
-    pathChoices.innerHTML = state.paths.map((path) => `
-      <button class="path-card ${path.id === state.selectedPathId ? 'selected' : ''} ${path.id === state.activePathId ? 'active' : ''}"
-        type="button" data-path-id="${path.id}" aria-pressed="${path.id === state.selectedPathId}">
-        <span class="path-icon path-icon-${path.id}">${pathIconSvg(path.icon)}</span>
-        <span class="path-card-copy">
-          <strong>${escapeHtml(path.title)}</strong>
-          <small>${escapeHtml(path.summary)}</small>
-          <span class="path-status">${escapeHtml(statusLabels[path.status] ?? path.status)}</span>
-        </span>
-        <span class="path-open" aria-hidden="true">展开 ↗</span>
-      </button>
-    `).join('');
-
-    const routeLayers = [
-      ['[data-route-scene]', 'routeScene'],
-    ];
-    routeLayers.forEach(([selector, datasetKey]) => {
-      document.querySelectorAll(selector).forEach((layer) => {
-        const routeId = layer.dataset[datasetKey];
-        layer.classList.toggle('selected', routeId === state.selectedPathId);
-        layer.classList.toggle('active', routeId === state.activePathId);
-      });
-    });
-  }
-
-  function renderDetails() {
-    const selected = getPath(state);
-    byId('detail-title').textContent = selected.title;
-    byId('detail-summary').textContent = selected.summary;
-    byId('detail-reason').textContent = selected.reason;
-    byId('detail-success').textContent = selected.success;
-    byId('detail-cost').textContent = selected.cost;
-    byId('detail-later').textContent = selected.timeline.later.map(([title]) => title).join('；');
-    byId('activate-button').disabled = selected.id === state.activePathId;
-    byId('activate-button').textContent = selected.id === state.activePathId ? '正在走这条路' : '设为当前主线';
-
-    const labels = timelineLabels();
-    const scheduleLabels = {
-      today: ['10:00', '15:00', '20:00'],
-      week: ['周五', '周三', '周日'],
-      month: [`${new Date().getMonth() + 1}月25日`, `${new Date().getMonth() + 1}月30日`, `${new Date().getMonth() + 1}月31日`],
-      later: ['下次复盘'],
-    };
-    timelineGroups.innerHTML = Object.entries(labels).filter(([horizon]) => horizon !== 'later').map(([horizon, [label, range]]) => {
-      const items = getTimelineItems(selected, horizon);
-      return `<section class="time-group">
-        <div class="time-label"><strong>${label}</strong><span>${range}</span></div>
-        <div class="time-items">${items.map(([title], index) => `
-          <div class="time-item"><i aria-hidden="true"></i><strong>${escapeHtml(title)}</strong><small>${scheduleLabels[horizon][index] ?? selected.horizon}</small></div>
-        `).join('')}</div>
-      </section>`;
-    }).join('');
-
-    document.querySelectorAll('[data-view]').forEach((tab) => {
-      tab.setAttribute('aria-selected', String(tab.dataset.view === state.view));
-    });
-    byId('timeline-view').hidden = state.view !== 'timeline';
-    byId('details-view').hidden = state.view !== 'details';
-
-    byId('now-title').textContent = selected.now.title;
-    byId('now-why').textContent = selected.now.why;
-    byId('now-duration').textContent = selected.now.duration;
-    byId('now-energy').textContent = selected.now.priority ?? selected.now.energy;
-    byId('now-done').textContent = selected.now.done;
-    byId('now-fallback').textContent = selected.now.fallback;
-  }
-
-  function render() {
-    renderPaths();
-    renderDetails();
-    saveState(state);
-  }
-
-  pathChoices.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-path-id]');
-    if (!button) return;
-    state.selectedPathId = button.dataset.pathId;
-    state.view = 'timeline';
-    render();
-  });
-
-  document.querySelectorAll('[data-view]').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      state.view = tab.dataset.view;
-      render();
-    });
-  });
-
-  byId('activate-button').addEventListener('click', () => {
-    const selected = getPath(state);
-    state = activatePath(state, selected.id);
-    render();
-    showToast(`已把“${selected.title}”设为当前主线`);
-  });
-
-  byId('fallback-button').addEventListener('click', () => {
-    const fallback = byId('fallback');
-    fallback.hidden = !fallback.hidden;
-    byId('fallback-button').setAttribute('aria-expanded', String(!fallback.hidden));
-  });
-
-  byId('start-button').addEventListener('click', () => {
-    const current = getPath(state).now;
-    showToast(`开始：${current.title}。做到完成定义就停。`);
-    byId('start-button').classList.add('started');
-    byId('start-button').querySelector('span').textContent = '这一步已开始';
-  });
-
-  byId('notification-button').addEventListener('click', () => showToast('暂无新通知'));
-  byId('user-menu').addEventListener('click', () => showToast('当前为视觉演示用户 Honye'));
-  byId('reflection-button').addEventListener('click', () => showToast('想法记录将在后续版本接入本地存储'));
-  byId('rail-collapse').addEventListener('click', () => {
-    const collapsed = document.body.classList.toggle('rail-collapsed');
-    byId('rail-collapse').setAttribute('aria-label', collapsed ? '展开侧边栏' : '收起侧边栏');
-  });
-
-  byId('panel-collapse').addEventListener('click', () => {
-    const workspace = byId('timeline');
-    const collapsed = workspace.classList.toggle('collapsed');
-    byId('panel-collapse').setAttribute('aria-expanded', String(!collapsed));
-    byId('panel-collapse').innerHTML = collapsed ? '展开 <span aria-hidden="true">⌄</span>' : '收起 <span aria-hidden="true">⌃</span>';
-  });
-
-  const editDialog = byId('edit-dialog');
-  byId('edit-button').addEventListener('click', () => {
-    const selected = getPath(state);
-    byId('edit-title').value = selected.title;
-    byId('edit-summary').value = selected.summary;
-    byId('edit-now').value = selected.now.title;
-    editDialog.showModal();
-  });
-  byId('save-edit').addEventListener('click', (event) => {
-    if (!byId('edit-form').reportValidity()) {
-      event.preventDefault();
+  const save = async () => {
+    if (settled) return;
+    const nextValue = input.value.trim();
+    settled = true;
+    if (nextValue === value.trim()) {
+      renderAll();
       return;
     }
-    state.paths = state.paths.map((path) => path.id === state.selectedPathId ? {
-      ...path,
-      title: byId('edit-title').value.trim(),
-      summary: byId('edit-summary').value.trim(),
-      now: { ...path.now, title: byId('edit-now').value.trim() },
-    } : path);
-    render();
-    showToast('路径内容已保存在这个浏览器');
+    const result = await onSave(nextValue);
+    if (!result) renderAll();
+  };
+  input.addEventListener('click', (event) => event.stopPropagation());
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') { event.preventDefault(); save(); }
+    if (event.key === 'Escape') { event.preventDefault(); cancel(); }
   });
-
-  const historyDialog = byId('history-dialog');
-  byId('history-button').addEventListener('click', () => {
-    byId('history-list').innerHTML = state.history.length
-      ? state.history.map((item) => `<article><time>${new Date(item.endedAt).toLocaleDateString('zh-CN')}</time><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.path?.reason ?? '当时未记录选择原因')}</p><p>转向 ${escapeHtml(item.nextTitle)}</p></article>`).join('')
-      : '<p class="empty-state">还没有切换记录。探索路径不会产生记录，只有明确设为当前主线才会。</p>';
-    historyDialog.showModal();
-  });
-  byId('close-history').addEventListener('click', () => historyDialog.close());
-
-  render();
+  input.addEventListener('blur', save, { once: true });
 }
+
+function closeContextMenu() {
+  byId('context-menu').hidden = true;
+}
+
+function openContextMenu(type, id, x, y) {
+  const menu = byId('context-menu');
+  menu.innerHTML = type === 'mainline'
+    ? `
+      <button type="button" role="menuitem" data-context-action="complete" data-target-id="${id}">完成主线</button>
+      <button type="button" role="menuitem" data-context-action="abandon" data-target-id="${id}">放弃主线</button>
+      <button class="danger" type="button" role="menuitem" data-context-action="delete-mainline" data-target-id="${id}">删除主线</button>
+    `
+    : `
+      <button type="button" role="menuitem" data-context-action="abandon-todo" data-target-id="${id}">放弃 Todo</button>
+      <button class="danger" type="button" role="menuitem" data-context-action="delete-todo" data-target-id="${id}">删除 Todo</button>
+    `;
+  menu.hidden = false;
+  menu.style.left = `${Math.min(x, window.innerWidth - 175)}px`;
+  menu.style.top = `${Math.min(y, window.innerHeight - menu.offsetHeight - 10)}px`;
+  menu.querySelector('button')?.focus();
+}
+
+function openDialog({ kicker, title, message, fields = '', confirmLabel = '确认', danger = false, onConfirm }) {
+  byId('dialog-kicker').textContent = kicker;
+  byId('dialog-title').textContent = title;
+  byId('dialog-message').textContent = message;
+  byId('dialog-fields').innerHTML = fields;
+  const confirm = byId('dialog-confirm');
+  confirm.textContent = confirmLabel;
+  confirm.classList.toggle('danger-action', danger);
+  confirm.classList.toggle('primary-action', !danger);
+  ui.dialogAction = onConfirm;
+  byId('action-dialog').showModal();
+  requestAnimationFrame(() => byId('dialog-fields').querySelector('input, select')?.focus());
+}
+
+function closeEndPanel() {
+  ui.endAction = null;
+  byId('end-panel').hidden = true;
+}
+
+async function beginEndMainline(mainline, status) {
+  if (!mainline.todos.length) {
+    await mutate(
+      () => api.endMainline(mainline.id, { status, resolutions: {} }),
+      status === 'completed' ? '主线已完成' : '主线已放弃',
+    );
+    return;
+  }
+  const state = activeState();
+  const alternatives = state.mainlines.filter((item) => item.id !== mainline.id);
+  ui.endAction = { mainlineId: mainline.id, status };
+  byId('end-panel-kicker').textContent = status === 'completed' ? '完成主线' : '放弃主线';
+  byId('end-panel-title').textContent = `处理“${mainline.name}”的剩余 Todo`;
+  byId('resolution-list').innerHTML = mainline.todos.map((todo) => `
+    <label class="resolution-row">
+      <strong>${html(todo.title)}</strong>
+      <select data-resolution-todo="${todo.id}">
+        <option value="abandon">标记为已放弃（默认）</option>
+        <option value="state">移到${html(state.name)}通用 Todo</option>
+        ${alternatives.map((target) => `<option value="mainline:${target.id}">移到 ${html(target.name)}</option>`).join('')}
+      </select>
+    </label>
+  `).join('');
+  byId('end-panel').hidden = false;
+}
+
+function confirmDeleteMainline(mainline) {
+  const hasTodos = mainline.todos.length > 0;
+  openDialog({
+    kicker: '不可逆操作',
+    title: `删除“${mainline.name}”`,
+    message: hasTodos ? '选择这条主线所绑定 Todo 的处理方式。删除后主线无法恢复。' : '这条主线将被永久删除。',
+    fields: hasTodos ? `
+      <label><span>Todo 处理</span><select name="todoPolicy">
+        <option value="move_to_state">移动到${html(activeState().name)}通用 Todo（推荐）</option>
+        <option value="delete">连同 Todo 一起永久删除</option>
+      </select></label>
+    ` : '',
+    confirmLabel: '确认删除',
+    danger: true,
+    onConfirm: async (values) => {
+      await mutate(() => api.deleteMainline(mainline.id, values.todoPolicy || 'move_to_state'), '主线已删除');
+    },
+  });
+}
+
+function confirmDeleteTodo(todo) {
+  openDialog({
+    kicker: '不可逆操作',
+    title: `删除“${todo.title}”`,
+    message: '这条 Todo 会被永久删除，不会进入历史。',
+    confirmLabel: '确认删除',
+    danger: true,
+    onConfirm: async () => {
+      await mutate(() => api.deleteTodo(todo.id), 'Todo 已删除');
+    },
+  });
+}
+
+function clearDragState() {
+  ui.drag = null;
+  document.body.classList.remove('dragging-todo', 'dragging-mainline');
+  document.querySelectorAll('.drop-active, .drag-target').forEach((element) => element.classList.remove('drop-active', 'drag-target'));
+}
+
+function todoDropPosition(list, clientY) {
+  const rows = [...list.querySelectorAll('.todo-row')]
+    .filter((row) => row.dataset.todoId !== ui.drag?.id);
+  const beforeIndex = rows.findIndex((row) => clientY < row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2);
+  return beforeIndex === -1 ? rows.length + 1 : beforeIndex + 1;
+}
+
+function setupNavigation() {
+  document.querySelectorAll('[data-page]').forEach((button) => {
+    button.addEventListener('click', () => navigate(button.dataset.page));
+  });
+  document.querySelector('[data-page-link="dashboard"]').addEventListener('click', (event) => {
+    event.preventDefault();
+    navigate('dashboard');
+  });
+  byId('dismiss-error').addEventListener('click', () => { byId('error-banner').hidden = true; });
+}
+
+function setupDashboardEvents() {
+  byId('state-tabs').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-state-id]');
+    if (button) selectState(button.dataset.stateId);
+  });
+  byId('road-switches').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-state-id]');
+    if (button) selectState(button.dataset.stateId);
+  });
+
+  byId('mainline-slots').addEventListener('click', async (event) => {
+    const empty = event.target.closest('[data-empty-slot]');
+    if (empty) {
+      ui.createSlot = Number(empty.dataset.emptySlot);
+      renderMainlineSlots(activeState());
+      return;
+    }
+    const menuButton = event.target.closest('[data-mainline-menu]');
+    if (menuButton) {
+      event.stopPropagation();
+      const rect = menuButton.getBoundingClientRect();
+      openContextMenu('mainline', menuButton.dataset.mainlineMenu, rect.right - 150, rect.bottom + 4);
+      return;
+    }
+    const card = event.target.closest('[data-mainline-id]');
+    if (card && card.dataset.mainlineId !== activeState().currentMainlineId) {
+      await mutate(() => api.setCurrentMainline(card.dataset.mainlineId), 'Current 主线已切换');
+    }
+  });
+
+  byId('mainline-slots').addEventListener('submit', async (event) => {
+    const form = event.target.closest('[data-create-slot]');
+    if (!form) return;
+    event.preventDefault();
+    const input = form.querySelector('input');
+    const name = input.value.trim();
+    if (!name) return;
+    const slotIndex = Number(form.dataset.createSlot);
+    const snapshot = await mutate(() => api.createMainline({ stateId: activeState().id, slotIndex, name }), '主线已创建');
+    if (snapshot) {
+      ui.createSlot = null;
+      renderDashboard();
+    }
+  });
+
+  byId('mainline-slots').addEventListener('keydown', (event) => {
+    const card = event.target.closest('[data-mainline-id]');
+    if (!card) return;
+    if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button')) {
+      event.preventDefault();
+      mutate(() => api.setCurrentMainline(card.dataset.mainlineId), 'Current 主线已切换');
+    }
+    if (event.shiftKey && event.key === 'F10') {
+      event.preventDefault();
+      const rect = card.getBoundingClientRect();
+      openContextMenu('mainline', card.dataset.mainlineId, rect.left + 20, rect.top + 20);
+    }
+  });
+
+  byId('mainline-slots').addEventListener('contextmenu', (event) => {
+    const card = event.target.closest('[data-mainline-id]');
+    if (!card) return;
+    event.preventDefault();
+    openContextMenu('mainline', card.dataset.mainlineId, event.clientX, event.clientY);
+  });
+
+  byId('current-detail').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-edit-mainline]');
+    if (!button) return;
+    const field = button.dataset.field;
+    const value = button.dataset.value;
+    beginInlineEdit(
+      button,
+      value,
+      (nextValue) => mutate(() => api.updateMainline(button.dataset.editMainline, { [field]: nextValue }), '主线已更新'),
+      field === 'name' ? 60 : field === 'horizon' ? 40 : field === 'goal' ? 180 : 240,
+    );
+  });
+
+  byId('mainline-todo-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const current = currentMainline(activeState());
+    const input = byId('mainline-todo-input');
+    const title = input.value.trim();
+    if (!current || !title) return;
+    const snapshot = await mutate(() => api.createTodo({ stateId: activeState().id, mainlineId: current.id, title }), 'Todo 已添加');
+    if (snapshot) input.value = '';
+  });
+  byId('state-todo-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const input = byId('state-todo-input');
+    const title = input.value.trim();
+    if (!title) return;
+    const snapshot = await mutate(() => api.createTodo({ stateId: activeState().id, title }), 'Todo 已添加');
+    if (snapshot) input.value = '';
+  });
+
+  [byId('priority-content'), byId('mainline-todos'), byId('state-todos')].forEach((container) => {
+    container.addEventListener('click', (event) => {
+      const complete = event.target.closest('[data-complete-todo]');
+      if (complete) {
+        mutate(() => api.completeTodo(complete.dataset.completeTodo), 'Todo 已完成，下一步已接棒');
+        return;
+      }
+      const edit = event.target.closest('[data-edit-todo]');
+      if (edit) {
+        beginInlineEdit(
+          edit,
+          edit.dataset.value,
+          (title) => mutate(() => api.updateTodo(edit.dataset.editTodo, { title }), 'Todo 已更新'),
+          160,
+        );
+      }
+    });
+    container.addEventListener('contextmenu', (event) => {
+      const row = event.target.closest('[data-todo-id]');
+      if (!row) return;
+      event.preventDefault();
+      openContextMenu('todo', row.dataset.todoId, event.clientX, event.clientY);
+    });
+    container.addEventListener('keydown', (event) => {
+      const row = event.target.closest('[data-todo-id]');
+      if (row && event.shiftKey && event.key === 'F10') {
+        event.preventDefault();
+        const rect = row.getBoundingClientRect();
+        openContextMenu('todo', row.dataset.todoId, rect.left + 20, rect.top + 20);
+      }
+    });
+  });
+}
+
+function setupContextMenu() {
+  byId('context-menu').addEventListener('click', async (event) => {
+    const actionButton = event.target.closest('[data-context-action]');
+    if (!actionButton) return;
+    const { contextAction: action, targetId: id } = actionButton.dataset;
+    closeContextMenu();
+    if (action === 'complete' || action === 'abandon') {
+      const mainline = mainlineById(id);
+      if (mainline) await beginEndMainline(mainline, action === 'complete' ? 'completed' : 'abandoned');
+    } else if (action === 'delete-mainline') {
+      const mainline = mainlineById(id);
+      if (mainline) confirmDeleteMainline(mainline);
+    } else if (action === 'abandon-todo') {
+      await mutate(() => api.abandonTodo(id), 'Todo 已放弃');
+    } else if (action === 'delete-todo') {
+      const todo = todoById(id);
+      if (todo) confirmDeleteTodo(todo);
+    }
+  });
+  document.addEventListener('pointerdown', (event) => {
+    if (!event.target.closest('#context-menu') && !event.target.closest('[data-mainline-menu]')) closeContextMenu();
+  });
+  window.addEventListener('blur', closeContextMenu);
+}
+
+function setupDragAndDrop() {
+  document.addEventListener('dragstart', (event) => {
+    const todo = event.target.closest('[data-todo-id]');
+    const mainline = event.target.closest('[data-mainline-id]');
+    if (todo) {
+      ui.drag = { type: 'todo', id: todo.dataset.todoId };
+      document.body.classList.add('dragging-todo');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', todo.dataset.todoId);
+    } else if (mainline) {
+      ui.drag = { type: 'mainline', id: mainline.dataset.mainlineId };
+      document.body.classList.add('dragging-mainline');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', mainline.dataset.mainlineId);
+    }
+  });
+
+  document.addEventListener('dragover', (event) => {
+    if (!ui.drag) return;
+    const target = ui.drag.type === 'todo'
+      ? event.target.closest('#priority-zone, .todo-list, .mainline-card')
+      : event.target.closest('.mainline-slot');
+    if (!target) return;
+    event.preventDefault();
+    document.querySelectorAll('.drop-active, .drag-target').forEach((element) => element.classList.remove('drop-active', 'drag-target'));
+    target.classList.add(target.classList.contains('mainline-card') ? 'drag-target' : 'drop-active');
+  });
+
+  document.addEventListener('drop', async (event) => {
+    if (!ui.drag) return;
+    const drag = { ...ui.drag };
+    if (drag.type === 'mainline') {
+      const slot = event.target.closest('.mainline-slot');
+      if (!slot) return;
+      event.preventDefault();
+      clearDragState();
+      await mutate(() => api.moveMainline(drag.id, Number(slot.dataset.slotIndex)), '主线槽位已保存');
+      return;
+    }
+
+    const priority = event.target.closest('#priority-zone');
+    const card = event.target.closest('.mainline-card');
+    const list = event.target.closest('.todo-list');
+    if (!priority && !card && !list) return;
+    event.preventDefault();
+    clearDragState();
+    if (priority) {
+      await mutate(() => api.setPriority(drag.id), '当前优先已更新');
+    } else if (card) {
+      const target = mainlineById(card.dataset.mainlineId);
+      await mutate(() => api.moveTodo(drag.id, { mainlineId: target.id, position: target.todos.length + 1 }), 'Todo 归属已更新');
+    } else if (list) {
+      const targetMainlineId = list.dataset.todoScope === 'mainline' ? list.dataset.mainlineId || null : null;
+      await mutate(() => api.moveTodo(drag.id, {
+        mainlineId: targetMainlineId,
+        position: todoDropPosition(list, event.clientY),
+      }), 'Todo 顺序已保存');
+    }
+  });
+  document.addEventListener('dragend', clearDragState);
+}
+
+function setupEndPanel() {
+  byId('close-end-panel').addEventListener('click', closeEndPanel);
+  byId('cancel-end-panel').addEventListener('click', closeEndPanel);
+  byId('end-mainline-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!ui.endAction) return;
+    const resolutions = {};
+    document.querySelectorAll('[data-resolution-todo]').forEach((select) => {
+      const value = select.value;
+      resolutions[select.dataset.resolutionTodo] = value.startsWith('mainline:')
+        ? { target: 'mainline', mainlineId: value.slice('mainline:'.length) }
+        : { target: value };
+    });
+    const { mainlineId, status } = ui.endAction;
+    closeEndPanel();
+    await mutate(
+      () => api.endMainline(mainlineId, { status, resolutions }),
+      status === 'completed' ? '主线已完成' : '主线已放弃',
+    );
+  });
+}
+
+function setupDialog() {
+  byId('action-dialog-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (event.submitter?.value === 'cancel') {
+      ui.dialogAction = null;
+      byId('action-dialog').close();
+      return;
+    }
+    if (!ui.dialogAction) return;
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    const action = ui.dialogAction;
+    ui.dialogAction = null;
+    byId('action-dialog').close();
+    await action(values);
+  });
+  byId('action-dialog').addEventListener('close', () => { ui.dialogAction = null; });
+}
+
+function setupHistory() {
+  byId('history-list').addEventListener('click', (event) => {
+    const toggle = event.target.closest('[data-history-toggle]');
+    if (toggle) {
+      const key = toggle.dataset.historyToggle;
+      if (ui.expandedHistory.has(key)) ui.expandedHistory.delete(key);
+      else ui.expandedHistory.add(key);
+      renderHistory();
+      return;
+    }
+    const copy = event.target.closest('[data-copy-mainline]');
+    if (copy) {
+      const item = ui.snapshot.history.find((historyItem) => historyItem.type === 'mainline' && historyItem.id === copy.dataset.copyMainline);
+      openDialog({
+        kicker: '从历史重新出发',
+        title: '复制为新的独立主线',
+        message: '新主线会获得新 ID，并预填目标、完成标准和阶段跨度；不会复制旧 Todo。',
+        fields: `<label><span>新的全局唯一名称</span><input name="name" maxlength="60" required value="${html(item.name)} · 新阶段" /></label>`,
+        confirmLabel: '创建新主线',
+        onConfirm: async ({ name }) => {
+          const snapshot = await mutate(() => api.copyMainline(item.id, name), '新主线已创建');
+          if (snapshot) {
+            ui.activeStateId = item.stateId;
+            navigate('dashboard');
+          }
+        },
+      });
+    }
+  });
+}
+
+function setupSettings() {
+  byId('display-name-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    await mutate(() => api.updateSettings({ displayName: byId('display-name-input').value }), '显示名称已保存');
+  });
+  byId('avatar-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const file = byId('avatar-input').files[0];
+    if (!file) {
+      showError('没有选择头像', new Error('请选择 PNG、JPEG 或 WebP 图片。'));
+      return;
+    }
+    await mutate(() => api.uploadAvatar(file), '本地头像已更新');
+    byId('avatar-input').value = '';
+  });
+  byId('cue-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      let snapshot = ui.snapshot;
+      for (const input of document.querySelectorAll('[data-cue-state]')) {
+        snapshot = await api.updateState(input.dataset.cueState, { cue: input.value });
+      }
+      applySnapshot(snapshot);
+      showToast('三个状态 Cue 已保存');
+    } catch (error) {
+      showError('Cue 没有保存完整', error);
+    } finally {
+      setBusy(false);
+    }
+  });
+  byId('restore-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const file = byId('restore-input').files[0];
+    if (!file) {
+      showError('没有选择数据库', new Error('请选择 SUOWANG 的 SQLite 备份文件。'));
+      return;
+    }
+    openDialog({
+      kicker: '整库覆盖恢复',
+      title: '用这个备份覆盖当前数据库？',
+      message: 'SUOWANG 会先自动备份当前数据库，再执行覆盖恢复。两个数据库不会合并。',
+      confirmLabel: '备份当前数据并恢复',
+      danger: true,
+      onConfirm: async () => {
+        const snapshot = await mutate(() => api.restoreDatabase(file), '数据库已恢复');
+        if (snapshot) {
+          ui.activeStateId = snapshot.settings.lastViewedStateId;
+          navigate('dashboard');
+        }
+        byId('restore-input').value = '';
+      },
+    });
+  });
+}
+
+function setup() {
+  setupNavigation();
+  setupDashboardEvents();
+  setupContextMenu();
+  setupDragAndDrop();
+  setupEndPanel();
+  setupDialog();
+  setupHistory();
+  setupSettings();
+}
+
+async function initialize() {
+  setup();
+  try {
+    const snapshot = await api.snapshot();
+    ui.activeStateId = snapshot.settings.lastViewedStateId;
+    applySnapshot(snapshot);
+    byId('loading-layer').classList.add('done');
+  } catch (error) {
+    byId('loading-layer').classList.add('done');
+    showError('本地驾驶舱没有连接成功', error);
+  }
+}
+
+initialize();

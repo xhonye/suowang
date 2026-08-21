@@ -1,0 +1,34 @@
+# SUOWANG V0.1 实施交接
+
+## 当前已有
+
+- 三个永久状态及每状态三个 active 主线槽。
+- 每状态独立 Current、Priority、状态 Todo 和 cue。
+- 主线与 Todo 的创建、原地编辑、排序、改归属、完成、放弃、纠错删除和历史。
+- 主线结束时逐条处理 active Todo，历史主线复制为新主线。
+- SQLite migration、每日备份、JSON/SQLite 导出、整库安全恢复和本地头像。
+- Windows 双击入口、重复启动保护和桌面快捷方式。
+- 1920×1080、2560×1440 与 320px 响应式驾驶舱。
+
+## 真实运行边界
+
+- 正式数据在仓库外，当前本机默认目录为 `D:/5Data/suowang`。
+- V0.1 不依赖 LLM、账号、云服务、遥测或远程数据库。
+- 本地 HTTP 服务只接受 loopback Host 和同源浏览器请求。
+- JSON 是阅读导出；只有 SQLite 导出能用于恢复。
+
+## 维护入口
+
+- 产品与工程合同：`AGENTS.md`
+- 使用说明：`README.md`
+- 产品模型：`docs/product-brief.md`
+- 视觉约束：`docs/visual-contract.md`
+- 架构与数据流：`docs/architecture.md`
+- 内部端点：`docs/integration-guide.md`
+- 启动、备份与故障处理：`docs/operator-runbook.md`
+
+## 变更闸门
+
+修改稳定业务规则时，先在 `src/server/service.mjs` 形成原子事务并补自动化测试。涉及 UI 时同时检查 1920×1080、2560×1440 和 320px。涉及数据格式、端点、环境变量或启动方式时，同步架构、接口和运维文档。
+
+不把旧 Timeline、Theme/Run/Round、假统计、专注 session、隐藏 backlog、localStorage 业务真源或运行时 AI 带回 V0.1。
