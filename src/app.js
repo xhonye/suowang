@@ -136,6 +136,7 @@ function renderStateControls(state) {
     </button>
   `;
   }).join('');
+  byId('road-stage').dataset.activeState = state.id;
   document.querySelectorAll('[data-road-scene]').forEach((layer) => {
     layer.classList.toggle('selected', layer.dataset.roadScene === state.id);
   });
@@ -154,8 +155,9 @@ function renderMainlineSlots(state) {
           <div class="mainline-card ${mainline.id === state.currentMainlineId ? 'current' : ''}"
             role="button" tabindex="0" draggable="true" data-mainline-id="${mainline.id}"
             aria-label="${html(mainline.name)}${mainline.id === state.currentMainlineId ? '，当前主线' : '，点击设为当前主线'}">
-            ${mainline.id === state.currentMainlineId ? '<small>CURRENT</small>' : '<small>&nbsp;</small>'}
+            <span class="mainline-head"><small>MAINLINE SLOT ${String(slotIndex).padStart(2, '0')}</small><span class="mainline-state">${mainline.id === state.currentMainlineId ? '当前' : '进行中'}</span></span>
             <span class="mainline-name">${html(mainline.name)}</span>
+            <span class="mainline-goal">${html(mainline.goal || '添加一句话目标')}</span>
             <button class="mainline-more" type="button" data-mainline-menu="${mainline.id}" aria-label="${html(mainline.name)}的更多操作">•••</button>
           </div>
         </div>
@@ -226,7 +228,7 @@ function renderPriority(state) {
         <button class="priority-title" type="button" data-edit-todo="${priority.id}" data-value="${html(priority.title)}">${html(priority.title)}</button>
         <small>${html(todoSource(state, priority))}</small>
       </div>
-      <button class="complete-button" type="button" data-complete-todo="${priority.id}" aria-label="完成 ${html(priority.title)}">✓</button>
+      <button class="complete-button priority-complete" type="button" data-complete-todo="${priority.id}" aria-label="完成 ${html(priority.title)}">完成</button>
     </div>
   `;
 }

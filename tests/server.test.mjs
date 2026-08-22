@@ -56,9 +56,12 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.doesNotMatch(shell, /class="road-field"/);
   assert.match(shell, /id="route-tabs" role="tablist"/);
   assert.doesNotMatch(shell, /id="state-tabs"|id="road-switches"/);
-  assert.match(shell, /mainline-scene-restore-v3\.webp/);
-  assert.match(shell, /mainline-scene-work-v3\.webp/);
-  assert.match(shell, /mainline-scene-life-v3\.webp/);
+  assert.match(shell, /mainline-scene-restore-v4\.webp/);
+  assert.match(shell, /mainline-scene-work-v4\.webp/);
+  assert.match(shell, /mainline-scene-life-v4\.webp/);
+  assert.match(shell, /class="cockpit"/);
+  assert.match(shell, /class="work-area"/);
+  assert.match(shell, /class="dashboard-prompt"/);
   assert.doesNotMatch(shell, /mainline-scene-neutral|road-mist/);
   assert.doesNotMatch(shell, /时间线|开始专注|累计专注|notification-button|data-path-id/);
 });

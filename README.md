@@ -80,6 +80,8 @@
 
 需要 Node 22 或更高版本。
 
+交给本地 Agent 安装时，直接发送：`请从 https://github.com/xhonye/suowang 克隆最新 main，检查 Node.js 22+，运行 npm install 和 npm run install-shortcut，启动后验证 http://127.0.0.1:2037/health 正常并打开 SUOWANG；不要读取、移动或覆盖已有的 SUOWANG_DATA_DIR 数据。`
+
 ```powershell
 Set-Location -LiteralPath 'A:/2Workspace/Projects/suowang'
 npm install

@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f2f6f5" />
     <meta name="description" content="所往 SUOWANG · 人生主线驾驶舱" />
     <title>所往 SUOWANG · 人生主线驾驶舱</title>
-    <link rel="stylesheet" href="/src/styles.css" />
+    <link rel="stylesheet" href="/src/styles.css?v=4" />
   </head>
   <body>
     <a class="skip-link" href="#dashboard-page">跳到驾驶舱</a>
@@ -65,17 +65,18 @@
 
         <main class="page-stage">
           <section class="page dashboard-page" id="dashboard-page" data-page-panel="dashboard" aria-labelledby="dashboard-title">
-            <section class="road-stage" aria-label="恢复、工作与生活三条道路">
+            <section class="road-stage" id="road-stage" aria-label="恢复、工作与生活三条道路">
               <div class="road-scene" id="road-scene">
-                <img class="road-image road-state" data-road-scene="restore" src="/assets/mainline-scene-restore-v3.webp" alt="阳光下三条道路向湖边地平线展开" />
-                <img class="road-image road-state" data-road-scene="work" src="/assets/mainline-scene-work-v3.webp" alt="" />
-                <img class="road-image road-state" data-road-scene="life" src="/assets/mainline-scene-life-v3.webp" alt="" />
+                <img class="road-image road-state" data-road-scene="restore" src="/assets/mainline-scene-restore-v4.webp" alt="明亮晨光下三条远端分离的道路" />
+                <img class="road-image road-state" data-road-scene="work" src="/assets/mainline-scene-work-v4.webp" alt="" />
+                <img class="road-image road-state" data-road-scene="life" src="/assets/mainline-scene-life-v4.webp" alt="" />
               </div>
               <div class="road-stage-copy">
                 <div class="dashboard-heading">
                   <div>
                     <p class="eyebrow">MAINLINE COCKPIT</p>
                     <h1 id="dashboard-title">人生主线驾驶舱</h1>
+                    <p class="dashboard-prompt">我现在处于什么状态？当前主要往哪里走？接下来优先做什么？</p>
                   </div>
                 </div>
                 <p class="state-cue" id="state-cue"></p>
@@ -85,40 +86,43 @@
             </section>
 
             <section class="mainline-deck" id="mainline-deck" aria-label="三个进行中主线槽">
-              <div class="section-label"><span>进行中主线</span><small>点击即切换 Current · 拖动可换槽</small></div>
+              <h2 class="visually-hidden">进行中主线</h2>
               <div class="mainline-slots" id="mainline-slots"></div>
             </section>
 
-            <section class="current-detail" id="current-detail" aria-label="当前主线详情"></section>
+            <section class="cockpit" aria-label="当前主线工作舱">
+              <section class="current-detail" id="current-detail" aria-label="当前主线详情"></section>
+              <div class="work-area">
+                <section class="priority-zone" id="priority-zone" aria-labelledby="priority-heading">
+                  <div class="priority-label">
+                    <p>NEXT ACTION</p>
+                    <h2 id="priority-heading">现在最值得做</h2>
+                  </div>
+                  <div class="priority-content" id="priority-content"></div>
+                </section>
 
-            <section class="priority-zone" id="priority-zone" aria-labelledby="priority-heading">
-              <div class="priority-label">
-                <span class="priority-pulse" aria-hidden="true"></span>
-                <div><p>此刻优先处理</p><h2 id="priority-heading">当前优先</h2></div>
+                <section class="todo-grid" aria-label="Todo 工作区">
+                  <article class="todo-column" id="mainline-todo-column">
+                    <header><div><p>沿当前方向</p><h2>当前主线 Todo</h2></div><span id="mainline-todo-count">0</span></header>
+                    <div class="todo-list" id="mainline-todos" data-todo-scope="mainline"></div>
+                    <form class="quick-add" id="mainline-todo-form">
+                      <label class="visually-hidden" for="mainline-todo-input">添加当前主线 Todo</label>
+                      <input id="mainline-todo-input" maxlength="160" placeholder="＋ 添加 Todo" autocomplete="off" />
+                      <button type="submit">添加</button>
+                    </form>
+                  </article>
+
+                  <article class="todo-column state-todo-column">
+                    <header><div><p>不依附于某条主线</p><h2>状态 Todo</h2></div><span id="state-todo-count">0</span></header>
+                    <div class="todo-list" id="state-todos" data-todo-scope="state"></div>
+                    <form class="quick-add" id="state-todo-form">
+                      <label class="visually-hidden" for="state-todo-input">添加状态 Todo</label>
+                      <input id="state-todo-input" maxlength="160" placeholder="＋ 添加 Todo" autocomplete="off" />
+                      <button type="submit">添加</button>
+                    </form>
+                  </article>
+                </section>
               </div>
-              <div class="priority-content" id="priority-content"></div>
-            </section>
-
-            <section class="todo-grid" aria-label="Todo 工作区">
-              <article class="todo-column" id="mainline-todo-column">
-                <header><div><p>沿当前方向</p><h2>当前主线 Todo</h2></div><span id="mainline-todo-count">0</span></header>
-                <div class="todo-list" id="mainline-todos" data-todo-scope="mainline"></div>
-                <form class="quick-add" id="mainline-todo-form">
-                  <label class="visually-hidden" for="mainline-todo-input">添加当前主线 Todo</label>
-                  <input id="mainline-todo-input" maxlength="160" placeholder="＋ 添加 Todo" autocomplete="off" />
-                  <button type="submit">添加</button>
-                </form>
-              </article>
-
-              <article class="todo-column state-todo-column">
-                <header><div><p>不依附于某条主线</p><h2>状态 Todo</h2></div><span id="state-todo-count">0</span></header>
-                <div class="todo-list" id="state-todos" data-todo-scope="state"></div>
-                <form class="quick-add" id="state-todo-form">
-                  <label class="visually-hidden" for="state-todo-input">添加状态 Todo</label>
-                  <input id="state-todo-input" maxlength="160" placeholder="＋ 添加 Todo" autocomplete="off" />
-                  <button type="submit">添加</button>
-                </form>
-              </article>
             </section>
           </section>
 
@@ -209,6 +213,6 @@
       <p>正在连接本地驾驶舱</p>
     </div>
 
-    <script type="module" src="/src/app.js"></script>
+    <script type="module" src="/src/app.js?v=4"></script>
   </body>
 </html>
