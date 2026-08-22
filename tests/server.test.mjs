@@ -52,6 +52,8 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.match(shell, /data-page="history"/);
   assert.match(shell, /data-page="settings"/);
   assert.equal(shell.match(/data-road-scene=/g)?.length, 3);
+  assert.match(shell, /class="road-stage"/);
+  assert.doesNotMatch(shell, /class="road-field"/);
   assert.match(shell, /id="route-tabs" role="tablist"/);
   assert.doesNotMatch(shell, /id="state-tabs"|id="road-switches"/);
   assert.match(shell, /mainline-scene-restore-v2\.webp/);

@@ -66,30 +66,36 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 
 .page-stage { min-width: 0; min-height: 0; overflow: hidden; }
 .page { width: min(100%, 1780px); height: 100%; margin-inline: auto; }
-.dashboard-page { --current-slot: 2; position: relative; display: grid; grid-template-rows: 44px minmax(230px, 25vh) 92px 58px 86px minmax(176px, 1fr); gap: 9px; padding: 14px clamp(20px, 2.5vw, 44px) 16px; }
+.dashboard-page { --current-slot: 2; --page-gutter: clamp(20px, 2.5vw, 44px); position: relative; display: grid; width: 100%; max-width: none; grid-template-rows: minmax(360px, 38vh) 92px 58px 86px minmax(176px, 1fr); gap: 9px; padding: 0 0 16px; }
+.dashboard-page > :not(.road-stage) { width: min(calc(100% - (var(--page-gutter) * 2)), 1692px); margin-inline: auto; }
 .dashboard-heading { display: flex; align-items: center; justify-content: space-between; gap: 22px; min-width: 0; }
 .dashboard-heading > div:first-child { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
 .eyebrow { margin: 0; color: var(--signal); font-family: var(--utility-font); font-size: 9px; letter-spacing: 0.18em; }
 .dashboard-heading h1, .page-heading h1 { margin: 0; font-family: var(--display-font); font-size: 25px; font-weight: 710; letter-spacing: -0.035em; }
 .dashboard-heading .eyebrow { order: 2; white-space: nowrap; }
 
-.road-field { position: relative; min-height: 0; overflow: hidden; background: var(--horizon); border: 1px solid rgba(84, 114, 126, 0.09); border-radius: 18px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58), 0 5px 20px rgba(54, 78, 87, 0.035); }
+.road-stage { position: relative; min-height: 0; overflow: hidden; background: var(--horizon); }
 .road-scene { position: absolute; inset: 0; overflow: hidden; }
-.road-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 61%; }
+.road-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 56%; }
 .road-state { opacity: 0; transition: opacity 190ms ease; }
 .road-state.selected { opacity: 1; }
+.road-stage-copy { position: relative; z-index: 4; width: min(calc(100% - (var(--page-gutter) * 2)), 1692px); height: 100%; margin-inline: auto; padding-top: 26px; pointer-events: none; }
+.road-stage-copy .dashboard-heading { color: #253845; text-shadow: 0 1px 10px rgba(255, 255, 255, 0.42); }
+.road-stage-copy .dashboard-heading h1 { font-size: 31px; }
+.road-stage-copy .eyebrow { color: #47738a; }
+.road-stage-fade { position: absolute; z-index: 2; inset: auto 0 0; height: 84px; background: linear-gradient(to bottom, rgba(242, 246, 245, 0), rgba(242, 246, 245, 0.9) 78%, var(--fog)); pointer-events: none; }
 .route-tabs { position: absolute; z-index: 3; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); }
 .route-tab { position: relative; min-width: 0; color: rgba(255, 255, 255, 0.84); background: transparent; border: 0; cursor: pointer; transition: background 180ms ease; }
 .route-tab:hover { background: linear-gradient(to top, rgba(25, 48, 57, 0.14), transparent 46%); }
 .route-tab:focus-visible { z-index: 1; outline: 2px solid rgba(255, 255, 255, 0.9); outline-offset: -5px; box-shadow: inset 0 0 0 7px rgba(43, 93, 114, 0.28); }
-.route-tab-label { position: absolute; bottom: 14px; left: 50%; display: inline-flex; min-height: 31px; align-items: center; gap: 7px; padding: 5px 11px; background: rgba(34, 54, 63, 0.42); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 999px; box-shadow: 0 5px 15px rgba(23, 40, 47, 0.08); backdrop-filter: blur(8px); transform: translateX(-50%); white-space: nowrap; opacity: 0.78; }
+.route-tab-label { position: absolute; bottom: 49px; left: 50%; display: inline-flex; min-height: 31px; align-items: center; gap: 7px; padding: 5px 11px; background: rgba(34, 54, 63, 0.42); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 999px; box-shadow: 0 5px 15px rgba(23, 40, 47, 0.08); backdrop-filter: blur(8px); transform: translateX(-50%); white-space: nowrap; opacity: 0.78; }
 .route-tab-label strong { font-size: 11px; font-weight: 680; letter-spacing: 0.08em; }
 .route-tab-label small { padding-left: 7px; border-left: 1px solid rgba(255, 255, 255, 0.34); font-size: 9px; font-weight: 620; letter-spacing: 0.04em; }
 .route-tab[aria-selected="true"] { background: linear-gradient(to top, rgba(37, 74, 88, 0.18), transparent 52%); }
 .route-tab[aria-selected="true"] .route-tab-label { color: white; background: rgba(43, 93, 114, 0.82); border-color: rgba(255, 255, 255, 0.56); box-shadow: 0 7px 20px rgba(27, 56, 68, 0.2); opacity: 1; }
-.state-cue { position: absolute; z-index: 4; top: 17px; left: 20px; max-width: min(420px, 65%); margin: 0; padding: 8px 12px; color: #344a52; background: rgba(251, 253, 252, 0.72); border: 1px solid rgba(255, 255, 255, 0.82); border-radius: 11px; box-shadow: 0 6px 20px rgba(45, 66, 73, 0.06); backdrop-filter: blur(14px); font-size: 12px; }
+.state-cue { position: absolute; top: 23px; right: 0; max-width: min(360px, 42%); margin: 0; padding: 10px 13px; color: #344a52; background: rgba(251, 253, 252, 0.72); border: 1px solid rgba(255, 255, 255, 0.82); border-radius: 13px; box-shadow: 0 7px 24px rgba(45, 66, 73, 0.07); backdrop-filter: blur(14px); font-size: 12px; line-height: 1.55; }
 
-.mainline-deck { position: relative; display: grid; min-height: 0; grid-template-columns: 126px minmax(0, 1fr); align-items: stretch; gap: 12px; }
+.mainline-deck { position: relative; z-index: 5; display: grid; min-height: 0; grid-template-columns: 126px minmax(0, 1fr); align-items: stretch; gap: 12px; margin-top: -34px; padding-top: 7px; }
 .section-label { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding-left: 4px; }
 .section-label span { font-size: 13px; font-weight: 690; }
 .section-label small { max-width: 12ch; color: var(--quiet); font-size: 10px; line-height: 1.45; }
@@ -233,7 +239,7 @@ body.dragging-mainline .mainline-slot { outline: 1px dashed rgba(78, 131, 156, 0
 body.busy button, body.busy input, body.busy select { pointer-events: none; }
 
 @media (max-height: 820px) and (min-width: 901px) {
-  .dashboard-page { grid-template-rows: 40px minmax(196px, 24vh) 78px 52px 74px minmax(140px, 1fr); gap: 7px; padding-top: 9px; padding-bottom: 9px; }
+  .dashboard-page { grid-template-rows: minmax(300px, 36vh) 78px 52px 74px minmax(140px, 1fr); gap: 7px; padding-bottom: 9px; }
   .mainline-card, .empty-mainline, .create-mainline-form { min-height: 64px; }
   .priority-zone { border-radius: 14px; }
 }
@@ -241,7 +247,7 @@ body.busy button, body.busy input, body.busy select { pointer-events: none; }
 @media (max-width: 1180px) {
   .app-shell { grid-template-columns: 174px minmax(0, 1fr); }
   .side-rail { padding-inline: 10px; }
-  .dashboard-page { padding-inline: 18px; }
+  .dashboard-page { --page-gutter: 18px; }
   .mainline-deck { grid-template-columns: 104px minmax(0, 1fr); }
   .section-label small { display: none; }
   .current-detail { grid-template-columns: minmax(120px, .8fr) minmax(130px, 1fr) minmax(150px, 1.2fr) minmax(100px, .65fr); }
@@ -262,17 +268,17 @@ body.busy button, body.busy input, body.busy select { pointer-events: none; }
   .topbar-context { font-size: 10px; }
   .page-stage { overflow: visible; }
   .page { height: auto; min-height: calc(100vh - 58px); }
-  .dashboard-page { display: grid; grid-template-rows: auto 170px auto auto auto auto; gap: 9px; padding: 12px 10px 78px; }
+  .dashboard-page { --page-gutter: 10px; display: grid; grid-template-rows: 280px auto auto auto auto; gap: 9px; padding: 0 0 78px; }
   .dashboard-heading { display: grid; gap: 10px; }
   .dashboard-heading > div:first-child { justify-content: space-between; }
-  .dashboard-heading h1 { font-size: 21px; }
-  .road-field { border-radius: 14px; }
-  .road-image { object-position: center 62%; }
-  .state-cue { top: 10px; left: 10px; max-width: calc(100% - 20px); padding: 6px 9px; font-size: 10px; }
-  .route-tab-label { bottom: 8px; min-height: 26px; gap: 5px; padding: 3px 7px; }
+  .road-stage-copy { padding-top: 14px; }
+  .road-stage-copy .dashboard-heading h1 { font-size: 23px; }
+  .road-image { object-position: center 58%; }
+  .state-cue { top: 58px; right: auto; left: 0; max-width: min(270px, calc(100% - 20px)); padding: 6px 9px; font-size: 10px; }
+  .route-tab-label { bottom: 36px; min-height: 26px; gap: 5px; padding: 3px 7px; }
   .route-tab-label strong { font-size: 9px; }
   .route-tab-label small { padding-left: 5px; font-size: 8px; }
-  .mainline-deck { display: block; }
+  .mainline-deck { display: block; margin-top: -18px; padding-top: 0; }
   .section-label { flex-direction: row; justify-content: space-between; padding: 4px 2px 7px; }
   .mainline-slots { gap: 6px; }
   .mainline-card, .empty-mainline, .create-mainline-form { min-height: 72px; border-radius: 12px; }
