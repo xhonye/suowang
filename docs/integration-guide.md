@@ -52,6 +52,7 @@
 | `DELETE` | `/api/todos/:id` | 确认后 hard delete |
 | `POST` | `/api/todos/:id/complete` | 完成 Todo |
 | `POST` | `/api/todos/:id/abandon` | 放弃 Todo |
+| `POST` | `/api/todos/:id/reopen` | 撤回历史 Todo；原主线已结束时回到状态通用 Todo |
 | `POST` | `/api/todos/:id/move` | 同状态移动、改归属和重排 |
 | `POST` | `/api/todos/:id/priority` | 设为当前状态 Priority |
 

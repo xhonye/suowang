@@ -59,7 +59,7 @@
 - **稳定界面，动态内容**：让人形成空间记忆，不必每次重新理解 UI。
 - **主线意味着取舍**：可以保留多条进行中主线，但 Current 必须表达此刻的主要方向。
 - **下一步必须清楚**：Priority 是注意力指针，不是新的任务状态或工作计时器。
-- **历史尊重事实**：完成和放弃都被保留；重新开始意味着创建一条新的主线。
+- **历史尊重事实**：主线完成和放弃后只能复制为新主线；Todo 允许撤回，以纠正误点完成或放弃。
 - **本地事实优先**：SQLite 是业务数据唯一真源，主线与 Todo 不进入云端，也不依赖运行时 AI。
 - **AI 退居幕后**：核心功能完全不依赖 LLM，默认界面没有聊天框。
 
@@ -71,16 +71,34 @@
 - 每状态最多三条进行中主线，支持槽位移动或交换。
 - 主线原地创建和编辑；Todo 原地创建、编辑、完成、放弃、删除、重排和同状态改归属。
 - Priority 自动接棒，切 Current 不制造历史。
-- completed/abandoned 历史与历史主线复制。
+- completed/abandoned 历史、Todo 撤回与历史主线复制。
 - SQLite migration、每日备份、SQLite 完整导出、JSON 可读导出和整库恢复。
 - 显示名称、本地头像与三个状态 cue。
 - 2560×1440、1920×1080 桌面第一屏与 320px 窄屏布局。
 
-## 运行
+## 安装与运行
 
 需要 Node 22 或更高版本。
 
-交给本地 Agent 安装时，直接发送：`请从 https://github.com/xhonye/suowang 克隆最新 main，检查 Node.js 22+，运行 npm install 和 npm run install-shortcut，启动后验证 http://127.0.0.1:2037/health 正常并打开 SUOWANG；不要读取、移动或覆盖已有的 SUOWANG_DATA_DIR 数据。`
+### Windows 双击安装
+
+从 GitHub Release 下载并解压 `SUOWANG-0.1.0`，确认电脑已安装 Node.js 22+，然后双击 `INSTALL.cmd`。它会安装依赖、创建桌面 `SUOWANG` 快捷方式并打开应用。以后只需双击桌面图标。
+
+### 交给本地 Agent
+
+把下面一句发给能使用终端的本地 Agent：
+
+> 请安装 SUOWANG 0.1.0：先用 `npm view suowang@0.1.0 version` 核对 npm 版本存在，再运行 `npm install --global suowang@0.1.0`；若 npm 包尚未发布但你有 GitHub 仓库权限，则运行 `npm install --global github:xhonye/suowang#v0.1.0`。然后运行 `suowang install-shortcut`，验证 `http://127.0.0.1:2037/health` 正常并打开 SUOWANG。不要读取、移动或覆盖已有的 `SUOWANG_DATA_DIR` 数据，也不要退回安装会漂移的最新 `main`。
+
+安装为全局 npm 命令后也可以直接运行：
+
+```powershell
+suowang
+suowang install-shortcut
+suowang --help
+```
+
+### 从源码运行
 
 ```powershell
 Set-Location -LiteralPath 'A:/2Workspace/Projects/suowang'
@@ -113,6 +131,7 @@ npm run install-shortcut
 ```powershell
 npm test
 npm run check
+npm run release:check
 ```
 
 测试全部使用临时数据库，不读取或修改个人运行数据。
@@ -125,6 +144,7 @@ npm run check
 - [本地接口速查](docs/integration-guide.md)
 - [启动、备份与故障处理](docs/operator-runbook.md)
 - [V0.1 实施交接](docs/handoff.md)
+- [版本记录](CHANGELOG.md)
 
 ## 技术边界
 

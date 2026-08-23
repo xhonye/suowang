@@ -31,11 +31,11 @@ SUOWANG 回答三个问题：我现在处于什么状态？我当前主要往哪
 
 主线只有 `active / completed / abandoned` 三种状态。主线字段固定为名称、一句话目标、完成标准、可选低精度阶段跨度。主线不能跨状态，彼此没有父子或 lineage。结束后的主线不可编辑或恢复，只能复制为具有新 ID 和全局唯一新名称的独立主线。
 
-Todo 只有 `active / completed / abandoned` 三种状态。`state_id` 不可变，`mainline_id` 可空；Todo 可以在同状态的通用区和任意主线之间移动并保留 ID，不能跨状态。
+Todo 只有 `active / completed / abandoned` 三种状态。`state_id` 不可变，`mainline_id` 可空；Todo 可以在同状态的通用区和任意主线之间移动并保留 ID，不能跨状态。历史 Todo 提供纠错用的撤回：恢复为 `active` 并保留原 ID；原归属主线仍 active 时回到该主线，否则回到同状态通用 Todo。
 
 Current 和 Priority 是指针，不是业务状态。切 Current 不结束旧主线、不产生历史、不记录事件。Priority 只能引用当前状态通用 Todo 或 Current 主线 Todo；指针失效时按「Current 主线第一条 active Todo → 状态第一条 active Todo → null」补位。
 
-完成与放弃是历史事实。Hard delete 只用于纠错，必须确认，不能用数据库级 cascade 静默删除用户 Todo。
+主线完成与放弃是不可恢复的历史事实；Todo 完成或放弃允许从历史撤回，以纠正误操作。Hard delete 只用于纠错，必须确认，不能用数据库级 cascade 静默删除用户 Todo。
 
 ## 第一屏合同
 
@@ -53,7 +53,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 
 点击主线卡立即设为 Current。主线和 Todo 的文字均原地编辑。Todo 整行拖动可排序、改归属或设为 Priority，末尾 `✓` 立即完成，右键放弃或 hard delete；主线右键完成、放弃或删除。系统永不按创建时间或日期自动重排。
 
-历史只展示 completed/abandoned 事实并按 `ended_at DESC` 排序。设置只放显示名称、本地头像、三个 cue、SQLite/JSON 导出与整库恢复。
+历史只展示 completed/abandoned 事实并按 `ended_at DESC` 排序；历史 Todo 提供「撤回」，历史主线仍只能复制为新主线。设置只放显示名称、本地头像、三个 cue、SQLite/JSON 导出与整库恢复。
 
 ## 数据与技术合同
 
@@ -76,9 +76,12 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - `src/styles.css`：桌面第一屏与窄屏视觉系统。
 - `scripts/start.ps1`、`SUOWANG.cmd`：Windows 一键启动。
 - `scripts/install-shortcut.ps1`：安装桌面快捷方式。
+- `INSTALL.cmd`：Release 解压后的 Windows 双击安装入口。
+- `scripts/cli.mjs`：npm 全局命令 `suowang` 的启动与快捷方式入口。
 - `tests/`：数据库、事务、HTTP 和视图规则测试。
 - `docs/architecture.md`、`docs/integration-guide.md`、`docs/operator-runbook.md`：架构、内部端点和本地运维真相。
 - `docs/handoff.md`：当前已实现边界与后续维护入口。
+- `docs/visual-final-preview.html`：正式页面当前 2172×724 分层视觉的静态交互基准；图片基座、透明箭头与生成溯源见 `assets/milestones/2026-08-23-arrow-pipeline/`。
 
 在仓库根目录运行：
 
@@ -86,6 +89,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 npm install
 npm test
 npm run check
+npm run release:check
 npm start
 ```
 

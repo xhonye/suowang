@@ -286,17 +286,19 @@ function renderHistory() {
       </div>
     ` : '';
     return `
-      <article class="history-item">
+      <article class="history-item history-item-${item.type}">
         <div class="history-summary">
           <strong>${html(item.name)}</strong>
           <span class="history-meta">${typeLabel(item.type)}</span>
           <span class="history-status">${statusLabel(item.status)}</span>
           <span class="history-meta">${html(stateName(ui.snapshot, item.stateId))}</span>
           <span class="history-meta">${formatEndedAt(item.endedAt)}</span>
-          ${item.type === 'mainline' ? `
-            <button class="history-toggle" type="button" data-history-toggle="${item.type}:${item.id}">${expanded ? '收起' : '展开'}</button>
-            <button class="copy-history" type="button" data-copy-mainline="${item.id}">复制为新主线</button>
-          ` : ''}
+          <div class="history-actions">
+            ${item.type === 'mainline' ? `
+              <button class="history-toggle" type="button" data-history-toggle="${item.type}:${item.id}">${expanded ? '收起' : '展开'}</button>
+              <button class="copy-history" type="button" data-copy-mainline="${item.id}">复制为新主线</button>
+            ` : `<button class="undo-history" type="button" data-reopen-todo="${item.id}" aria-label="撤回 Todo：${html(item.name)}">撤回</button>`}
+          </div>
         </div>
         ${details}
       </article>
@@ -782,6 +784,11 @@ function setupHistory() {
           }
         },
       });
+      return;
+    }
+    const reopen = event.target.closest('[data-reopen-todo]');
+    if (reopen) {
+      mutate(() => api.reopenTodo(reopen.dataset.reopenTodo), 'Todo 已撤回并回到进行中');
     }
   });
 }

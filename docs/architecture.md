@@ -42,7 +42,7 @@ scripts/serve.mjs
 
 ## Routes
 
-内部 API 以 `GET /api/snapshot` 为读取入口；主线、Todo、设置和状态变更分别使用资源端点。完整方法表、请求类型和错误结构见 [integration-guide.md](integration-guide.md)。
+内部 API 以 `GET /api/snapshot` 为读取入口；主线、Todo、设置和状态变更分别使用资源端点。`POST /api/todos/:id/reopen` 专门把历史 Todo 撤回为 active，并在原主线已结束时解除主线归属。完整方法表、请求类型和错误结构见 [integration-guide.md](integration-guide.md)。
 
 服务只接受 `Host: 127.0.0.1` 或 `localhost`。带 `Origin` 的请求必须与 Host 同源；JSON 变更请求必须使用 `application/json`。静态服务只暴露页面所需的前端文件与道路图片，不映射后端源码、仓库配置或 Git 元数据。这些边界用于阻止其他网页借浏览器访问本机数据，不代表面向外部系统的认证接口。
 
@@ -58,5 +58,5 @@ scripts/serve.mjs
 
 - 使用原生 Node HTTP 和 Vanilla JS，保持本地应用依赖面小。
 - 使用同步 SQLite 驱动，把单用户短事务写成清楚的原子操作。
-- 不建立 audit/event 流水；完成和放弃后的实体本身就是历史事实。
+- 不建立 audit/event 流水；主线结束后保持历史事实，Todo 可从历史撤回为 active 以纠正误操作。
 - 不做 JSON 恢复或数据 merge，避免产生两套真源和模糊冲突规则。

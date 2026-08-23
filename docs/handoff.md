@@ -4,11 +4,14 @@
 
 - 三个永久状态及每状态三个 active 主线槽。
 - 每状态独立 Current、Priority、状态 Todo 和 cue。
-- 主线与 Todo 的创建、原地编辑、排序、改归属、完成、放弃、纠错删除和历史。
+- 主线与 Todo 的创建、原地编辑、排序、改归属、完成、放弃、Todo 历史撤回、纠错删除和历史。
 - 主线结束时逐条处理 active Todo，历史主线复制为新主线。
 - SQLite migration、每日备份、JSON/SQLite 导出、整库安全恢复和本地头像。
 - Windows 双击入口、重复启动保护和桌面快捷方式。
+- npm CLI（`suowang`）与双击安装入口（`INSTALL.cmd`）。
 - 1920×1080、2560×1440 与 320px 响应式驾驶舱。
+
+以上能力构成 `0.1.0` 发布基线。后续改变必须通过新 commit 和新版本推进，不改写 `v0.1.0` 标签。
 
 ## 真实运行边界
 
@@ -23,9 +26,12 @@
 - 使用说明：`README.md`
 - 产品模型：`docs/product-brief.md`
 - 视觉约束：`docs/visual-contract.md`
+- 当前分层视觉预览：`docs/visual-final-preview.html`
+- 图片与箭头里程碑：`assets/milestones/2026-08-23-arrow-pipeline/MILESTONE.md`
 - 架构与数据流：`docs/architecture.md`
 - 内部端点：`docs/integration-guide.md`
 - 启动、备份与故障处理：`docs/operator-runbook.md`
+- 发布记录：`CHANGELOG.md`
 
 ## 变更闸门
 

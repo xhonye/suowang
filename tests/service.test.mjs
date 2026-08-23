@@ -75,6 +75,34 @@ test('current and priority remain per-state pointers with deterministic fallback
   assert.equal(snapshot.states.find((state) => state.id === 'work').currentMainlineId, a.id);
 });
 
+test('historical todos can be reopened without reviving a historical mainline', (context) => {
+  const { service } = createServiceHarness(context);
+  let snapshot = service.createMainline({ stateId: 'work', slotIndex: 1, name: '可撤回主线' });
+  const mainline = findMainline(snapshot, 'work', '可撤回主线');
+  snapshot = service.createTodo({ stateId: 'work', mainlineId: mainline.id, title: '容易误点的事项' });
+  const todoId = findMainline(snapshot, 'work', '可撤回主线').todos[0].id;
+
+  snapshot = service.endTodo(todoId, 'completed');
+  assert.equal(snapshot.history.find((item) => item.type === 'todo' && item.id === todoId).status, 'completed');
+  snapshot = service.reopenTodo(todoId);
+  const reopenedInMainline = findMainline(snapshot, 'work', '可撤回主线').todos[0];
+  assert.equal(reopenedInMainline.id, todoId);
+  assert.equal(reopenedInMainline.status, 'active');
+  assert.equal(reopenedInMainline.endedAt, null);
+  assert.equal(snapshot.history.some((item) => item.type === 'todo' && item.id === todoId), false);
+
+  snapshot = service.endMainline(mainline.id, { status: 'completed', resolutions: {} });
+  assert.equal(snapshot.history.find((item) => item.type === 'todo' && item.id === todoId).status, 'abandoned');
+  snapshot = service.reopenTodo(todoId);
+  const reopenedAsStateTodo = snapshot.states.find((state) => state.id === 'work').stateTodos[0];
+  assert.equal(reopenedAsStateTodo.id, todoId);
+  assert.equal(reopenedAsStateTodo.mainlineId, null);
+  assert.throws(
+    () => service.reopenTodo(todoId),
+    (error) => error instanceof AppError && error.code === 'todo_is_active',
+  );
+});
+
 test('ending a current mainline resolves active todos without inventing completion', (context) => {
   const { service } = createServiceHarness(context);
   let snapshot = service.createMainline({ stateId: 'work', slotIndex: 1, name: '阶段 A' });

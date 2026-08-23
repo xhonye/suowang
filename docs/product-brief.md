@@ -41,7 +41,7 @@ Todo 可以属于某条主线，也可以只属于状态。Priority 只能引用
 
 ## 历史和设置
 
-历史只按结束时间倒序展示 completed/abandoned 事实。历史主线可展开，并复制为新的独立主线；新主线不复制旧 Todo。
+历史只按结束时间倒序展示 completed/abandoned 事实。历史 Todo 可撤回为 active；原主线仍 active 时回到原主线，否则回到同状态通用 Todo。历史主线可展开，并复制为新的独立主线；新主线不复制旧 Todo。
 
 设置只包含显示名称、本地头像、三个 cue、SQLite/JSON 导出和整库恢复。
 

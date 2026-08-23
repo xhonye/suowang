@@ -4,6 +4,29 @@
 
 需要 Node 22 或更高版本。
 
+### GitHub Release / 双击入口
+
+解压 Release 包后双击 `INSTALL.cmd`。它会在当前目录安装生产依赖、创建桌面快捷方式并打开应用。该入口不会读取或覆盖已有数据目录。
+
+### npm / Agent 入口
+
+发布到 npm 后：
+
+```powershell
+npm install --global suowang@0.1.0
+suowang install-shortcut
+suowang
+```
+
+仅有私有 GitHub 仓库权限、npm 包尚未发布时：
+
+```powershell
+npm install --global github:xhonye/suowang#v0.1.0
+suowang install-shortcut
+```
+
+### 源码入口
+
 ```powershell
 Set-Location -LiteralPath 'A:/2Workspace/Projects/suowang'
 npm install
@@ -61,8 +84,9 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 ```powershell
 Set-Location -LiteralPath 'A:/2Workspace/Projects/suowang'
 npm run check
+npm run release:check
 git diff --check
 git status --short
 ```
 
-确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出或个人主线/Todo 内容。
+`release:check` 会同时运行完整测试并审阅 npm tarball 文件清单。确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/Todo 或视觉探索归档。

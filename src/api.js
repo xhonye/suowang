@@ -56,6 +56,7 @@ export const api = {
   updateTodo: (id, changes) => request(`/api/todos/${id}`, { method: 'PATCH', body: changes }),
   completeTodo: (id) => request(`/api/todos/${id}/complete`, { method: 'POST', body: {} }),
   abandonTodo: (id) => request(`/api/todos/${id}/abandon`, { method: 'POST', body: {} }),
+  reopenTodo: (id) => request(`/api/todos/${id}/reopen`, { method: 'POST', body: {} }),
   deleteTodo: (id) => request(`/api/todos/${id}`, { method: 'DELETE' }),
   moveTodo: (id, data) => request(`/api/todos/${id}/move`, { method: 'POST', body: data }),
   setPriority: (id) => request(`/api/todos/${id}/priority`, { method: 'POST', body: {} }),

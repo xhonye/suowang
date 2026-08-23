@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SUOWANG V4 视觉预览</title>
+    <title>SUOWANG 最终视觉预览</title>
     <style>
       :root {
         color-scheme: light;
@@ -19,7 +19,7 @@
       }
 
       * { box-sizing: border-box; }
-      body { min-width: 320px; min-height: 100vh; margin: 0; overflow-x: hidden; color: var(--ink); background: var(--fog); }
+      body { min-width: 0; min-height: 100vh; margin: 0; overflow-x: hidden; color: var(--ink); background: var(--fog); }
       button { color: inherit; font: inherit; }
       .shell { display: grid; min-height: 100vh; grid-template-columns: var(--rail) minmax(0, 1fr); }
       .rail { position: relative; z-index: 4; display: flex; flex-direction: column; padding: 25px 14px 20px; background: rgba(251, 252, 250, 0.96); border-right: 1px solid var(--line); }
@@ -33,17 +33,21 @@
       .rail-note { margin: auto 10px 0; padding-top: 18px; color: var(--muted); border-top: 1px solid var(--line); font-size: 11px; line-height: 1.6; }
 
       .workspace { min-width: 0; background: radial-gradient(circle at 52% 0, rgba(255,255,255,.7), transparent 42%), var(--fog); }
-      .hero { position: relative; height: clamp(520px, 52vh, 690px); overflow: hidden; background: #dce9ee; }
-      .hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; filter: saturate(.8) contrast(.95) brightness(1.025); }
+      .hero { position: relative; aspect-ratio: 3 / 1; overflow: hidden; background: #dce9ee; }
+      .hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; object-position: center; filter: saturate(.8) contrast(.95) brightness(1.025); }
+      .arrow-overlay { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; pointer-events: none; transition: opacity 180ms ease; }
       .hero::after { content: ""; position: absolute; inset: auto 0 0; height: 102px; background: linear-gradient(to bottom, transparent 0%, rgba(237,243,243,.06) 42%, rgba(237,243,243,.38) 76%, rgba(237,243,243,.92) 100%); pointer-events: none; }
       .skybar { position: absolute; z-index: 2; inset: 0 0 auto; display: flex; height: 58px; align-items: center; justify-content: space-between; padding: 0 clamp(28px, 3.5vw, 64px); color: #3a505a; font-size: 12px; text-shadow: 0 1px 12px rgba(255,255,255,.82); }
       .hero-copy { position: relative; z-index: 2; width: min(calc(100% - 80px), 1692px); margin: 0 auto; padding-top: 76px; }
       .hero-copy h1 { margin: 0; font-size: clamp(31px, 2.2vw, 43px); letter-spacing: -.045em; }
       .hero-copy p { margin: 7px 0 0; color: #496571; font-size: 13px; }
       .cue { position: absolute; z-index: 2; top: 76px; right: clamp(40px, 4vw, 72px); max-width: 320px; margin: 0; padding: 9px 12px; color: #3e545d; background: rgba(252,253,252,.58); border: 1px solid rgba(255,255,255,.72); border-radius: 12px; backdrop-filter: blur(10px); font-size: 12px; }
-      .route-labels { position: absolute; z-index: 2; inset: auto 0 126px; display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; }
+      .route-labels { position: absolute; z-index: 2; inset: auto 0 126px; display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; transform: translateY(200px); }
       .route-labels span { justify-self: center; padding: 6px 13px; color: white; background: rgba(31, 57, 68, .42); border: 1px solid rgba(255,255,255,.16); border-radius: 999px; box-shadow: 0 5px 18px rgba(21,44,53,.08); backdrop-filter: blur(6px); font-size: 11px; }
       .route-labels .current { background: rgba(43, 109, 138, .88); border-color: rgba(255,255,255,.28); box-shadow: 0 7px 20px rgba(31, 74, 94, .16); }
+      .route-hotspots { position: absolute; z-index: 2; inset: 142px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); }
+      .route-hotspots button { cursor: pointer; background: transparent; border: 0; }
+      .route-hotspots button:focus-visible { outline: 3px solid rgba(52,120,149,.5); outline-offset: -6px; }
 
       .content { position: relative; z-index: 3; width: min(calc(100% - 64px), 1692px); margin: -86px auto 34px; }
       .mainlines { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 0 12px; }
@@ -84,6 +88,10 @@
       .todo i { width: 15px; height: 15px; border: 1px solid rgba(57,123,154,.5); border-radius: 50%; }
       .prototype-note { margin: 12px 4px 0; color: #84949a; font-size: 10px; text-align: right; }
 
+      @media (prefers-reduced-motion: reduce) {
+        .arrow-overlay { transition: none; }
+      }
+
       @media (max-width: 900px) {
         :root { --rail: 0px; }
         .shell { display: block; }
@@ -100,7 +108,7 @@
         .nav button:nth-child(1) span::after { content: "舱"; }
         .nav button:nth-child(2) span::after { content: "史"; }
         .nav button:nth-child(3) span::after { content: "设"; }
-        .hero { height: 500px; }
+        .hero { height: auto; aspect-ratio: 3 / 1; }
         .skybar { padding: 0 18px; }
         .skybar span, .cue { display: none; }
         .hero-copy { width: calc(100% - 36px); padding-top: 76px; }
@@ -134,23 +142,29 @@
 
       <main class="workspace">
         <section class="hero">
-          <img class="hero-image" src="/assets/mainline-scene-work-v4-16-preview.webp" alt="明亮晨光下三条远端分离的道路与均匀短草坪" />
+          <img class="hero-image" src="../assets/mainline-scene-bright-office-v1-no-arrows-geometry-v5.png" alt="清晨蓝调下三条分离道路与春夏自然植被，无方向箭头底图" />
+          <img id="active-arrow" class="arrow-overlay" src="../assets/mainline-scene-bright-office-v1-arrow-work-light-v4.png" alt="工作路线激活箭头" />
           <div class="skybar"><strong>☀　早上好，Honye</strong><span>8月22日 · 充分参与这一次人生</span></div>
           <div class="hero-copy"><h1>人生主线驾驶舱</h1><p>我现在处于什么状态？当前主要往哪里走？接下来优先做什么？</p></div>
-          <p class="cue">推进真正重要的事。</p>
-          <div class="route-labels"><span>恢复</span><span class="current">工作　当前</span><span>生活</span></div>
+          <p id="state-cue" class="cue">推进真正重要的事。</p>
+          <div class="route-labels" aria-hidden="true"><span data-state-label="restore">恢复</span><span data-state-label="work" class="current">工作　当前</span><span data-state-label="life">生活</span></div>
+          <div class="route-hotspots" role="tablist" aria-label="恢复、工作与生活状态">
+            <button type="button" role="tab" aria-selected="false" data-state="restore" aria-label="切换到恢复状态"></button>
+            <button type="button" role="tab" aria-selected="true" data-state="work" aria-label="切换到工作状态"></button>
+            <button type="button" role="tab" aria-selected="false" data-state="life" aria-label="切换到生活状态"></button>
+          </div>
         </section>
 
         <div class="content">
           <section class="mainlines" role="tablist" aria-label="三条主线预览">
-            <button class="mainline" role="tab" aria-selected="false"><span class="mainline-head"><small>MAINLINE SLOT 01</small><span class="mainline-state">进行中</span></span><h2>第一条工作主线</h2><p>一句话目标放在这里</p></button>
-            <button class="mainline current" role="tab" aria-selected="true"><span class="mainline-head"><small>MAINLINE SLOT 02</small><span class="mainline-state">当前</span></span><h2>当前工作主线</h2><p>当前主要往这里走</p></button>
-            <button class="mainline" role="tab" aria-selected="false"><span class="mainline-head"><small>MAINLINE SLOT 03</small><span class="mainline-state">进行中</span></span><h2>第三条工作主线</h2><p>一句话目标放在这里</p></button>
+            <button class="mainline" role="tab" aria-selected="false"><span class="mainline-head"><small>MAINLINE SLOT 01</small><span class="mainline-state">进行中</span></span><h2 data-mainline="0">第一条工作主线</h2><p>一句话目标放在这里</p></button>
+            <button class="mainline current" role="tab" aria-selected="true"><span class="mainline-head"><small>MAINLINE SLOT 02</small><span class="mainline-state">当前</span></span><h2 data-mainline="1">当前工作主线</h2><p>当前主要往这里走</p></button>
+            <button class="mainline" role="tab" aria-selected="false"><span class="mainline-head"><small>MAINLINE SLOT 03</small><span class="mainline-state">进行中</span></span><h2 data-mainline="2">第三条工作主线</h2><p>一句话目标放在这里</p></button>
           </section>
 
           <section class="cockpit" aria-label="整体工作舱预览">
             <div class="current-strip">
-              <div class="field"><small>CURRENT 主线</small><span>当前工作主线</span></div>
+              <div class="field"><small>CURRENT 主线</small><span id="current-mainline">当前工作主线</span></div>
               <div class="field"><small>一句话目标</small><span>聚焦当前最重要的阶段使命</span></div>
               <div class="field"><small>完成标准</small><span>达到清晰、可验证的结束条件</span></div>
               <div class="field"><small>阶段跨度</small><span>约 1–2 个月</span></div>
@@ -158,18 +172,98 @@
             <div class="work-area">
               <div class="priority">
                 <div class="priority-label"><small>NEXT ACTION</small><h2>现在最值得做</h2></div>
-                <div class="priority-copy"><strong>下一步优先 Todo</strong><span>来自当前主线</span></div>
+                <div class="priority-copy"><strong id="priority-todo">下一步优先 Todo</strong><span>来自当前主线</span></div>
                 <button aria-label="完成当前优先">完成</button>
               </div>
               <div class="todos">
-                <section class="todo-column"><header><h2>当前主线 Todo</h2><span>2</span></header><div class="todo"><span>完成当前主线的下一项动作</span><i></i></div><div class="todo"><span>整理需要继续推进的事项</span><i></i></div></section>
-                <section class="todo-column"><header><h2>状态 Todo</h2><span>2</span></header><div class="todo"><span>处理工作状态下的通用事项</span><i></i></div><div class="todo"><span>记录暂时不属于具体主线的事项</span><i></i></div></section>
+                <section class="todo-column"><header><h2>当前主线 Todo</h2><span>2</span></header><div class="todo"><span id="mainline-todo-1">完成当前主线的下一项动作</span><i></i></div><div class="todo"><span id="mainline-todo-2">整理需要继续推进的事项</span><i></i></div></section>
+                <section class="todo-column"><header><h2>状态 Todo</h2><span>2</span></header><div class="todo"><span id="state-todo-1">处理工作状态下的通用事项</span><i></i></div><div class="todo"><span id="state-todo-2">记录暂时不属于具体主线的事项</span><i></i></div></section>
               </div>
             </div>
           </section>
-          <p class="prototype-note">V4 静态视觉预览 · 不读取或写入真实数据</p>
+          <p class="prototype-note">最终视觉交互预览 · 点击三条道路切换状态 · 不读取或写入真实数据</p>
         </div>
       </main>
     </div>
+    <script>
+      const states = {
+        restore: {
+          label: "恢复",
+          arrow: "../assets/mainline-scene-bright-office-v1-arrow-restore-light-v2.png",
+          cue: "先恢复能量，再继续前行。",
+          mainlines: ["睡眠节律恢复", "当前恢复主线", "身体活力重建"],
+          priority: "完成今天最小恢复动作",
+          mainlineTodos: ["完成当前恢复主线的下一项动作", "记录恢复后的身体感受"],
+          stateTodos: ["处理恢复状态下的通用事项", "为今晚留出安静空间"]
+        },
+        work: {
+          label: "工作",
+          arrow: "../assets/mainline-scene-bright-office-v1-arrow-work-light-v4.png",
+          cue: "推进真正重要的事。",
+          mainlines: ["第一条工作主线", "当前工作主线", "第三条工作主线"],
+          priority: "下一步优先 Todo",
+          mainlineTodos: ["完成当前主线的下一项动作", "整理需要继续推进的事项"],
+          stateTodos: ["处理工作状态下的通用事项", "记录暂时不属于具体主线的事项"]
+        },
+        life: {
+          label: "生活",
+          arrow: "../assets/mainline-scene-bright-office-v1-arrow-life-light-v2.png",
+          cue: "回到关系、体验与生活本身。",
+          mainlines: ["重要关系经营", "当前生活主线", "日常体验拓展"],
+          priority: "完成今天最值得的生活动作",
+          mainlineTodos: ["完成当前生活主线的下一项动作", "安排一次完整的生活体验"],
+          stateTodos: ["处理生活状态下的通用事项", "记录想与重要的人分享的事"]
+        }
+      };
+
+      const stateOrder = ["restore", "work", "life"];
+      let activeState = "work";
+
+      function renderState(stateId) {
+        const state = states[stateId];
+        const arrow = document.querySelector("#active-arrow");
+        activeState = stateId;
+        arrow.style.opacity = "0";
+        window.setTimeout(() => {
+          arrow.src = state.arrow;
+          arrow.alt = `${state.label}路线激活箭头`;
+          arrow.style.opacity = "1";
+        }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 120);
+        document.querySelector("#state-cue").textContent = state.cue;
+        document.querySelectorAll("[data-state-label]").forEach((label) => {
+          const selected = label.dataset.stateLabel === stateId;
+          label.classList.toggle("current", selected);
+          label.textContent = selected ? `${state.label}　当前` : states[label.dataset.stateLabel].label;
+        });
+        document.querySelectorAll("[data-state]").forEach((button) => {
+          button.setAttribute("aria-selected", String(button.dataset.state === stateId));
+        });
+        document.querySelectorAll("[data-mainline]").forEach((title, index) => { title.textContent = state.mainlines[index]; });
+        document.querySelector("#current-mainline").textContent = state.mainlines[1];
+        document.querySelector("#priority-todo").textContent = state.priority;
+        document.querySelector("#mainline-todo-1").textContent = state.mainlineTodos[0];
+        document.querySelector("#mainline-todo-2").textContent = state.mainlineTodos[1];
+        document.querySelector("#state-todo-1").textContent = state.stateTodos[0];
+        document.querySelector("#state-todo-2").textContent = state.stateTodos[1];
+      }
+
+      document.querySelectorAll("[data-state]").forEach((button) => {
+        button.addEventListener("click", () => renderState(button.dataset.state));
+        button.addEventListener("keydown", (event) => {
+          const currentIndex = stateOrder.indexOf(activeState);
+          let nextIndex = currentIndex;
+          if (event.key === "ArrowLeft") nextIndex = Math.max(0, currentIndex - 1);
+          if (event.key === "ArrowRight") nextIndex = Math.min(stateOrder.length - 1, currentIndex + 1);
+          if (event.key === "Home") nextIndex = 0;
+          if (event.key === "End") nextIndex = stateOrder.length - 1;
+          if (nextIndex !== currentIndex) {
+            event.preventDefault();
+            const next = document.querySelector(`[data-state="${stateOrder[nextIndex]}"]`);
+            next.focus();
+            renderState(stateOrder[nextIndex]);
+          }
+        });
+      });
+    </script>
   </body>
 </html>

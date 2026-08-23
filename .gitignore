@@ -24,6 +24,9 @@ progress.md
 .pytest_cache/
 __pycache__/
 
+# Local visual exploration archive (milestones stay tracked separately)
+assets/archive/
+
 # Editors and operating systems
 .vscode/
 .idea/

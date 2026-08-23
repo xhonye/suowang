@@ -1,19 +1,50 @@
 {
   "name": "suowang",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "SUOWANG is a local-first mainline cockpit for real life.",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/xhonye/suowang#readme",
+  "bugs": "https://github.com/xhonye/suowang/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xhonye/suowang.git"
+  },
+  "keywords": [
+    "local-first",
+    "mainline",
+    "personal-dashboard",
+    "sqlite"
+  ],
+  "bin": {
+    "suowang": "scripts/cli.mjs"
+  },
+  "files": [
+    "assets/mainline-scene-bright-office-v1-no-arrows-geometry-v5.png",
+    "assets/mainline-scene-bright-office-v1-arrow-restore-light-v2.png",
+    "assets/mainline-scene-bright-office-v1-arrow-work-light-v4.png",
+    "assets/mainline-scene-bright-office-v1-arrow-life-light-v2.png",
+    "index.html",
+    "INSTALL.cmd",
+    "migrations/",
+    "scripts/cli.mjs",
+    "scripts/install-shortcut.ps1",
+    "scripts/serve.mjs",
+    "scripts/start.ps1",
+    "src/",
+    "SUOWANG.cmd"
+  ],
   "scripts": {
     "start": "node scripts/serve.mjs",
     "install-shortcut": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install-shortcut.ps1",
     "test": "node --test",
-    "check": "node --check src/app.js && node --check src/api.js && node --check src/view-model.js && node --check scripts/serve.mjs && node --check src/server/config.mjs && node --check src/server/database.mjs && node --check src/server/service.mjs && node --test"
+    "check": "node --check src/app.js && node --check src/api.js && node --check src/view-model.js && node --check scripts/cli.mjs && node --check scripts/serve.mjs && node --check src/server/config.mjs && node --check src/server/database.mjs && node --check src/server/service.mjs && node --test",
+    "release:check": "npm run check && npm pack --dry-run"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.3"
+    "better-sqlite3": "13.0.3"
   }
 }

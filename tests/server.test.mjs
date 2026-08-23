@@ -56,9 +56,10 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.doesNotMatch(shell, /class="road-field"/);
   assert.match(shell, /id="route-tabs" role="tablist"/);
   assert.doesNotMatch(shell, /id="state-tabs"|id="road-switches"/);
-  assert.match(shell, /mainline-scene-restore-v4\.webp/);
-  assert.match(shell, /mainline-scene-work-v4\.webp/);
-  assert.match(shell, /mainline-scene-life-v4\.webp/);
+  assert.match(shell, /mainline-scene-bright-office-v1-no-arrows-geometry-v5\.png/);
+  assert.match(shell, /mainline-scene-bright-office-v1-arrow-restore-light-v2\.png/);
+  assert.match(shell, /mainline-scene-bright-office-v1-arrow-work-light-v4\.png/);
+  assert.match(shell, /mainline-scene-bright-office-v1-arrow-life-light-v2\.png/);
   assert.match(shell, /class="cockpit"/);
   assert.match(shell, /class="work-area"/);
   assert.match(shell, /class="dashboard-prompt"/);
@@ -81,6 +82,15 @@ test('API mutations return the new authoritative snapshot and readable errors', 
   });
   assert.equal(todo.response.status, 201);
   assert.equal(todo.body.states.find((state) => state.id === 'work').priorityTodoId, todo.body.states[1].mainlines[0].todos[0].id);
+  const todoId = todo.body.states[1].mainlines[0].todos[0].id;
+
+  const completed = await jsonRequest(`${baseUrl}/api/todos/${todoId}/complete`, { method: 'POST' });
+  assert.equal(completed.response.status, 200);
+  assert.equal(completed.body.history.find((item) => item.id === todoId).status, 'completed');
+  const reopened = await jsonRequest(`${baseUrl}/api/todos/${todoId}/reopen`, { method: 'POST' });
+  assert.equal(reopened.response.status, 200);
+  assert.equal(reopened.body.states[1].mainlines[0].todos[0].id, todoId);
+  assert.equal(reopened.body.history.some((item) => item.id === todoId), false);
 
   const invalid = await jsonRequest(`${baseUrl}/api/mainlines`, {
     method: 'POST',

@@ -580,6 +580,30 @@ export class SuowangService {
     });
   }
 
+  reopenTodo(id) {
+    return this.mutate(() => {
+      const todo = this.requireTodo(id);
+      if (todo.status === 'active') {
+        throw new AppError(409, 'todo_is_active', '这条 Todo 已经在进行中。');
+      }
+      const state = this.assertState(todo.state_id);
+      const originalMainline = todo.mainline_id
+        ? this.db.prepare(`
+            SELECT id FROM mainlines
+            WHERE id = ? AND state_id = ? AND status = 'active'
+          `).get(todo.mainline_id, todo.state_id)
+        : null;
+      const mainlineId = originalMainline?.id ?? null;
+      this.db.prepare(`
+        UPDATE todos
+        SET mainline_id = ?, status = 'active', position = ?, ended_at = NULL
+        WHERE id = ?
+      `).run(mainlineId, this.nextPosition(todo.state_id, mainlineId), id);
+      this.reconcilePointers(todo.state_id, state.current_mainline_id, state.priority_todo_id);
+      return this.snapshot();
+    });
+  }
+
   deleteTodo(id) {
     return this.mutate(() => {
       const todo = this.requireTodo(id);

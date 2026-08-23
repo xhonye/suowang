@@ -230,16 +230,18 @@ async function handleApi(request, response, url, { runtime, service, clock }) {
     return true;
   }
 
-  const todoAction = /^\/api\/todos\/([^/]+)\/(complete|abandon|move|priority)$/.exec(pathname);
+  const todoAction = /^\/api\/todos\/([^/]+)\/(complete|abandon|reopen|move|priority)$/.exec(pathname);
   if (todoAction && method === 'POST') {
     const [, id, action] = todoAction;
     const result = action === 'complete'
       ? service.endTodo(id, 'completed')
       : action === 'abandon'
         ? service.endTodo(id, 'abandoned')
-        : action === 'move'
-          ? service.moveTodo(id, await readJson(request))
-          : service.setPriorityTodo(id);
+        : action === 'reopen'
+          ? service.reopenTodo(id)
+          : action === 'move'
+            ? service.moveTodo(id, await readJson(request))
+            : service.setPriorityTodo(id);
     sendJson(response, 200, result);
     return true;
   }
