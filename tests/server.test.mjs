@@ -80,8 +80,47 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.match(shell, /class="cockpit"/);
   assert.match(shell, /class="work-area"/);
   assert.match(shell, /class="dashboard-prompt"/);
+  assert.match(shell, /我现在处于什么模式/);
+  assert.match(shell, /<span>行迹<\/span>/);
+  assert.match(shell, /id="priority-heading">下一步/);
+  assert.match(shell, /id="mainline-todo-heading">当前主线/);
+  assert.match(shell, /<h2>其他事项<\/h2>/);
+  assert.match(shell, /id="daylight-icon"/);
+  assert.doesNotMatch(shell, /沿当前方向|暂不归入主线|当前主线 Todo|状态 Todo|现在最值得做/);
   assert.doesNotMatch(shell, /mainline-scene-neutral|road-mist/);
   assert.doesNotMatch(shell, /时间线|开始专注|累计专注|notification-button|data-path-id/);
+
+  const app = await fetch(`${baseUrl}/src/app.js`);
+  assert.equal(app.status, 200);
+  const appSource = await app.text();
+  assert.match(appSource, /卡住了？/);
+  assert.match(appSource, /data-stuck-action="minimal-step"/);
+  assert.match(appSource, /data-stuck-action="restore"/);
+  assert.doesNotMatch(appSource, /MAINLINE SLOT/);
+  assert.doesNotMatch(appSource, /priority-source|class="priority-card" draggable/);
+  assert.match(shell, /id="stuck-toggle"/);
+  assert.equal(shell.match(/class="todo-kind-toggle"/g)?.length, 2);
+
+  const styles = await fetch(`${baseUrl}/src/styles.css`);
+  assert.equal(styles.status, 200);
+  const stylesSource = await styles.text();
+  assert.match(stylesSource, /scrollbar-gutter:\s*stable/);
+  assert.match(stylesSource, /\.page-stage::\-webkit-scrollbar-thumb/);
+  assert.match(stylesSource, /\.settings-page::\-webkit-scrollbar-thumb/);
+  assert.match(stylesSource, /html::\-webkit-scrollbar-thumb/);
+  assert.match(stylesSource, /\.road-stage\[data-active-state="restore"\]/);
+  assert.match(stylesSource, /object-fit:\s*cover/);
+  assert.match(stylesSource, /env\(safe-area-inset-bottom\)/);
+  assert.match(stylesSource, /\.mainline-slots:has\(\.create-mainline-form\)/);
+  assert.doesNotMatch(stylesSource, /grid-auto-columns:\s*min\(82vw/);
+  assert.match(stylesSource, /\.todo-list\s*\{[^}]*max-height:\s*230px/);
+  assert.doesNotMatch(stylesSource, /\.todo-column\s*\{\s*min-height:\s*260px/);
+  assert.match(stylesSource, /@media \(max-width: 900px\)[\s\S]*?\.priority-zone\s*\{[^}]*min-height:\s*160px/);
+  assert.match(stylesSource, /@media \(max-width: 900px\)[\s\S]*?\.priority-label p\s*\{\s*display:\s*none/);
+  assert.match(appSource, /持续事项 · 累计/);
+  assert.match(appSource, /data-record-todo/);
+  assert.match(appSource, /撤回今天/);
+  assert.match(appSource, /mainline-todo-form'\)\.querySelector\('button\[type="submit"\]'\)/);
 });
 
 test('API mutations return the new authoritative snapshot and readable errors', async (context) => {
@@ -95,11 +134,24 @@ test('API mutations return the new authoritative snapshot and readable errors', 
 
   const todo = await jsonRequest(`${baseUrl}/api/todos`, {
     method: 'POST',
-    body: JSON.stringify({ stateId: 'work', mainlineId: mainline.id, title: 'API 下一步' }),
+    body: JSON.stringify({
+      stateId: 'work',
+      mainlineId: mainline.id,
+      title: 'API 下一步',
+      minimalStep: '先打开文件',
+    }),
   });
   assert.equal(todo.response.status, 201);
   assert.equal(todo.body.states.find((state) => state.id === 'work').priorityTodoId, todo.body.states[1].mainlines[0].todos[0].id);
   const todoId = todo.body.states[1].mainlines[0].todos[0].id;
+  assert.equal(todo.body.states[1].mainlines[0].todos[0].minimalStep, '先打开文件');
+
+  const edited = await jsonRequest(`${baseUrl}/api/todos/${todoId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ minimalStep: '只写第一行' }),
+  });
+  assert.equal(edited.response.status, 200);
+  assert.equal(edited.body.states[1].mainlines[0].todos[0].minimalStep, '只写第一行');
 
   const completed = await jsonRequest(`${baseUrl}/api/todos/${todoId}/complete`, { method: 'POST' });
   assert.equal(completed.response.status, 200);
@@ -109,13 +161,23 @@ test('API mutations return the new authoritative snapshot and readable errors', 
   assert.equal(reopened.body.states[1].mainlines[0].todos[0].id, todoId);
   assert.equal(reopened.body.history.some((item) => item.id === todoId), false);
 
+  const ongoing = await jsonRequest(`${baseUrl}/api/todos/${todoId}`, {
+    method: 'PATCH', body: JSON.stringify({ kind: 'ongoing' }),
+  });
+  assert.equal(ongoing.body.states[1].mainlines[0].todos[0].kind, 'ongoing');
+  const recorded = await jsonRequest(`${baseUrl}/api/todos/${todoId}/record`, { method: 'POST' });
+  assert.equal(recorded.body.states[1].mainlines[0].todos[0].completionCount, 1);
+  assert.equal(recorded.body.states[1].mainlines[0].todos[0].completedToday, true);
+  const undone = await jsonRequest(`${baseUrl}/api/todos/${todoId}/undo-record`, { method: 'POST' });
+  assert.equal(undone.body.states[1].mainlines[0].todos[0].completionCount, 0);
+
   const invalid = await jsonRequest(`${baseUrl}/api/mainlines`, {
     method: 'POST',
     body: JSON.stringify({ stateId: 'unknown', slotIndex: 1, name: '错误状态' }),
   });
   assert.equal(invalid.response.status, 404);
   assert.equal(invalid.body.error.code, 'state_not_found');
-  assert.match(invalid.body.error.message, /状态/);
+  assert.match(invalid.body.error.message, /模式/);
 });
 
 test('server exports JSON and rejects missing or traversal paths', async (context) => {

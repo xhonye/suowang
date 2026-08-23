@@ -29,7 +29,7 @@
 | `GET` | `/api/snapshot` | 获取完整渲染快照 |
 | `PATCH` | `/api/app-state` | 保存 `lastViewedStateId` |
 | `PATCH` | `/api/settings` | 更新 `displayName` |
-| `PATCH` | `/api/states/:stateId` | 更新状态 `cue` |
+| `PATCH` | `/api/states/:stateId` | 更新模式 `cue`（路径为兼容保留） |
 
 ## 主线
 
@@ -37,24 +37,28 @@
 |---|---|---|
 | `POST` | `/api/mainlines` | 创建主线 |
 | `PATCH` | `/api/mainlines/:id` | 编辑 active 主线字段 |
-| `DELETE` | `/api/mainlines/:id` | 确认后 hard delete；请求体说明 Todo 处理 |
-| `POST` | `/api/mainlines/:id/current` | 设为 Current |
+| `DELETE` | `/api/mainlines/:id` | 确认后 hard delete；请求体说明事项处理 |
+| `POST` | `/api/mainlines/:id/current` | 设为当前主线 |
 | `POST` | `/api/mainlines/:id/slot` | 移动或交换槽位 |
-| `POST` | `/api/mainlines/:id/end` | 完成或放弃并处理 active Todo |
-| `POST` | `/api/mainlines/:id/copy` | 从历史复制新主线，不复制 Todo |
+| `POST` | `/api/mainlines/:id/end` | 完成或放弃并处理 active 事项 |
+| `POST` | `/api/mainlines/:id/copy` | 从行迹复制新主线，不复制事项 |
 
-## Todo
+## 事项（内部路径保留 `/api/todos`）
 
 | 方法 | 路径 | 用途 |
 |---|---|---|
-| `POST` | `/api/todos` | 创建状态或主线 Todo |
-| `PATCH` | `/api/todos/:id` | 编辑 active Todo 标题 |
+| `POST` | `/api/todos` | 创建其他事项或主线事项；接收必填 `title`、可选 `minimalStep` 与 `kind: single/ongoing` |
+| `PATCH` | `/api/todos/:id` | 编辑 active 事项的 `title`、`minimalStep`；一次事项可改为 `ongoing`，持续事项不能直接降回一次事项 |
 | `DELETE` | `/api/todos/:id` | 确认后 hard delete |
-| `POST` | `/api/todos/:id/complete` | 完成 Todo |
-| `POST` | `/api/todos/:id/abandon` | 放弃 Todo |
-| `POST` | `/api/todos/:id/reopen` | 撤回历史 Todo；原主线已结束时回到状态通用 Todo |
-| `POST` | `/api/todos/:id/move` | 同状态移动、改归属和重排 |
-| `POST` | `/api/todos/:id/priority` | 设为当前状态 Priority |
+| `POST` | `/api/todos/:id/complete` | 完成事项 |
+| `POST` | `/api/todos/:id/abandon` | 放弃事项 |
+| `POST` | `/api/todos/:id/reopen` | 撤回行迹事项；原主线已结束时回到同模式其他事项 |
+| `POST` | `/api/todos/:id/record` | 为持续事项记录今天完成；同一本地自然日最多一次 |
+| `POST` | `/api/todos/:id/undo-record` | 撤回持续事项今天的完成记录 |
+| `POST` | `/api/todos/:id/move` | 同模式移动、改归属和重排 |
+| `POST` | `/api/todos/:id/priority` | 设为当前模式的下一步 |
+
+持续事项始终保持 active，直到显式调用 `complete`（达成并结束）或 `abandon`（不再继续）。Snapshot 中每条事项包含 `kind`、`completionCount` 和 `completedToday`；当天已完成的持续事项不会成为下一步补位候选。JSON 导出包含 `todoOccurrences`，SQLite 导出仍是唯一可恢复格式。
 
 ## 文件
 

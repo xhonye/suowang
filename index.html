@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f2f6f5" />
     <meta name="description" content="所往 SUOWANG · 人生主线驾驶舱" />
     <title>所往 SUOWANG · 人生主线驾驶舱</title>
-    <link rel="stylesheet" href="/src/styles.css?v=5" />
+    <link rel="stylesheet" href="/src/styles.css?v=18" />
   </head>
   <body>
     <a class="skip-link" href="#dashboard-page">跳到驾驶舱</a>
@@ -27,10 +27,10 @@
           </button>
           <button type="button" data-page="history">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 13h6M8 17h4"/></svg>
-            <span>历史</span>
+            <span>行迹</span>
           </button>
           <button type="button" data-page="settings">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 13.5v-3l-2-.7-.6-1.4.9-1.9-2.1-2.1-1.9.9-1.4-.6-.7-2h-3l-.7 2-1.4.6-1.9-.9-2.1 2.1.9 1.9-.6 1.4-2 .7v3l2 .7.6 1.4-.9 1.9 2.1 2.1 1.9-.9 1.4.6.7 2h3l.7-2 1.4-.6 1.9.9 2.1-2.1-.9-1.9.6-1.4Z"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h4M12 7h8M4 17h8M16 17h4"/><circle cx="10" cy="7" r="2"/><circle cx="14" cy="17" r="2"/></svg>
             <span>设置</span>
           </button>
         </nav>
@@ -48,7 +48,7 @@
       <div class="workspace-shell">
         <header class="topbar">
           <div class="greeting-block">
-            <span class="daylight-dot" aria-hidden="true"></span>
+            <span class="daylight-icon" id="daylight-icon" aria-hidden="true">☀️</span>
             <strong id="greeting">正在打开 SUOWANG</strong>
           </div>
           <div class="topbar-context">
@@ -77,12 +77,12 @@
                   <div>
                     <p class="eyebrow">MAINLINE COCKPIT</p>
                     <h1 id="dashboard-title">人生主线驾驶舱</h1>
-                    <p class="dashboard-prompt">我现在处于什么状态？当前主要往哪里走？接下来优先做什么？</p>
+                    <p class="dashboard-prompt">我现在处于什么模式？主要往哪里走？现在做什么？怎样更容易开始？</p>
                   </div>
                 </div>
                 <p class="state-cue" id="state-cue"></p>
               </div>
-              <div class="route-tabs" id="route-tabs" role="tablist" aria-label="恢复、工作与生活状态"></div>
+              <div class="route-tabs" id="route-tabs" role="tablist" aria-label="恢复、工作与生活模式"></div>
               <span class="road-stage-fade" aria-hidden="true"></span>
             </section>
 
@@ -96,29 +96,34 @@
               <div class="work-area">
                 <section class="priority-zone" id="priority-zone" aria-labelledby="priority-heading">
                   <div class="priority-label">
-                    <p>NEXT ACTION</p>
-                    <h2 id="priority-heading">现在最值得做</h2>
+                    <div>
+                      <p>NEXT STEP</p>
+                      <h2 id="priority-heading">下一步</h2>
+                    </div>
+                    <button class="stuck-toggle" id="stuck-toggle" type="button" aria-expanded="false" aria-controls="priority-content" hidden>卡住了？</button>
                   </div>
                   <div class="priority-content" id="priority-content"></div>
                 </section>
 
-                <section class="todo-grid" aria-label="Todo 工作区">
+                <section class="todo-grid" aria-label="事项工作区">
                   <article class="todo-column" id="mainline-todo-column">
-                    <header><div><p>沿当前方向</p><h2>当前主线 Todo</h2></div><span id="mainline-todo-count">0</span></header>
+                    <header><h2 id="mainline-todo-heading">当前主线</h2><span id="mainline-todo-count">0</span></header>
                     <div class="todo-list" id="mainline-todos" data-todo-scope="mainline"></div>
                     <form class="quick-add" id="mainline-todo-form">
-                      <label class="visually-hidden" for="mainline-todo-input">添加当前主线 Todo</label>
-                      <input id="mainline-todo-input" maxlength="160" placeholder="＋ 添加 Todo" autocomplete="off" />
+                      <label class="visually-hidden" for="mainline-todo-input">添加当前主线事项</label>
+                      <input id="mainline-todo-input" maxlength="160" placeholder="＋ 添加事项" autocomplete="off" />
+                      <button class="todo-kind-toggle" type="button" aria-pressed="false" title="设为持续事项：每天最多记录一次">持续</button>
                       <button type="submit">添加</button>
                     </form>
                   </article>
 
                   <article class="todo-column state-todo-column">
-                    <header><div><p>不依附于某条主线</p><h2>状态 Todo</h2></div><span id="state-todo-count">0</span></header>
+                    <header><h2>其他事项</h2><span id="state-todo-count">0</span></header>
                     <div class="todo-list" id="state-todos" data-todo-scope="state"></div>
                     <form class="quick-add" id="state-todo-form">
-                      <label class="visually-hidden" for="state-todo-input">添加状态 Todo</label>
-                      <input id="state-todo-input" maxlength="160" placeholder="＋ 添加 Todo" autocomplete="off" />
+                      <label class="visually-hidden" for="state-todo-input">添加其他事项</label>
+                      <input id="state-todo-input" maxlength="160" placeholder="＋ 添加事项" autocomplete="off" />
+                      <button class="todo-kind-toggle" type="button" aria-pressed="false" title="设为持续事项：每天最多记录一次">持续</button>
                       <button type="submit">添加</button>
                     </form>
                   </article>
@@ -130,8 +135,8 @@
           <section class="page history-page" data-page-panel="history" aria-labelledby="history-title" hidden>
             <header class="page-heading">
               <p class="eyebrow">ENDED FACTS</p>
-              <h1 id="history-title">历史</h1>
-              <p>这里只保留真正完成或放弃的主线与 Todo。</p>
+              <h1 id="history-title">行迹</h1>
+              <p>这里只保留真正完成或放弃的主线与事项。</p>
             </header>
             <div class="history-list" id="history-list"></div>
           </section>
@@ -158,7 +163,7 @@
               </section>
 
               <section class="settings-card cue-settings">
-                <header><p>状态提示</p><h2>Cue</h2></header>
+                <header><p>模式提示</p><h2>Cue</h2></header>
                 <form id="cue-form">
                   <label>恢复<input data-cue-state="restore" maxlength="120" /></label>
                   <label>工作<input data-cue-state="work" maxlength="120" /></label>
@@ -189,10 +194,10 @@
     <aside class="end-panel" id="end-panel" aria-labelledby="end-panel-title" hidden>
       <form id="end-mainline-form">
         <header>
-          <div><p id="end-panel-kicker">结束主线</p><h2 id="end-panel-title">处理剩余 Todo</h2></div>
+          <div><p id="end-panel-kicker">结束主线</p><h2 id="end-panel-title">处理剩余事项</h2></div>
           <button class="icon-button" type="button" id="close-end-panel" aria-label="关闭">×</button>
         </header>
-        <p class="panel-note">未单独处理的 Todo 会标记为已放弃，不会被当作完成。</p>
+        <p class="panel-note">未单独处理的事项会标记为已放弃，不会被当作完成。</p>
         <div class="resolution-list" id="resolution-list"></div>
         <footer><button type="button" class="quiet-action" id="cancel-end-panel">取消</button><button type="submit" class="primary-action">确认结束主线</button></footer>
       </form>
@@ -214,6 +219,6 @@
       <p>正在连接本地驾驶舱</p>
     </div>
 
-    <script type="module" src="/src/app.js?v=4"></script>
+    <script type="module" src="/src/app.js?v=8"></script>
   </body>
 </html>

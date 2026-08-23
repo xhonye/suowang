@@ -30,7 +30,7 @@ export function priorityTodo(state) {
 
 export function todoSource(state, todo) {
   if (!todo) return '';
-  if (!todo.mainlineId) return `${state.name} · 通用`;
+  if (!todo.mainlineId) return `${state.name}模式 · 其他事项`;
   return state.mainlines.find((mainline) => mainline.id === todo.mainlineId)?.name ?? state.name;
 }
 
@@ -66,5 +66,5 @@ export function statusLabel(status) {
 }
 
 export function typeLabel(type) {
-  return type === 'mainline' ? '主线' : 'Todo';
+  return type === 'mainline' ? '主线' : '事项';
 }

@@ -75,6 +75,78 @@ test('current and priority remain per-state pointers with deterministic fallback
   assert.equal(snapshot.states.find((state) => state.id === 'work').currentMainlineId, a.id);
 });
 
+test('todos keep an optional minimal step through create, edit, priority, and history', (context) => {
+  const { service } = createServiceHarness(context);
+  let snapshot = service.createMainline({ stateId: 'work', slotIndex: 1, name: '写作' });
+  const mainline = findMainline(snapshot, 'work', '写作');
+  snapshot = service.createTodo({
+    stateId: 'work',
+    mainlineId: mainline.id,
+    title: '写公众号文章',
+    minimalStep: '打开文档写 50 字',
+  });
+  let todo = findMainline(snapshot, 'work', '写作').todos[0];
+  assert.equal(todo.minimalStep, '打开文档写 50 字');
+  assert.equal(snapshot.states.find((state) => state.id === 'work').priorityTodoId, todo.id);
+
+  snapshot = service.updateTodo(todo.id, { minimalStep: '只写三个标题' });
+  todo = findMainline(snapshot, 'work', '写作').todos[0];
+  assert.equal(todo.title, '写公众号文章');
+  assert.equal(todo.minimalStep, '只写三个标题');
+
+  snapshot = service.endTodo(todo.id, 'completed');
+  const historyTodo = snapshot.history.find((item) => item.id === todo.id);
+  assert.equal(historyTodo.minimalStep, '只写三个标题');
+});
+
+test('ongoing todos record at most once per local day and keep an honest count', (context) => {
+  const { runtime, service } = createServiceHarness(context);
+  let current = new Date('2026-08-21T21:30:00.000Z');
+  service.clock = () => current;
+  let snapshot = service.createMainline({ stateId: 'restore', slotIndex: 1, name: '稳定作息' });
+  const mainline = findMainline(snapshot, 'restore', '稳定作息');
+  snapshot = service.createTodo({
+    stateId: 'restore', mainlineId: mainline.id, title: '23点前睡觉', kind: 'ongoing',
+  });
+  snapshot = service.createTodo({
+    stateId: 'restore', mainlineId: mainline.id, title: '收好手机',
+  });
+  const ongoing = findMainline(snapshot, 'restore', '稳定作息').todos[0];
+  assert.equal(ongoing.kind, 'ongoing');
+  assert.equal(ongoing.completionCount, 0);
+  assert.equal(ongoing.completedToday, false);
+
+  snapshot = service.recordTodoOccurrence(ongoing.id);
+  let recorded = findMainline(snapshot, 'restore', '稳定作息').todos[0];
+  assert.equal(recorded.status, 'active');
+  assert.equal(recorded.completionCount, 1);
+  assert.equal(recorded.completedToday, true);
+  assert.notEqual(snapshot.states.find((state) => state.id === 'restore').priorityTodoId, ongoing.id);
+  assert.throws(
+    () => service.recordTodoOccurrence(ongoing.id),
+    (error) => error instanceof AppError && error.code === 'already_completed_today',
+  );
+
+  snapshot = service.undoTodoOccurrence(ongoing.id);
+  recorded = findMainline(snapshot, 'restore', '稳定作息').todos[0];
+  assert.equal(recorded.completionCount, 0);
+  assert.equal(recorded.completedToday, false);
+
+  service.recordTodoOccurrence(ongoing.id);
+  current = new Date('2026-08-22T21:30:00.000Z');
+  snapshot = service.recordTodoOccurrence(ongoing.id);
+  recorded = findMainline(snapshot, 'restore', '稳定作息').todos[0];
+  assert.equal(recorded.completionCount, 2);
+  assert.equal(recorded.completedToday, true);
+
+  snapshot = service.endTodo(ongoing.id, 'completed');
+  const history = snapshot.history.find((item) => item.id === ongoing.id);
+  assert.equal(history.kind, 'ongoing');
+  assert.equal(history.completionCount, 2);
+  service.deleteTodo(ongoing.id);
+  assert.equal(runtime.db.prepare('SELECT COUNT(*) AS count FROM todo_occurrences').get().count, 0);
+});
+
 test('historical todos can be reopened without reviving a historical mainline', (context) => {
   const { service } = createServiceHarness(context);
   let snapshot = service.createMainline({ stateId: 'work', slotIndex: 1, name: '可撤回主线' });

@@ -62,6 +62,8 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 
 默认正式数据库为 `D:/5Data/suowang/suowang.db`。不要手工编辑、复制运行中的数据库或把它放进仓库；使用设置页的 SQLite 导出取得一致性副本。
 
+升级现有安装后首次启动会自动运行未应用的 migration。持续事项完成记录保存在同一个 SQLite 数据库中，随每日备份、SQLite 导出和整库恢复一起保存；无需创建额外数据文件。
+
 ## 备份与恢复
 
 - 每天第一次启动自动备份，位于数据目录的 `backups/`，滚动保留 30 份。
@@ -93,4 +95,4 @@ git diff --check
 git status --short
 ```
 
-`release:check` 会同时运行完整测试并审阅 npm tarball 文件清单。确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/Todo 或视觉探索归档。
+`release:check` 会同时运行完整测试并审阅 npm tarball 文件清单。确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/事项或视觉探索归档。

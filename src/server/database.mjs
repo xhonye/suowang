@@ -34,11 +34,12 @@ function migrationVersion(fileName) {
   return match ? Number(match[1]) : null;
 }
 
-function assertDatabaseIntegrity(db) {
+function assertDatabaseIntegrity(db, { requireCurrentSchema = true } = {}) {
   const integrity = db.pragma('integrity_check', { simple: true });
   if (integrity !== 'ok') throw new Error(`SQLite integrity check failed: ${integrity}`);
 
   const required = new Set(['schema_migrations', 'states', 'mainlines', 'todos', 'app_settings']);
+  if (requireCurrentSchema) required.add('todo_occurrences');
   const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all();
   for (const name of required) {
     if (!tables.some((table) => table.name === name)) {
@@ -73,7 +74,8 @@ export class DatabaseRuntime {
     this.db.pragma('busy_timeout = 5000');
     this.db.pragma('journal_mode = WAL');
     this.runMigrations();
-    assertDatabaseIntegrity(this.db);
+    const schemaVersion = this.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version;
+    assertDatabaseIntegrity(this.db, { requireCurrentSchema: schemaVersion >= 4 });
   }
 
   runMigrations() {
@@ -139,7 +141,7 @@ export class DatabaseRuntime {
     const candidate = new Database(path, { readonly: true, fileMustExist: true });
     try {
       candidate.pragma('foreign_keys = ON');
-      assertDatabaseIntegrity(candidate);
+      assertDatabaseIntegrity(candidate, { requireCurrentSchema: false });
     } finally {
       candidate.close();
     }

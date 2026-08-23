@@ -21,6 +21,8 @@ const ui = {
   drag: null,
   endAction: null,
   dialogAction: null,
+  stuckOpen: false,
+  stuckView: 'menu',
   expandedHistory: new Set(),
 };
 
@@ -31,6 +33,20 @@ const html = (value) => String(value ?? '')
   .replaceAll('>', '&gt;')
   .replaceAll('"', '&quot;')
   .replaceAll("'", '&#039;');
+
+function modeIcon(stateId) {
+  if (stateId === 'restore') {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 4.6C12.2 4.7 7.1 7.5 5.7 13.1c-.6 2.5.3 4.6 2.1 5.9 4.4-.8 7.8-3.4 9.6-7.6 1.1-2.5 1.6-4.8 2-6.8Z"/><path d="M4.6 20.2c2.4-4.5 5.9-7.6 10.7-9.6"/></svg>';
+  }
+  if (stateId === 'work') {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5V5.8c0-.7.6-1.3 1.3-1.3h3.4c.7 0 1.3.6 1.3 1.3v1.7M3.5 12h17M10 12v1.5h4V12"/></svg>';
+  }
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.2 12 4.5l8.5 6.7V20h-17Z"/><path d="M9 20v-5.5h6V20"/></svg>';
+}
+
+function daylightEmojiForHour(hour) {
+  return hour >= 6 && hour < 18 ? '☀️' : '🌙';
+}
 
 function activeState() {
   return stateById(ui.snapshot, ui.activeStateId);
@@ -73,6 +89,8 @@ function showError(title, error) {
 
 function applySnapshot(snapshot) {
   ui.snapshot = snapshot;
+  ui.stuckOpen = false;
+  ui.stuckView = 'menu';
   if (!stateById(snapshot, ui.activeStateId)) {
     ui.activeStateId = snapshot.settings.lastViewedStateId;
   }
@@ -97,6 +115,7 @@ async function mutate(operation, successMessage) {
 
 function renderChrome(now = new Date()) {
   const { settings } = ui.snapshot;
+  byId('daylight-icon').textContent = daylightEmojiForHour(now.getHours());
   byId('greeting').textContent = `${greetingForHour(now.getHours())}，${settings.displayName}`;
   byId('local-date').textContent = formatLocalDate(now);
   byId('profile-name').textContent = settings.displayName;
@@ -128,10 +147,10 @@ function renderStateControls(state) {
     return `
     <button class="route-tab" type="button" role="tab" data-state-id="${item.id}"
       aria-selected="${selected}" tabindex="${selected ? 0 : -1}"
-      aria-label="${selected ? `${html(item.name)}，当前状态` : `切换到${html(item.name)}状态`}">
+      aria-label="${selected ? `${html(item.name)}，当前模式` : `切换到${html(item.name)}模式`}">
       <span class="route-tab-label">
-        <strong>${html(item.name)}</strong>
-        ${selected ? '<small>当前</small>' : ''}
+        <span class="route-tab-icon">${modeIcon(item.id)}</span>
+        <strong>${html(item.name)}模式</strong>
       </span>
     </button>
   `;
@@ -140,7 +159,7 @@ function renderStateControls(state) {
   document.querySelectorAll('[data-road-scene]').forEach((layer) => {
     layer.classList.toggle('selected', layer.dataset.roadScene === state.id);
   });
-  byId('state-cue').textContent = state.cue || `${state.name}状态暂未设置 cue`;
+  byId('state-cue').textContent = `${state.name}模式 · ${state.cue || '暂未设置提示语'}`;
 }
 
 function renderMainlineSlots(state) {
@@ -155,7 +174,7 @@ function renderMainlineSlots(state) {
           <div class="mainline-card ${mainline.id === state.currentMainlineId ? 'current' : ''}"
             role="button" tabindex="0" draggable="true" data-mainline-id="${mainline.id}"
             aria-label="${html(mainline.name)}${mainline.id === state.currentMainlineId ? '，当前主线' : '，点击设为当前主线'}">
-            <span class="mainline-head"><small>MAINLINE SLOT ${String(slotIndex).padStart(2, '0')}</small><span class="mainline-state">${mainline.id === state.currentMainlineId ? '当前' : '进行中'}</span></span>
+            <span class="mainline-state">${mainline.id === state.currentMainlineId ? '当前' : '进行中'}</span>
             <span class="mainline-name">${html(mainline.name)}</span>
             <span class="mainline-goal">${html(mainline.goal || '添加一句话目标')}</span>
             <button class="mainline-more" type="button" data-mainline-menu="${mainline.id}" aria-label="${html(mainline.name)}的更多操作">•••</button>
@@ -189,11 +208,11 @@ function renderCurrentDetail(state) {
   const current = currentMainline(state);
   const container = byId('current-detail');
   if (!current) {
-    container.innerHTML = '<p class="detail-empty">创建一条主线，它会自动成为 Current。</p>';
+    container.innerHTML = '<p class="detail-empty">创建一条主线，它会自动成为当前主线。</p>';
     return;
   }
   const fields = [
-    ['name', '主线名称', current.name, '输入主线名称'],
+    ['name', '当前主线', current.name, '输入主线名称'],
     ['goal', '一句话目标', current.goal, '添加一句话目标'],
     ['successCriteria', '完成标准', current.successCriteria, '添加完成标准'],
     ['horizon', '阶段跨度', current.horizon, '添加阶段跨度'],
@@ -207,28 +226,127 @@ function renderCurrentDetail(state) {
 }
 
 function todoRow(todo) {
+  const ongoing = todo.kind === 'ongoing';
+  const ongoingBadge = ongoing
+    ? `<span class="todo-ongoing-badge" title="累计完成 ${todo.completionCount} 次">持续 ${todo.completionCount}</span>`
+    : '';
+  const minimalStep = todo.minimalStep ? `
+    <span class="todo-separator" aria-hidden="true">｜</span>
+    <button class="todo-minimal-step" type="button" data-edit-todo="${todo.id}" data-field="minimalStep" data-value="${html(todo.minimalStep)}">${html(todo.minimalStep)}</button>
+  ` : `
+    <button class="todo-minimal-step todo-minimal-step-empty" type="button" data-edit-todo="${todo.id}" data-field="minimalStep" data-value="" aria-label="为${html(todo.title)}添加最小一步">＋ 最小一步</button>
+  `;
   return `
-    <div class="todo-row" draggable="true" tabindex="0" data-todo-id="${todo.id}" aria-label="Todo：${html(todo.title)}">
-      <button class="todo-title" type="button" data-edit-todo="${todo.id}" data-value="${html(todo.title)}">${html(todo.title)}</button>
-      <button class="complete-button" type="button" data-complete-todo="${todo.id}" aria-label="完成 ${html(todo.title)}">✓</button>
+    <div class="todo-row ${ongoing ? 'todo-row-ongoing' : ''} ${todo.completedToday ? 'completed-today' : ''}" draggable="true" tabindex="0" data-todo-id="${todo.id}" aria-label="${ongoing ? `持续事项，累计完成 ${todo.completionCount} 次，` : '事项：'}${html(todo.title)}${todo.minimalStep ? `，最小一步：${html(todo.minimalStep)}` : ''}">
+      <div class="todo-copy ${todo.minimalStep ? 'has-minimal-step' : ''}">
+        <button class="todo-title" type="button" data-edit-todo="${todo.id}" data-field="title" data-value="${html(todo.title)}">${ongoingBadge}<span>${html(todo.title)}</span></button>
+        ${minimalStep}
+      </div>
+      <button class="complete-button ${ongoing ? 'ongoing-complete' : ''}" type="button" ${ongoing ? `data-record-todo="${todo.id}"` : `data-complete-todo="${todo.id}"`} ${todo.completedToday ? 'disabled' : ''} aria-label="${ongoing ? (todo.completedToday ? `今天已完成，累计 ${todo.completionCount} 次` : `记录今天完成 ${html(todo.title)}`) : `完成 ${html(todo.title)}`}">✓</button>
     </div>
+  `;
+}
+
+function orderedActiveTodos(state) {
+  const current = currentMainline(state);
+  return [
+    ...(current?.todos ?? []),
+    ...state.mainlines.filter((mainline) => mainline.id !== current?.id).flatMap((mainline) => mainline.todos),
+    ...state.stateTodos,
+  ];
+}
+
+function renderStuckPanel(state, priority) {
+  if (ui.stuckView === 'todo') {
+    const alternatives = orderedActiveTodos(state).filter((todo) => todo.id !== priority.id);
+    return `
+      <section class="stuck-panel stuck-picker" id="stuck-panel" aria-label="换一件事">
+        <header class="stuck-panel-heading">
+          <button class="stuck-back" type="button" data-stuck-back aria-label="返回调整方式">←</button>
+          <strong>换一件事</strong>
+        </header>
+        <div class="stuck-pick-list">
+          ${alternatives.length ? alternatives.map((todo) => `
+            <button type="button" data-stuck-select-todo="${todo.id}">
+              <strong>${html(todo.title)}</strong>
+              <small>${html(todoSource(state, todo))}</small>
+            </button>
+          `).join('') : '<p>这个模式暂时没有其他可选事项。</p>'}
+        </div>
+      </section>
+    `;
+  }
+
+  if (ui.stuckView === 'mainline') {
+    return `
+      <section class="stuck-panel stuck-picker" id="stuck-panel" aria-label="看看主线">
+        <header class="stuck-panel-heading">
+          <button class="stuck-back" type="button" data-stuck-back aria-label="返回调整方式">←</button>
+          <strong>看看主线</strong>
+        </header>
+        <div class="stuck-pick-list">
+          ${state.mainlines.length ? state.mainlines.map((mainline) => `
+            <button type="button" data-stuck-select-mainline="${mainline.id}">
+              <strong>${html(mainline.name)}</strong>
+              <small>${mainline.id === state.currentMainlineId ? '当前主线' : html(mainline.goal || '设为当前主线')}</small>
+            </button>
+          `).join('') : '<p>这个模式还没有主线。</p>'}
+        </div>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="stuck-panel" id="stuck-panel" aria-label="走不动时的调整方式">
+      <header class="stuck-panel-heading">
+        <strong>走不动时，可以换一种走法</strong>
+      </header>
+      <div class="stuck-options">
+        <button type="button" data-stuck-action="minimal-step">
+          <small>步幅</small><strong>再小一点</strong><span>把「最小一步」改得更容易开始</span>
+        </button>
+        <button type="button" data-stuck-action="todo">
+          <small>动作</small><strong>换一件事</strong><span>暂时换一个事项作为下一步</span>
+        </button>
+        <button type="button" data-stuck-action="mainline">
+          <small>方向</small><strong>看看主线</strong><span>也许现在真正该推进的不是这件事</span>
+        </button>
+        <button type="button" data-stuck-action="restore">
+          <small>模式</small><strong>先去恢复</strong><span>切换到恢复模式，养精蓄锐再来干</span>
+        </button>
+      </div>
+    </section>
   `;
 }
 
 function renderPriority(state) {
   const priority = priorityTodo(state);
   const container = byId('priority-content');
+  const stuckToggle = byId('stuck-toggle');
+  byId('priority-zone').classList.toggle('stuck-open', Boolean(priority && ui.stuckOpen));
+  stuckToggle.hidden = !priority;
+  stuckToggle.textContent = ui.stuckOpen ? '收起' : '卡住了？';
+  stuckToggle.setAttribute('aria-expanded', String(Boolean(priority && ui.stuckOpen)));
   if (!priority) {
-    container.innerHTML = '<p class="priority-empty">拖一条 Todo 到这里，明确此刻的下一步。</p>';
+    container.innerHTML = '<p class="priority-empty">拖一条事项到这里，明确此刻的下一步。</p>';
+    return;
+  }
+  if (ui.stuckOpen) {
+    container.innerHTML = renderStuckPanel(state, priority);
     return;
   }
   container.innerHTML = `
-    <div class="priority-card" draggable="true" tabindex="0" data-todo-id="${priority.id}" aria-label="当前优先：${html(priority.title)}">
+    <div class="priority-card" tabindex="0" data-todo-id="${priority.id}" aria-label="下一步：${html(priority.title)}">
       <div class="priority-copy">
-        <button class="priority-title" type="button" data-edit-todo="${priority.id}" data-value="${html(priority.title)}">${html(priority.title)}</button>
-        <small>${html(todoSource(state, priority))}</small>
+        <button class="priority-title" type="button" data-edit-todo="${priority.id}" data-field="title" data-value="${html(priority.title)}">${html(priority.title)}</button>
+        ${priority.kind === 'ongoing' ? `<span class="priority-ongoing-status">持续事项 · 累计 ${priority.completionCount} 次</span>` : ''}
+        <button class="priority-minimal-step ${priority.minimalStep ? '' : 'is-empty'}" type="button" data-edit-todo="${priority.id}" data-field="minimalStep" data-value="${html(priority.minimalStep)}">
+          ${priority.minimalStep ? `<span>最小一步：</span>${html(priority.minimalStep)}` : '＋ 添加最小一步'}
+        </button>
       </div>
-      <button class="complete-button priority-complete" type="button" data-complete-todo="${priority.id}" aria-label="完成 ${html(priority.title)}">完成</button>
+      <div class="priority-footer">
+        <button class="complete-button priority-complete" type="button" ${priority.kind === 'ongoing' ? `data-record-todo="${priority.id}"` : `data-complete-todo="${priority.id}"`} aria-label="${priority.kind === 'ongoing' ? `记录今天完成 ${html(priority.title)}` : `完成 ${html(priority.title)}`}">${priority.kind === 'ongoing' ? '今天完成' : '完成'}</button>
+      </div>
     </div>
   `;
 }
@@ -236,18 +354,19 @@ function renderPriority(state) {
 function renderTodos(state) {
   const current = currentMainline(state);
   const mainlineTodos = current?.todos ?? [];
+  byId('mainline-todo-heading').textContent = current ? `当前主线 · ${current.name}` : '当前主线';
   byId('mainline-todo-count').textContent = mainlineTodos.length;
   byId('state-todo-count').textContent = state.stateTodos.length;
   byId('mainline-todos').dataset.mainlineId = current?.id ?? '';
   byId('mainline-todos').innerHTML = mainlineTodos.length
     ? mainlineTodos.map(todoRow).join('')
-    : `<p class="list-empty">${current ? '这条主线还没有 Todo。' : '先创建或选择一条 Current 主线。'}</p>`;
+    : `<p class="list-empty">${current ? '这条主线还没有事项。' : '先创建或选择一条当前主线。'}</p>`;
   byId('state-todos').innerHTML = state.stateTodos.length
     ? state.stateTodos.map(todoRow).join('')
-    : '<p class="list-empty">这个状态还没有通用 Todo。</p>';
+    : '<p class="list-empty">这个模式还没有其他事项。</p>';
   byId('mainline-todo-input').disabled = !current;
-  byId('mainline-todo-form').querySelector('button').disabled = !current;
-  byId('mainline-todo-input').placeholder = current ? '＋ 添加 Todo' : '先选择 Current 主线';
+  byId('mainline-todo-form').querySelector('button[type="submit"]').disabled = !current;
+  byId('mainline-todo-input').placeholder = current ? '＋ 添加事项' : '先选择当前主线';
 }
 
 function renderDashboard() {
@@ -270,7 +389,7 @@ function formatEndedAt(value) {
 function renderHistory() {
   const container = byId('history-list');
   if (!ui.snapshot.history.length) {
-    container.innerHTML = '<p class="history-empty">还没有完成或放弃的记录。切换 Current 不会制造历史。</p>';
+    container.innerHTML = '<p class="history-empty">还没有完成或放弃的行迹。切换当前主线不会制造行迹。</p>';
     return;
   }
   container.innerHTML = ui.snapshot.history.map((item) => {
@@ -280,15 +399,15 @@ function renderHistory() {
         <div><small>一句话目标</small><p>${html(item.goal || '未填写')}</p></div>
         <div><small>完成标准</small><p>${html(item.successCriteria || '未填写')}</p></div>
         <div><small>阶段跨度</small><p>${html(item.horizon || '未填写')}</p></div>
-        <div class="history-bound-todos"><small>最终仍绑定的历史 Todo</small>
-          ${item.boundTodos.length ? `<ul>${item.boundTodos.map((todo) => `<li>${html(todo.title)} · ${statusLabel(todo.status)}</li>`).join('')}</ul>` : '<p>没有。</p>'}
+        <div class="history-bound-todos"><small>最终仍绑定的事项</small>
+          ${item.boundTodos.length ? `<ul>${item.boundTodos.map((todo) => `<li>${html(todo.title)}${todo.minimalStep ? ` ｜ ${html(todo.minimalStep)}` : ''} · ${statusLabel(todo.status)}</li>`).join('')}</ul>` : '<p>没有。</p>'}
         </div>
       </div>
     ` : '';
     return `
       <article class="history-item history-item-${item.type}">
         <div class="history-summary">
-          <strong>${html(item.name)}</strong>
+          <strong>${html(item.name)}${item.type === 'todo' && item.kind === 'ongoing' ? `<small class="history-ongoing-count">持续 · 累计 ${item.completionCount} 次</small>` : ''}${item.type === 'todo' && item.minimalStep ? `<small class="history-minimal-step"> ｜ ${html(item.minimalStep)}</small>` : ''}</strong>
           <span class="history-meta">${typeLabel(item.type)}</span>
           <span class="history-status">${statusLabel(item.status)}</span>
           <span class="history-meta">${html(stateName(ui.snapshot, item.stateId))}</span>
@@ -297,7 +416,7 @@ function renderHistory() {
             ${item.type === 'mainline' ? `
               <button class="history-toggle" type="button" data-history-toggle="${item.type}:${item.id}">${expanded ? '收起' : '展开'}</button>
               <button class="copy-history" type="button" data-copy-mainline="${item.id}">复制为新主线</button>
-            ` : `<button class="undo-history" type="button" data-reopen-todo="${item.id}" aria-label="撤回 Todo：${html(item.name)}">撤回</button>`}
+            ` : `<button class="undo-history" type="button" data-reopen-todo="${item.id}" aria-label="撤回事项：${html(item.name)}">撤回</button>`}
           </div>
         </div>
         ${details}
@@ -325,7 +444,10 @@ function focusStateTab(stateId) {
 
 async function selectState(stateId, restoreFocus = false) {
   if (!stateById(ui.snapshot, stateId)) return;
+  ui.stuckOpen = false;
+  ui.stuckView = 'menu';
   if (stateId === ui.activeStateId) {
+    renderPriority(activeState());
     if (restoreFocus) focusStateTab(stateId);
     return;
   }
@@ -339,6 +461,7 @@ async function selectState(stateId, restoreFocus = false) {
 
 function beginInlineEdit(button, value, onSave, maxLength) {
   if (button.querySelector('input')) return;
+  button.classList.add('editing');
   const input = document.createElement('input');
   input.className = 'inline-editor';
   input.value = value;
@@ -371,21 +494,41 @@ function beginInlineEdit(button, value, onSave, maxLength) {
   input.addEventListener('blur', save, { once: true });
 }
 
+function beginTodoEdit(button) {
+  if (!button) return;
+  beginInlineEdit(
+    button,
+    button.dataset.value,
+    (value) => mutate(
+      () => api.updateTodo(button.dataset.editTodo, { [button.dataset.field || 'title']: value }),
+      button.dataset.field === 'minimalStep' ? '最小一步已更新' : '事项已更新',
+    ),
+    160,
+  );
+}
+
 function closeContextMenu() {
   byId('context-menu').hidden = true;
 }
 
 function openContextMenu(type, id, x, y) {
   const menu = byId('context-menu');
+  const todo = type === 'todo' ? todoById(id) : null;
   menu.innerHTML = type === 'mainline'
     ? `
       <button type="button" role="menuitem" data-context-action="complete" data-target-id="${id}">完成主线</button>
       <button type="button" role="menuitem" data-context-action="abandon" data-target-id="${id}">放弃主线</button>
       <button class="danger" type="button" role="menuitem" data-context-action="delete-mainline" data-target-id="${id}">删除主线</button>
     `
-    : `
-      <button type="button" role="menuitem" data-context-action="abandon-todo" data-target-id="${id}">放弃 Todo</button>
-      <button class="danger" type="button" role="menuitem" data-context-action="delete-todo" data-target-id="${id}">删除 Todo</button>
+    : todo?.kind === 'ongoing' ? `
+      ${todo.completedToday ? `<button type="button" role="menuitem" data-context-action="undo-record" data-target-id="${id}">撤回今天</button>` : ''}
+      <button type="button" role="menuitem" data-context-action="complete-ongoing" data-target-id="${id}">达成并结束</button>
+      <button type="button" role="menuitem" data-context-action="abandon-todo" data-target-id="${id}">不再继续</button>
+      <button class="danger" type="button" role="menuitem" data-context-action="delete-todo" data-target-id="${id}">删除事项</button>
+    ` : `
+      <button type="button" role="menuitem" data-context-action="make-ongoing" data-target-id="${id}">设为持续事项</button>
+      <button type="button" role="menuitem" data-context-action="abandon-todo" data-target-id="${id}">放弃事项</button>
+      <button class="danger" type="button" role="menuitem" data-context-action="delete-todo" data-target-id="${id}">删除事项</button>
     `;
   menu.hidden = false;
   menu.style.left = `${Math.min(x, window.innerWidth - 175)}px`;
@@ -424,13 +567,13 @@ async function beginEndMainline(mainline, status) {
   const alternatives = state.mainlines.filter((item) => item.id !== mainline.id);
   ui.endAction = { mainlineId: mainline.id, status };
   byId('end-panel-kicker').textContent = status === 'completed' ? '完成主线' : '放弃主线';
-  byId('end-panel-title').textContent = `处理“${mainline.name}”的剩余 Todo`;
+  byId('end-panel-title').textContent = `处理“${mainline.name}”的剩余事项`;
   byId('resolution-list').innerHTML = mainline.todos.map((todo) => `
     <label class="resolution-row">
       <strong>${html(todo.title)}</strong>
       <select data-resolution-todo="${todo.id}">
         <option value="abandon">标记为已放弃（默认）</option>
-        <option value="state">移到${html(state.name)}通用 Todo</option>
+        <option value="state">移到${html(state.name)}模式的其他事项</option>
         ${alternatives.map((target) => `<option value="mainline:${target.id}">移到 ${html(target.name)}</option>`).join('')}
       </select>
     </label>
@@ -443,11 +586,11 @@ function confirmDeleteMainline(mainline) {
   openDialog({
     kicker: '不可逆操作',
     title: `删除“${mainline.name}”`,
-    message: hasTodos ? '选择这条主线所绑定 Todo 的处理方式。删除后主线无法恢复。' : '这条主线将被永久删除。',
+    message: hasTodos ? '选择这条主线所绑定事项的处理方式。删除后主线无法恢复。' : '这条主线将被永久删除。',
     fields: hasTodos ? `
-      <label><span>Todo 处理</span><select name="todoPolicy">
-        <option value="move_to_state">移动到${html(activeState().name)}通用 Todo（推荐）</option>
-        <option value="delete">连同 Todo 一起永久删除</option>
+      <label><span>事项处理</span><select name="todoPolicy">
+        <option value="move_to_state">移动到${html(activeState().name)}模式的其他事项（推荐）</option>
+        <option value="delete">连同事项一起永久删除</option>
       </select></label>
     ` : '',
     confirmLabel: '确认删除',
@@ -462,11 +605,11 @@ function confirmDeleteTodo(todo) {
   openDialog({
     kicker: '不可逆操作',
     title: `删除“${todo.title}”`,
-    message: '这条 Todo 会被永久删除，不会进入历史。',
+    message: '这条事项会被永久删除，不会进入行迹。',
     confirmLabel: '确认删除',
     danger: true,
     onConfirm: async () => {
-      await mutate(() => api.deleteTodo(todo.id), 'Todo 已删除');
+      await mutate(() => api.deleteTodo(todo.id), '事项已删除');
     },
   });
 }
@@ -496,6 +639,12 @@ function setupNavigation() {
 }
 
 function setupDashboardEvents() {
+  byId('stuck-toggle').addEventListener('click', () => {
+    ui.stuckOpen = !ui.stuckOpen;
+    ui.stuckView = 'menu';
+    renderPriority(activeState());
+  });
+
   byId('route-tabs').addEventListener('click', (event) => {
     const button = event.target.closest('[data-state-id]');
     if (button) selectState(button.dataset.stateId, true);
@@ -525,7 +674,7 @@ function setupDashboardEvents() {
     }
     const card = event.target.closest('[data-mainline-id]');
     if (card && card.dataset.mainlineId !== activeState().currentMainlineId) {
-      await mutate(() => api.setCurrentMainline(card.dataset.mainlineId), 'Current 主线已切换');
+      await mutate(() => api.setCurrentMainline(card.dataset.mainlineId), '当前主线已切换');
     }
   });
 
@@ -549,7 +698,7 @@ function setupDashboardEvents() {
     if (!card) return;
     if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button')) {
       event.preventDefault();
-      mutate(() => api.setCurrentMainline(card.dataset.mainlineId), 'Current 主线已切换');
+      mutate(() => api.setCurrentMainline(card.dataset.mainlineId), '当前主线已切换');
     }
     if (event.shiftKey && event.key === 'F10') {
       event.preventDefault();
@@ -584,33 +733,85 @@ function setupDashboardEvents() {
     const input = byId('mainline-todo-input');
     const title = input.value.trim();
     if (!current || !title) return;
-    const snapshot = await mutate(() => api.createTodo({ stateId: activeState().id, mainlineId: current.id, title }), 'Todo 已添加');
-    if (snapshot) input.value = '';
+    const toggle = event.currentTarget.querySelector('.todo-kind-toggle');
+    const kind = toggle.getAttribute('aria-pressed') === 'true' ? 'ongoing' : 'single';
+    const snapshot = await mutate(() => api.createTodo({ stateId: activeState().id, mainlineId: current.id, title, kind }), kind === 'ongoing' ? '持续事项已添加' : '事项已添加');
+    if (snapshot) { input.value = ''; toggle.setAttribute('aria-pressed', 'false'); }
   });
   byId('state-todo-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     const input = byId('state-todo-input');
     const title = input.value.trim();
     if (!title) return;
-    const snapshot = await mutate(() => api.createTodo({ stateId: activeState().id, title }), 'Todo 已添加');
-    if (snapshot) input.value = '';
+    const toggle = event.currentTarget.querySelector('.todo-kind-toggle');
+    const kind = toggle.getAttribute('aria-pressed') === 'true' ? 'ongoing' : 'single';
+    const snapshot = await mutate(() => api.createTodo({ stateId: activeState().id, title, kind }), kind === 'ongoing' ? '持续事项已添加' : '事项已添加');
+    if (snapshot) { input.value = ''; toggle.setAttribute('aria-pressed', 'false'); }
+  });
+  document.querySelectorAll('.todo-kind-toggle').forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const pressed = toggle.getAttribute('aria-pressed') === 'true';
+      toggle.setAttribute('aria-pressed', String(!pressed));
+    });
   });
 
   [byId('priority-content'), byId('mainline-todos'), byId('state-todos')].forEach((container) => {
-    container.addEventListener('click', (event) => {
+    container.addEventListener('click', async (event) => {
+      if (event.target.closest('[data-stuck-back]')) {
+        ui.stuckView = 'menu';
+        renderPriority(activeState());
+        return;
+      }
+      const stuckAction = event.target.closest('[data-stuck-action]')?.dataset.stuckAction;
+      if (stuckAction === 'minimal-step') {
+        const priority = priorityTodo(activeState());
+        ui.stuckOpen = false;
+        ui.stuckView = 'menu';
+        renderPriority(activeState());
+        beginTodoEdit(container.querySelector(`[data-edit-todo="${priority.id}"][data-field="minimalStep"]`));
+        return;
+      }
+      if (stuckAction === 'todo' || stuckAction === 'mainline') {
+        ui.stuckView = stuckAction;
+        renderPriority(activeState());
+        return;
+      }
+      if (stuckAction === 'restore') {
+        const alreadyRestoring = ui.activeStateId === 'restore';
+        await selectState('restore', true);
+        showToast(alreadyRestoring ? '已经在恢复模式' : '已切换到恢复模式');
+        return;
+      }
+      const selectedTodo = event.target.closest('[data-stuck-select-todo]');
+      if (selectedTodo) {
+        ui.stuckOpen = false;
+        ui.stuckView = 'menu';
+        await mutate(() => api.setPriority(selectedTodo.dataset.stuckSelectTodo), '下一步已更新');
+        return;
+      }
+      const selectedMainline = event.target.closest('[data-stuck-select-mainline]');
+      if (selectedMainline) {
+        ui.stuckOpen = false;
+        ui.stuckView = 'menu';
+        const mainlineId = selectedMainline.dataset.stuckSelectMainline;
+        if (mainlineId === activeState().currentMainlineId) renderPriority(activeState());
+        else await mutate(() => api.setCurrentMainline(mainlineId), '当前主线已切换');
+        document.querySelector(`[data-mainline-id="${mainlineId}"]`)?.focus({ preventScroll: true });
+        return;
+      }
       const complete = event.target.closest('[data-complete-todo]');
       if (complete) {
-        mutate(() => api.completeTodo(complete.dataset.completeTodo), 'Todo 已完成，下一步已接棒');
+        mutate(() => api.completeTodo(complete.dataset.completeTodo), '事项已完成，下一步已接棒');
+        return;
+      }
+      const record = event.target.closest('[data-record-todo]');
+      if (record) {
+        mutate(() => api.recordTodo(record.dataset.recordTodo), '今天已完成一次');
         return;
       }
       const edit = event.target.closest('[data-edit-todo]');
       if (edit) {
-        beginInlineEdit(
-          edit,
-          edit.dataset.value,
-          (title) => mutate(() => api.updateTodo(edit.dataset.editTodo, { title }), 'Todo 已更新'),
-          160,
-        );
+        beginTodoEdit(edit);
       }
     });
     container.addEventListener('contextmenu', (event) => {
@@ -643,7 +844,13 @@ function setupContextMenu() {
       const mainline = mainlineById(id);
       if (mainline) confirmDeleteMainline(mainline);
     } else if (action === 'abandon-todo') {
-      await mutate(() => api.abandonTodo(id), 'Todo 已放弃');
+      await mutate(() => api.abandonTodo(id), '事项已放弃');
+    } else if (action === 'make-ongoing') {
+      await mutate(() => api.updateTodo(id, { kind: 'ongoing' }), '已设为持续事项');
+    } else if (action === 'undo-record') {
+      await mutate(() => api.undoTodoRecord(id), '今天的完成记录已撤回');
+    } else if (action === 'complete-ongoing') {
+      await mutate(() => api.completeTodo(id), '持续事项已达成并进入行迹');
     } else if (action === 'delete-todo') {
       const todo = todoById(id);
       if (todo) confirmDeleteTodo(todo);
@@ -702,16 +909,16 @@ function setupDragAndDrop() {
     event.preventDefault();
     clearDragState();
     if (priority) {
-      await mutate(() => api.setPriority(drag.id), '当前优先已更新');
+      await mutate(() => api.setPriority(drag.id), '下一步已更新');
     } else if (card) {
       const target = mainlineById(card.dataset.mainlineId);
-      await mutate(() => api.moveTodo(drag.id, { mainlineId: target.id, position: target.todos.length + 1 }), 'Todo 归属已更新');
+      await mutate(() => api.moveTodo(drag.id, { mainlineId: target.id, position: target.todos.length + 1 }), '事项归属已更新');
     } else if (list) {
       const targetMainlineId = list.dataset.todoScope === 'mainline' ? list.dataset.mainlineId || null : null;
       await mutate(() => api.moveTodo(drag.id, {
         mainlineId: targetMainlineId,
         position: todoDropPosition(list, event.clientY),
-      }), 'Todo 顺序已保存');
+      }), '事项顺序已保存');
     }
   });
   document.addEventListener('dragend', clearDragState);
@@ -771,9 +978,9 @@ function setupHistory() {
     if (copy) {
       const item = ui.snapshot.history.find((historyItem) => historyItem.type === 'mainline' && historyItem.id === copy.dataset.copyMainline);
       openDialog({
-        kicker: '从历史重新出发',
+        kicker: '从行迹重新出发',
         title: '复制为新的独立主线',
-        message: '新主线会获得新 ID，并预填目标、完成标准和阶段跨度；不会复制旧 Todo。',
+        message: '新主线会获得新 ID，并预填目标、完成标准和阶段跨度；不会复制旧事项。',
         fields: `<label><span>新的全局唯一名称</span><input name="name" maxlength="60" required value="${html(item.name)} · 新阶段" /></label>`,
         confirmLabel: '创建新主线',
         onConfirm: async ({ name }) => {
@@ -788,7 +995,7 @@ function setupHistory() {
     }
     const reopen = event.target.closest('[data-reopen-todo]');
     if (reopen) {
-      mutate(() => api.reopenTodo(reopen.dataset.reopenTodo), 'Todo 已撤回并回到进行中');
+      mutate(() => api.reopenTodo(reopen.dataset.reopenTodo), '事项已撤回并回到进行中');
     }
   });
 }
@@ -817,7 +1024,7 @@ function setupSettings() {
         snapshot = await api.updateState(input.dataset.cueState, { cue: input.value });
       }
       applySnapshot(snapshot);
-      showToast('三个状态 Cue 已保存');
+      showToast('三个模式 Cue 已保存');
     } catch (error) {
       showError('Cue 没有保存完整', error);
     } finally {

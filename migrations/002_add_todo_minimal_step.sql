@@ -1,0 +1,2 @@
+ALTER TABLE todos
+ADD COLUMN minimal_step TEXT NOT NULL DEFAULT '';

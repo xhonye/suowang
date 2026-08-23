@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 const STATE_IDS = new Set(['restore', 'work', 'life']);
 const END_STATUSES = new Set(['completed', 'abandoned']);
+const TODO_KINDS = new Set(['single', 'ongoing']);
 
 export class AppError extends Error {
   constructor(status, code, message, details = null) {
@@ -58,6 +59,10 @@ function mapTodo(row) {
     stateId: row.state_id,
     mainlineId: row.mainline_id,
     title: row.title,
+    minimalStep: row.minimal_step,
+    kind: row.kind,
+    completionCount: Number(row.completion_count ?? 0),
+    completedToday: Boolean(row.completed_today),
     status: row.status,
     position: row.position,
     createdAt: row.created_at,
@@ -69,13 +74,13 @@ function translateDatabaseError(error) {
   if (error instanceof AppError) return error;
   const message = String(error?.message ?? error);
   if (message.includes('mainlines.normalized_name')) {
-    return new AppError(409, 'duplicate_mainline_name', '主线名称需要在全部历史中保持唯一。');
+    return new AppError(409, 'duplicate_mainline_name', '主线名称需要在全部行迹中保持唯一。');
   }
   if (message.includes('active_mainline_slot')) {
     return new AppError(409, 'slot_occupied', '这个主线槽已经被占用。');
   }
   if (message.includes('todo_mainline_state_mismatch')) {
-    return new AppError(409, 'state_mismatch', 'Todo 不能移动到其他状态的主线。');
+    return new AppError(409, 'state_mismatch', '事项不能移动到其他模式的主线。');
   }
   return error;
 }
@@ -94,6 +99,14 @@ export class SuowangService {
     return this.clock().toISOString();
   }
 
+  localDate() {
+    const date = this.clock();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   mutate(action) {
     try {
       return this.db.transaction(action)();
@@ -104,7 +117,7 @@ export class SuowangService {
 
   assertState(stateId) {
     if (!STATE_IDS.has(stateId)) {
-      throw new AppError(404, 'state_not_found', '未找到这个状态。');
+      throw new AppError(404, 'state_not_found', '未找到这个模式。');
     }
     return this.db.prepare('SELECT * FROM states WHERE id = ?').get(stateId);
   }
@@ -113,16 +126,16 @@ export class SuowangService {
     const row = this.db.prepare('SELECT * FROM mainlines WHERE id = ?').get(id);
     if (!row) throw new AppError(404, 'mainline_not_found', '未找到这条主线。');
     if (active && row.status !== 'active') {
-      throw new AppError(409, 'mainline_is_history', '历史主线不能再修改。');
+      throw new AppError(409, 'mainline_is_history', '行迹中的主线不能再修改。');
     }
     return row;
   }
 
   requireTodo(id, { active = false } = {}) {
     const row = this.db.prepare('SELECT * FROM todos WHERE id = ?').get(id);
-    if (!row) throw new AppError(404, 'todo_not_found', '未找到这条 Todo。');
+    if (!row) throw new AppError(404, 'todo_not_found', '未找到这条事项。');
     if (active && row.status !== 'active') {
-      throw new AppError(409, 'todo_is_history', '历史 Todo 不能再修改。');
+      throw new AppError(409, 'todo_is_history', '行迹中的事项不能再修改。');
     }
     return row;
   }
@@ -166,21 +179,30 @@ export class SuowangService {
   }
 
   firstEligibleTodo(stateId, currentMainlineId) {
+    const completedOn = this.localDate();
     if (currentMainlineId) {
       const currentTodo = this.db.prepare(`
-        SELECT id FROM todos
+        SELECT id FROM todos AS todo
         WHERE state_id = ? AND mainline_id = ? AND status = 'active'
+          AND NOT (kind = 'ongoing' AND EXISTS (
+            SELECT 1 FROM todo_occurrences
+            WHERE todo_id = todo.id AND completed_on = ?
+          ))
         ORDER BY position, created_at, id
         LIMIT 1
-      `).get(stateId, currentMainlineId);
+      `).get(stateId, currentMainlineId, completedOn);
       if (currentTodo) return currentTodo.id;
     }
     return this.db.prepare(`
-      SELECT id FROM todos
+      SELECT id FROM todos AS todo
       WHERE state_id = ? AND mainline_id IS NULL AND status = 'active'
+        AND NOT (kind = 'ongoing' AND EXISTS (
+          SELECT 1 FROM todo_occurrences
+          WHERE todo_id = todo.id AND completed_on = ?
+        ))
       ORDER BY position, created_at, id
       LIMIT 1
-    `).get(stateId)?.id ?? null;
+    `).get(stateId, completedOn)?.id ?? null;
   }
 
   reconcilePointers(stateId, currentMainlineId, preferredPriorityId = null) {
@@ -195,10 +217,14 @@ export class SuowangService {
     let priorityId = null;
     if (preferredPriorityId) {
       const preferred = this.db.prepare(`
-        SELECT id FROM todos
+        SELECT id FROM todos AS todo
         WHERE id = ? AND state_id = ? AND status = 'active'
           AND (mainline_id IS NULL OR mainline_id = ?)
-      `).get(preferredPriorityId, stateId, currentId);
+          AND NOT (kind = 'ongoing' AND EXISTS (
+            SELECT 1 FROM todo_occurrences
+            WHERE todo_id = todo.id AND completed_on = ?
+          ))
+      `).get(preferredPriorityId, stateId, currentId, this.localDate());
       priorityId = preferred?.id ?? null;
     }
     if (!priorityId) priorityId = this.firstEligibleTodo(stateId, currentId);
@@ -210,15 +236,22 @@ export class SuowangService {
   }
 
   snapshot() {
+    const completedOn = this.localDate();
     const settings = this.db.prepare('SELECT * FROM app_settings WHERE singleton = 1').get();
     const stateRows = this.db.prepare('SELECT * FROM states ORDER BY sort_order').all();
     const mainlineRows = this.db.prepare(`
       SELECT * FROM mainlines WHERE status = 'active' ORDER BY state_id, slot_index
     `).all();
     const todoRows = this.db.prepare(`
-      SELECT * FROM todos WHERE status = 'active'
+      SELECT todo.*,
+        COUNT(occurrence.id) AS completion_count,
+        MAX(CASE WHEN occurrence.completed_on = ? THEN 1 ELSE 0 END) AS completed_today
+      FROM todos AS todo
+      LEFT JOIN todo_occurrences AS occurrence ON occurrence.todo_id = todo.id
+      WHERE todo.status = 'active'
+      GROUP BY todo.id
       ORDER BY state_id, mainline_id, position, created_at, id
-    `).all();
+    `).all(completedOn);
 
     const states = stateRows.map((state) => {
       const mainlines = mainlineRows
@@ -247,13 +280,21 @@ export class SuowangService {
       ...mapMainline(row),
       type: 'mainline',
       boundTodos: this.db.prepare(`
-        SELECT * FROM todos
+        SELECT todo.*, COUNT(occurrence.id) AS completion_count, 0 AS completed_today
+        FROM todos AS todo
+        LEFT JOIN todo_occurrences AS occurrence ON occurrence.todo_id = todo.id
         WHERE mainline_id = ? AND status != 'active'
+        GROUP BY todo.id
         ORDER BY ended_at DESC, position, id
       `).all(row.id).map(mapTodo),
     }));
     const historyTodos = this.db.prepare(`
-      SELECT * FROM todos WHERE status != 'active' ORDER BY ended_at DESC, id
+      SELECT todo.*, COUNT(occurrence.id) AS completion_count, 0 AS completed_today
+      FROM todos AS todo
+      LEFT JOIN todo_occurrences AS occurrence ON occurrence.todo_id = todo.id
+      WHERE status != 'active'
+      GROUP BY todo.id
+      ORDER BY ended_at DESC, id
     `).all().map((row) => ({ ...mapTodo(row), type: 'todo', name: row.title }));
     const history = [...historyMainlines, ...historyTodos]
       .sort((left, right) => String(right.endedAt).localeCompare(String(left.endedAt)));
@@ -287,7 +328,7 @@ export class SuowangService {
 
   updateState(stateId, { cue }) {
     this.assertState(stateId);
-    const value = optionalText(cue, '状态 cue', 120);
+    const value = optionalText(cue, '模式 cue', 120);
     this.db.prepare('UPDATE states SET cue = ? WHERE id = ?').run(value, stateId);
     return this.snapshot();
   }
@@ -422,7 +463,7 @@ export class SuowangService {
         } else if (resolution.target === 'mainline') {
           const target = this.requireMainline(resolution.mainlineId, { active: true });
           if (target.state_id !== mainline.state_id || target.id === id) {
-            throw new AppError(409, 'state_mismatch', '剩余 Todo 只能移到同状态的另一条主线。');
+            throw new AppError(409, 'state_mismatch', '剩余事项只能移到同模式的另一条主线。');
           }
           this.db.prepare(`
             UPDATE todos SET mainline_id = ?, position = ? WHERE id = ?
@@ -432,7 +473,7 @@ export class SuowangService {
             UPDATE todos SET status = 'abandoned', ended_at = ? WHERE id = ?
           `).run(this.now(), todo.id);
         } else {
-          throw new AppError(400, 'validation_error', '未知的剩余 Todo 处理方式。');
+          throw new AppError(400, 'validation_error', '未知的剩余事项处理方式。');
         }
       }
 
@@ -456,7 +497,7 @@ export class SuowangService {
     return this.mutate(() => {
       const mainline = this.requireMainline(id);
       if (!['move_to_state', 'delete'].includes(todoPolicy)) {
-        throw new AppError(400, 'validation_error', '未知的 Todo 删除策略。');
+        throw new AppError(400, 'validation_error', '未知的事项删除策略。');
       }
       const state = this.assertState(mainline.state_id);
       const preferredPriorityId = state.priority_todo_id;
@@ -493,13 +534,13 @@ export class SuowangService {
     return this.mutate(() => {
       const source = this.requireMainline(id);
       if (source.status === 'active') {
-        throw new AppError(409, 'mainline_is_active', '只有历史主线可以复制为新主线。');
+        throw new AppError(409, 'mainline_is_active', '只有行迹中的主线可以复制为新主线。');
       }
       const occupied = new Set(this.db.prepare(`
         SELECT slot_index FROM mainlines WHERE state_id = ? AND status = 'active'
       `).all(source.state_id).map((row) => row.slot_index));
       const slot = [1, 2, 3].find((candidate) => !occupied.has(candidate));
-      if (!slot) throw new AppError(409, 'no_empty_slot', '这个状态的三个主线槽都已占用。');
+      if (!slot) throw new AppError(409, 'no_empty_slot', '这个模式的三个主线槽都已占用。');
       const title = requiredText(name, '新主线名称', 60);
       const newId = `ml_${randomUUID()}`;
       this.db.prepare(`
@@ -526,25 +567,30 @@ export class SuowangService {
     });
   }
 
-  createTodo({ stateId, mainlineId = null, title }) {
+  createTodo({ stateId, mainlineId = null, title, minimalStep = '', kind = 'single' }) {
     return this.mutate(() => {
       const state = this.assertState(stateId);
       if (mainlineId) {
         const mainline = this.requireMainline(mainlineId, { active: true });
         if (mainline.state_id !== stateId) {
-          throw new AppError(409, 'state_mismatch', 'Todo 不能创建到其他状态的主线。');
+          throw new AppError(409, 'state_mismatch', '事项不能创建到其他模式的主线。');
         }
       }
       const id = `td_${randomUUID()}`;
+      if (!TODO_KINDS.has(kind)) {
+        throw new AppError(400, 'validation_error', '事项类型只能是一次事项或持续事项。');
+      }
       this.db.prepare(`
         INSERT INTO todos(
-          id, state_id, mainline_id, title, status, position, created_at, ended_at
-        ) VALUES (?, ?, ?, ?, 'active', ?, ?, NULL)
+          id, state_id, mainline_id, title, minimal_step, kind, status, position, created_at, ended_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, NULL)
       `).run(
         id,
         stateId,
         mainlineId,
-        requiredText(title, 'Todo 名称', 160),
+        requiredText(title, '事项名称', 160),
+        optionalText(minimalStep, '最小一步', 160),
+        kind,
         this.nextPosition(stateId, mainlineId),
         this.now(),
       );
@@ -555,10 +601,31 @@ export class SuowangService {
     });
   }
 
-  updateTodo(id, { title }) {
-    this.requireTodo(id, { active: true });
-    this.db.prepare('UPDATE todos SET title = ? WHERE id = ?')
-      .run(requiredText(title, 'Todo 名称', 160), id);
+  updateTodo(id, changes) {
+    const todo = this.requireTodo(id, { active: true });
+    const fields = [];
+    const values = [];
+    if (Object.hasOwn(changes, 'title')) {
+      fields.push('title = ?');
+      values.push(requiredText(changes.title, '事项名称', 160));
+    }
+    if (Object.hasOwn(changes, 'minimalStep')) {
+      fields.push('minimal_step = ?');
+      values.push(optionalText(changes.minimalStep, '最小一步', 160));
+    }
+    if (Object.hasOwn(changes, 'kind')) {
+      if (!TODO_KINDS.has(changes.kind)) {
+        throw new AppError(400, 'validation_error', '事项类型只能是一次事项或持续事项。');
+      }
+      if (todo.kind === 'ongoing' && changes.kind === 'single') {
+        throw new AppError(409, 'ongoing_kind_is_stable', '持续事项不能直接改回一次事项；请结束它后创建新的事项。');
+      }
+      fields.push('kind = ?');
+      values.push(changes.kind);
+    }
+    if (!fields.length) throw new AppError(400, 'validation_error', '没有可保存的事项字段。');
+    values.push(id);
+    this.db.prepare(`UPDATE todos SET ${fields.join(', ')} WHERE id = ?`).run(...values);
     return this.snapshot();
   }
 
@@ -566,7 +633,7 @@ export class SuowangService {
     return this.mutate(() => {
       const todo = this.requireTodo(id, { active: true });
       if (!END_STATUSES.has(status)) {
-        throw new AppError(400, 'validation_error', 'Todo 只能标记为 completed 或 abandoned。');
+        throw new AppError(400, 'validation_error', '事项只能标记为 completed 或 abandoned。');
       }
       const state = this.assertState(todo.state_id);
       if (state.priority_todo_id === id) {
@@ -580,11 +647,58 @@ export class SuowangService {
     });
   }
 
+  recordTodoOccurrence(id) {
+    return this.mutate(() => {
+      const todo = this.requireTodo(id, { active: true });
+      if (todo.kind !== 'ongoing') {
+        throw new AppError(409, 'todo_is_not_ongoing', '只有持续事项可以记录今天完成。');
+      }
+      const completedOn = this.localDate();
+      if (this.db.prepare(`
+        SELECT 1 FROM todo_occurrences WHERE todo_id = ? AND completed_on = ?
+      `).get(id, completedOn)) {
+        throw new AppError(409, 'already_completed_today', '这条持续事项今天已经完成过一次。');
+      }
+      const state = this.assertState(todo.state_id);
+      this.db.prepare(`
+        INSERT INTO todo_occurrences(id, todo_id, completed_on, completed_at)
+        VALUES (?, ?, ?, ?)
+      `).run(`oc_${randomUUID()}`, id, completedOn, this.now());
+      if (state.priority_todo_id === id) {
+        this.db.prepare('UPDATE states SET priority_todo_id = NULL WHERE id = ?').run(todo.state_id);
+      }
+      this.reconcilePointers(
+        todo.state_id,
+        state.current_mainline_id,
+        state.priority_todo_id === id ? null : state.priority_todo_id,
+      );
+      return this.snapshot();
+    });
+  }
+
+  undoTodoOccurrence(id) {
+    return this.mutate(() => {
+      const todo = this.requireTodo(id, { active: true });
+      if (todo.kind !== 'ongoing') {
+        throw new AppError(409, 'todo_is_not_ongoing', '只有持续事项可以撤回今天的记录。');
+      }
+      const result = this.db.prepare(`
+        DELETE FROM todo_occurrences WHERE todo_id = ? AND completed_on = ?
+      `).run(id, this.localDate());
+      if (!result.changes) {
+        throw new AppError(409, 'not_completed_today', '这条持续事项今天还没有完成记录。');
+      }
+      const state = this.assertState(todo.state_id);
+      this.reconcilePointers(todo.state_id, state.current_mainline_id, state.priority_todo_id ?? id);
+      return this.snapshot();
+    });
+  }
+
   reopenTodo(id) {
     return this.mutate(() => {
       const todo = this.requireTodo(id);
       if (todo.status === 'active') {
-        throw new AppError(409, 'todo_is_active', '这条 Todo 已经在进行中。');
+        throw new AppError(409, 'todo_is_active', '这条事项已经在进行中。');
       }
       const state = this.assertState(todo.state_id);
       const originalMainline = todo.mainline_id
@@ -625,12 +739,12 @@ export class SuowangService {
       if (mainlineId) {
         const mainline = this.requireMainline(mainlineId, { active: true });
         if (mainline.state_id !== todo.state_id) {
-          throw new AppError(409, 'state_mismatch', 'Todo 不能移动到其他状态。');
+          throw new AppError(409, 'state_mismatch', '事项不能移动到其他模式。');
         }
       }
       const requestedPosition = Number(position);
       if (!Number.isInteger(requestedPosition) || requestedPosition < 1) {
-        throw new AppError(400, 'validation_error', 'Todo 排序位置必须是正整数。');
+        throw new AppError(400, 'validation_error', '事项排序位置必须是正整数。');
       }
       if (state.priority_todo_id === id) {
         this.db.prepare('UPDATE states SET priority_todo_id = NULL WHERE id = ?').run(todo.state_id);
@@ -665,7 +779,7 @@ export class SuowangService {
       const todo = this.requireTodo(id, { active: true });
       const state = this.assertState(todo.state_id);
       if (todo.mainline_id !== null && todo.mainline_id !== state.current_mainline_id) {
-        throw new AppError(409, 'priority_not_eligible', '当前优先只能来自状态通用 Todo 或当前主线。');
+        throw new AppError(409, 'priority_not_eligible', '下一步只能来自当前主线事项或其他事项。');
       }
       this.db.prepare('UPDATE states SET priority_todo_id = ? WHERE id = ?').run(id, todo.state_id);
       return this.snapshot();
@@ -681,6 +795,7 @@ export class SuowangService {
       states: this.db.prepare('SELECT * FROM states ORDER BY sort_order').all(),
       mainlines: this.db.prepare('SELECT * FROM mainlines ORDER BY created_at, id').all(),
       todos: this.db.prepare('SELECT * FROM todos ORDER BY created_at, id').all(),
+      todoOccurrences: this.db.prepare('SELECT * FROM todo_occurrences ORDER BY completed_at, id').all(),
     };
   }
 }

@@ -23,7 +23,7 @@ const state = {
 test('view model resolves current mainline, priority and source labels', () => {
   assert.equal(currentMainline(state).name, '主线 A');
   assert.equal(priorityTodo(state).title, '通用事项');
-  assert.equal(todoSource(state, priorityTodo(state)), '工作 · 通用');
+  assert.equal(todoSource(state, priorityTodo(state)), '工作模式 · 其他事项');
   assert.equal(todoSource(state, state.mainlines[0].todos[0]), '主线 A');
 });
 
