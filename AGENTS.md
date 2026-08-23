@@ -65,6 +65,32 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - 每天第一次启动自动备份 SQLite，按备份时间保留最后 30 份。手动导出不限；整库恢复前必须先备份当前库，不做 merge。
 - 不建立点击、切状态、切 Current、拖拽或文字修改的 audit/event 流水。
 
+## 版本里程碑与受保护基线
+
+`v0.1.0` 是 SUOWANG 首个由用户明确验收核心体验、信息结构与整体视觉的可长期使用版本。三岔道路视觉经过两天高密度迭代才形成，不是临时 demo；它是产品身份的一部分，也是后续版本必须能够回到的受保护基线。`v0.1.0` 标签和 Release 不得移动、覆盖或重建。
+
+以下内容构成 `v0.1.0` 的批准视觉基线：
+
+- `assets/mainline-scene-bright-office-v1-no-arrows-geometry-v5.png`
+- `assets/mainline-scene-bright-office-v1-arrow-restore-light-v2.png`
+- `assets/mainline-scene-bright-office-v1-arrow-work-light-v4.png`
+- `assets/mainline-scene-bright-office-v1-arrow-life-light-v2.png`
+- `docs/visual-final-preview.html`
+- `docs/visual-contract.md`
+- `assets/milestones/2026-08-23-arrow-pipeline/`
+
+默认禁止覆盖、删除、重新压缩或原地重画上述文件。视觉实验必须使用新文件名并先接入静态预览；只有用户明确审稿通过后才能更新正式页面引用和视觉基线哈希。只改箭头不得重画整幅背景，只调前端布局不得替换图片资产。
+
+`1.0.0` 不以功能数量为标准。它表示核心驾驶循环经过持续真实使用，普通 Windows 用户无需工程协助即可安装和恢复数据，升级 migration 有旧库验证，关键 UI 有自动化防回归，并且产品仍保持“状态 → Current 主线 → Priority → Todo”的低阻力边界。在这些条件成立前使用 `0.x` 版本推进。
+
+## 弱模型与外部 Agent 边界
+
+- 不得给能力或可靠性未充分验证的模型“整体优化”“自由重构”“改善视觉”等开放授权。
+- 允许交付文档纠错、测试、CI、无障碍标签和范围明确且可自动验证的小 Bug；一次任务只处理一个边界。
+- 涉及 `index.html`、`src/styles.css`、正式视觉资产、migration、备份恢复或核心业务规则时，先提出方案或制作隔离预览，不得直接接入正式版本。
+- 弱模型使用独立分支或 worktree，不得直接提交、push、打标签或发布 `main`；最终 diff、测试和视觉结果由用户或可信 Agent 审查。
+- 不得删除视觉里程碑或本地探索归档；清理只能先列出引用和候选文件，等待用户明确批准。
+
 ## 当前源码布局
 
 - `migrations/`：顺序执行的 SQLite schema migration。
@@ -98,6 +124,7 @@ npm start
 ## 变更纪律
 
 - 修改前检查当前分支、工作树和无关改动；低风险 SUOWANG 变更直接在 `main` 收口。
+- 修改批准视觉资产前先运行视觉基线测试；测试失败即视为受保护内容发生变化，除非用户本轮明确批准新基线，否则不得更新哈希绕过失败。
 - 每个稳定业务规则都应有自动化测试；UI 改动必须真实验证 1920×1080、2560×1440 和 320px。
 - 保持键盘焦点、非颜色状态表达和 `prefers-reduced-motion`。
 - 不把私人主线、Todo、数据库、日志、截图、凭据或导出放进 Git。
