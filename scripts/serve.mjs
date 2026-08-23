@@ -16,8 +16,10 @@ import { AppError, SuowangService } from '../src/server/service.mjs';
 import {
   MIGRATIONS_DIR,
   PROJECT_ROOT,
+  resolveAccessMode,
   resolveDataDir,
   resolvePort,
+  resolveTailscaleIPv4,
 } from '../src/server/config.mjs';
 
 const mimeTypes = new Map([
@@ -102,10 +104,11 @@ function sendError(response, error) {
   });
 }
 
-function assertLocalRequest(request) {
+function assertTrustedRequest(request, allowedHosts) {
   const host = String(request.headers.host ?? '').toLowerCase();
-  if (!/^(127\.0\.0\.1|localhost)(:\d{1,5})?$/.test(host)) {
-    throw new AppError(403, 'invalid_host', 'SUOWANG 只接受本机访问。');
+  const hostname = host.replace(/:\d{1,5}$/, '');
+  if (!allowedHosts.has(hostname)) {
+    throw new AppError(403, 'invalid_host', 'SUOWANG 拒绝了未授权地址的访问。');
   }
   const origin = request.headers.origin;
   if (origin && origin !== `http://${host}`) {
@@ -337,14 +340,17 @@ export async function createAppServer({
   migrationsDir = MIGRATIONS_DIR,
   clock = () => new Date(),
   ensureBackup = true,
+  allowedHosts = ['127.0.0.1', 'localhost'],
+  closeRuntimeOnServerClose = true,
 } = {}) {
   const runtime = new DatabaseRuntime({ dataDir, migrationsDir });
   const service = new SuowangService(runtime, { clock });
   if (ensureBackup) await runtime.ensureDailyBackup(clock());
 
-  const server = createServer(async (request, response) => {
+  const trustedHosts = new Set(allowedHosts.map((host) => String(host).toLowerCase()));
+  const requestListener = async (request, response) => {
     try {
-      assertLocalRequest(request);
+      assertTrustedRequest(request, trustedHosts);
       const url = new URL(request.url ?? '/', 'http://127.0.0.1');
       if (await handleApi(request, response, url, { runtime, service, clock })) return;
 
@@ -365,10 +371,12 @@ export async function createAppServer({
       if (!response.headersSent) sendError(response, error);
       else response.destroy(error);
     }
-  });
+  };
+  const server = createServer(requestListener);
   server.runtime = runtime;
   server.service = service;
-  server.on('close', () => runtime.close());
+  server.createSibling = () => createServer(requestListener);
+  if (closeRuntimeOnServerClose) server.on('close', () => runtime.close());
   return server;
 }
 
@@ -376,12 +384,43 @@ const isDirectRun = process.argv[1]
   && normalize(process.argv[1]) === normalize(fileURLToPath(import.meta.url));
 if (isDirectRun) {
   const port = resolvePort();
-  const server = await createAppServer();
-  server.listen(port, '127.0.0.1', () => {
-    console.log(`SUOWANG: http://127.0.0.1:${port}/`);
-    console.log(`Data: ${server.runtime.describe().databasePath}`);
+  const accessMode = resolveAccessMode();
+  const tailscaleIp = accessMode === 'tailscale' ? resolveTailscaleIPv4() : null;
+  const allowedHosts = ['127.0.0.1', 'localhost', ...(tailscaleIp ? [tailscaleIp] : [])];
+  const server = await createAppServer({ allowedHosts, closeRuntimeOnServerClose: false });
+  const listeners = [server];
+
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(port, '127.0.0.1', resolve);
   });
-  const shutdown = () => server.close(() => process.exit(0));
+  console.log(`SUOWANG local: http://127.0.0.1:${port}/`);
+
+  if (tailscaleIp) {
+    const remoteServer = server.createSibling();
+    listeners.push(remoteServer);
+    try {
+      await new Promise((resolve, reject) => {
+        remoteServer.once('error', reject);
+        remoteServer.listen(port, tailscaleIp, resolve);
+      });
+    } catch (error) {
+      await new Promise((resolve) => server.close(resolve));
+      server.runtime.close();
+      throw error;
+    }
+    console.log(`SUOWANG Tailscale: http://${tailscaleIp}:${port}/`);
+  }
+  console.log(`Data: ${server.runtime.describe().databasePath}`);
+
+  let shuttingDown = false;
+  const shutdown = async () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    await Promise.all(listeners.map((listener) => new Promise((resolve) => listener.close(resolve))));
+    server.runtime.close();
+    process.exit(0);
+  };
   process.once('SIGINT', shutdown);
   process.once('SIGTERM', shutdown);
 }

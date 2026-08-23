@@ -1,19 +1,21 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
+import { request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { createAppServer } from '../scripts/serve.mjs';
 import { migrationsDir } from './helpers.mjs';
 
-async function createServerHarness(context) {
+async function createServerHarness(context, options = {}) {
   const dataDir = mkdtempSync(join(tmpdir(), 'suowang-server-test-'));
   const server = await createAppServer({
     dataDir,
     migrationsDir,
     ensureBackup: false,
     clock: () => new Date('2026-08-21T00:00:00.000Z'),
+    ...options,
   });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
@@ -30,6 +32,21 @@ async function jsonRequest(url, options = {}) {
     headers: options.body ? { 'content-type': 'application/json', ...options.headers } : options.headers,
   });
   return { response, body: await response.json() };
+}
+
+async function requestWithHeaders(url, headers) {
+  return new Promise((resolve, reject) => {
+    const request = httpRequest(url, { headers }, (response) => {
+      const chunks = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', () => resolve({
+        status: response.statusCode,
+        body: JSON.parse(Buffer.concat(chunks).toString('utf8')),
+      }));
+    });
+    request.on('error', reject);
+    request.end();
+  });
 }
 
 test('server exposes a database-backed health check, snapshot, and static shell', async (context) => {
@@ -175,4 +192,27 @@ test('server rejects cross-origin and non-JSON mutation attempts', async (contex
 
   const snapshot = await (await fetch(`${baseUrl}/api/snapshot`)).json();
   assert.equal(snapshot.states.find((state) => state.id === 'work').mainlines.length, 0);
+});
+
+test('tailscale mode accepts only its discovered address and same origin', async (context) => {
+  const baseUrl = await createServerHarness(context, {
+    allowedHosts: ['127.0.0.1', 'localhost', '100.64.0.42'],
+  });
+  const allowed = await requestWithHeaders(`${baseUrl}/health`, {
+    host: '100.64.0.42:2037',
+  });
+  assert.equal(allowed.status, 200);
+
+  const denied = await requestWithHeaders(`${baseUrl}/health`, {
+    host: '192.168.1.20:2037',
+  });
+  assert.equal(denied.status, 403);
+  assert.equal(denied.body.error.code, 'invalid_host');
+
+  const crossOrigin = await requestWithHeaders(`${baseUrl}/api/snapshot`, {
+    host: '100.64.0.42:2037',
+    origin: 'http://100.68.113.59:2037',
+  });
+  assert.equal(crossOrigin.status, 403);
+  assert.equal(crossOrigin.body.error.code, 'invalid_origin');
 });

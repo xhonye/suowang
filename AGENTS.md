@@ -95,7 +95,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 
 - `migrations/`：顺序执行的 SQLite schema migration。
 - `src/server/`：路径配置、数据库运行时和原子业务规则。
-- `scripts/serve.mjs`：loopback HTTP API、静态服务、导出和恢复。
+- `scripts/serve.mjs`：默认 loopback HTTP API；可选 Tailscale 双监听、静态服务、导出和恢复。
 - `src/api.js`：浏览器 API 客户端。
 - `src/view-model.js`：无 DOM 的显示规则。
 - `src/app.js`：页面渲染与交互编排。
@@ -120,6 +120,8 @@ npm start
 ```
 
 本地地址为 `http://127.0.0.1:2037/`，健康检查为 `http://127.0.0.1:2037/health`。
+
+默认访问边界永久保持仅本机。用户明确启用 `SUOWANG_ACCESS=tailscale` 时，服务在保留 loopback 的同时，只额外绑定自动发现的本机 Tailscale IPv4；不得绑定 `0.0.0.0`，不得把个人 IP、Tailnet 名称或访问配置提交到仓库。手机访问依赖同一 Tailnet 及其 ACL，不构成公网发布，也不提供应用级账号认证。
 
 ## 变更纪律
 

@@ -1,13 +1,13 @@
 # SUOWANG 本地接口速查
 
-这些端点供仓库内浏览器界面和自动化测试使用，不是公网或跨应用集成合同。基础地址为 `http://127.0.0.1:2037`。
+这些端点供仓库内浏览器界面和自动化测试使用，不是公网或跨应用集成合同。默认基础地址为 `http://127.0.0.1:2037`；可选 Tailscale 地址只用于同一 Tailnet 内的 SUOWANG 页面，不扩大 API 集成承诺。
 
 ## 请求规则
 
 - 普通写操作发送 `Content-Type: application/json`。
 - SQLite 恢复直接发送数据库字节，最大 250 MiB。
 - 头像上传发送 `image/png`、`image/jpeg` 或 `image/webp`，最大 5 MiB。
-- 服务只接受本机 Host；浏览器请求的 Origin 必须与 Host 同源。
+- 服务默认只接受本机 Host；显式启用 Tailscale 模式时额外接受自动发现的精确 Tailscale IP。浏览器请求的 Origin 必须与 Host 同源。
 
 成功的业务写操作返回最新 snapshot。错误统一为：
 

@@ -116,6 +116,18 @@ npm run install-shortcut
 
 以后双击桌面的 `SUOWANG`：已运行则直接打开，未运行则隐藏启动本地服务后打开浏览器。
 
+### 手机通过 Tailscale 访问（可选）
+
+电脑和手机安装并登录同一个 Tailscale 后，在电脑运行：
+
+```powershell
+suowang access tailscale
+```
+
+然后再次双击桌面 `SUOWANG`。命令会显示类似 `http://100.x.x.x:2037/` 的手机地址。该模式仍保留电脑本机入口，并且只额外监听本机 Tailscale 地址，不监听普通局域网或公网。SUOWANG 目前没有应用级账号认证，因此只应允许你信任的 Tailnet 设备访问；恢复仅本机模式运行 `suowang access local` 后再次启动。
+
+访问开关保存在仓库外的数据目录 `access.json`，个人 Tailscale IP 只在启动时自动发现，不写入项目文件，也不需要提交 `.env`。开源仓库只包含通用的可选能力。
+
 ## 数据位置
 
 业务数据不会写进仓库。

@@ -41,8 +41,12 @@ npm run install-shortcut
 |---|---|---|
 | `SUOWANG_DATA_DIR` | 本机优先 `D:/5Data/suowang`，否则系统应用数据目录 | 必须是绝对路径；保存数据库、备份、头像和日志 |
 | `SUOWANG_PORT` | `2037` | 本地开发服务端口，范围 1–65535 |
+| `SUOWANG_ACCESS` | `local` | `tailscale` 时保留本机监听，并额外绑定自动发现的 Tailscale IPv4 |
+| `SUOWANG_TAILSCALE_IP` | 自动发现 | 仅在机器存在多个 Tailscale IPv4 时显式指定；必须属于本机 `100.64.0.0/10` |
 
 桌面启动器按固定日常地址 `http://127.0.0.1:2037/` 工作。若临时改端口，应从命令行启动和访问，不要把它当成已更新的桌面入口。
+
+手机访问使用 `suowang access tailscale` 启用，使用 `suowang access local` 关闭。设置保存在数据目录的 `access.json`，不进入仓库；环境变量可用于临时覆盖。再次双击桌面入口时，启动器会确认现有进程确实是 SUOWANG 后自动切换监听模式。远程模式不绑定 `0.0.0.0`，手机必须登录同一 Tailnet，并受 Tailscale ACL 与 Windows 防火墙共同约束。
 
 ## 冒烟检查
 

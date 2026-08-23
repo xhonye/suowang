@@ -28,6 +28,7 @@
     "INSTALL.cmd",
     "migrations/",
     "scripts/cli.mjs",
+    "scripts/configure-access.ps1",
     "scripts/install-shortcut.ps1",
     "scripts/serve.mjs",
     "scripts/start.ps1",

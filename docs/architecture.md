@@ -44,7 +44,7 @@ scripts/serve.mjs
 
 内部 API 以 `GET /api/snapshot` 为读取入口；主线、Todo、设置和状态变更分别使用资源端点。`POST /api/todos/:id/reopen` 专门把历史 Todo 撤回为 active，并在原主线已结束时解除主线归属。完整方法表、请求类型和错误结构见 [integration-guide.md](integration-guide.md)。
 
-服务只接受 `Host: 127.0.0.1` 或 `localhost`。带 `Origin` 的请求必须与 Host 同源；JSON 变更请求必须使用 `application/json`。静态服务只暴露页面所需的前端文件与道路图片，不映射后端源码、仓库配置或 Git 元数据。这些边界用于阻止其他网页借浏览器访问本机数据，不代表面向外部系统的认证接口。
+服务默认只接受 `Host: 127.0.0.1` 或 `localhost`。显式启用 Tailscale 模式时，共享同一数据库与请求处理器的第二个 HTTP listener 只绑定自动发现的本机 Tailscale IPv4，并把该精确地址加入 Host 白名单；本机 listener 保持不变。服务从不绑定 `0.0.0.0`。带 `Origin` 的请求必须与 Host 同源；JSON 变更请求必须使用 `application/json`。静态服务只暴露页面所需的前端文件与道路图片，不映射后端源码、仓库配置或 Git 元数据。这些边界用于阻止其他网页借浏览器访问数据；Tailscale 模式依赖 Tailnet ACL，不代表应用具备账号认证或公网接口。
 
 ## 数据生命周期
 
