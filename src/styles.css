@@ -143,7 +143,6 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 .priority-minimal-step { padding: 0; color: var(--muted); text-align: left; background: transparent; border: 0; cursor: text; font-size: 11px; font-style: italic; line-height: 1.55; }
 .priority-minimal-step span { color: var(--signal-strong); font-style: normal; }
 .priority-minimal-step.is-empty { color: var(--signal-strong); font-style: normal; opacity: .62; }
-.priority-ongoing-status { color: var(--signal-strong); font-family: var(--utility-font); font-size: 9px; letter-spacing: .03em; }
 .priority-copy small { color: var(--signal-strong); font-size: 10px; }
 .priority-empty { display: grid; height: 100%; place-items: center start; padding: 0 20px; color: var(--quiet); font-size: 12px; }
 .complete-button { display: grid; flex: 0 0 auto; width: 36px; height: 36px; place-items: center; color: var(--signal-strong); background: white; border: 1px solid rgba(78, 131, 156, 0.34); border-radius: 50%; cursor: pointer; }
@@ -157,16 +156,15 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 .todo-column > header > span { display: grid; min-width: 24px; height: 24px; place-items: center; color: var(--muted); background: var(--fog); border-radius: 999px; font-family: var(--utility-font); font-size: 10px; }
 .todo-list { min-height: 0; overflow: auto; padding: 6px 7px; scrollbar-width: thin; scrollbar-color: rgba(78, 131, 156, 0.26) transparent; }
 .todo-list.drop-active { background: rgba(220, 235, 240, 0.46); outline: 1px dashed var(--signal); outline-offset: -5px; }
-.todo-row { display: grid; grid-template-columns: minmax(0, 1fr) 34px; align-items: center; gap: 8px; min-height: 39px; padding: 4px 5px 4px 10px; border-bottom: 1px solid rgba(55, 83, 93, 0.08); cursor: grab; }
+.todo-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 39px; padding: 4px 5px 4px 10px; border-bottom: 1px solid rgba(55, 83, 93, 0.08); cursor: grab; }
 .todo-row:last-child { border-bottom: 0; }
 .todo-row:hover { background: rgba(220, 235, 240, 0.26); border-radius: 9px; }
 .todo-copy { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 6px; overflow: hidden; }
 .todo-title, .todo-minimal-step { overflow: hidden; min-width: 0; padding: 6px 0; text-align: left; background: transparent; border: 0; cursor: text; text-overflow: ellipsis; white-space: nowrap; }
-.todo-title { display: flex; align-items: center; gap: 5px; font-size: 12px; }
-.todo-title > span:last-child { overflow: hidden; min-width: 0; text-overflow: ellipsis; }
-.todo-ongoing-badge { flex: 0 0 auto; padding: 2px 5px; color: var(--signal-strong); background: rgba(205, 228, 237, .72); border-radius: 999px; font-family: var(--utility-font); font-size: 8px; font-weight: 680; }
-.todo-row.completed-today { background: rgba(222, 236, 229, .32); }
-.todo-row .ongoing-complete:disabled { color: #4d7e67; background: rgba(211, 232, 219, .88); opacity: 1; }
+.todo-title { font-size: 12px; }
+.todo-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
+.todo-ongoing-count, .priority-ongoing-count { color: var(--quiet); font-family: var(--utility-font); font-size: 9px; font-variant-numeric: tabular-nums; letter-spacing: .01em; white-space: nowrap; opacity: .72; }
+.todo-row .ongoing-complete.is-completed-today:disabled { color: var(--signal-strong); background: rgba(220, 235, 240, .72); border-color: rgba(78, 131, 156, .24); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .68); opacity: 1; }
 .todo-copy:not(.has-minimal-step) { grid-template-columns: minmax(0, 1fr) 0fr; transition: grid-template-columns 180ms ease; }
 .todo-copy:not(.has-minimal-step) .todo-title { grid-column: 1; max-width: 100%; }
 .todo-separator { color: rgba(78, 131, 156, .36); font-size: 11px; }
@@ -425,10 +423,10 @@ html::-webkit-scrollbar-thumb:hover, .page-stage::-webkit-scrollbar-thumb:hover,
 .priority-title { overflow: visible; font-size: 18px; line-height: 1.45; text-overflow: initial; white-space: normal; }
 .priority-minimal-step { font-size: 12px; }
 .priority-empty { height: 100%; place-items: center; padding: 20px; text-align: center; line-height: 1.7; }
-.priority-footer { display: block; }
+.priority-footer { display: flex; align-items: center; justify-content: flex-end; gap: 11px; }
 .stuck-toggle { align-self: start; min-height: 30px; padding: 2px 0 0 8px; color: #6f858e; background: transparent; border: 0; cursor: pointer; font-size: 10px; text-decoration: underline; text-decoration-color: rgba(78, 131, 156, .22); text-underline-offset: 4px; }
 .stuck-toggle:hover, .stuck-toggle[aria-expanded="true"] { color: var(--signal-strong); text-decoration-color: rgba(78, 131, 156, .58); }
-.priority-complete { width: 100%; height: 40px; color: white; background: var(--signal-strong); border: 0; border-radius: 11px; font-size: 12px; font-weight: 680; }
+.priority-complete { flex: 1; width: auto; height: 40px; color: white; background: var(--signal-strong); border: 0; border-radius: 11px; font-size: 12px; font-weight: 680; }
 .priority-complete:hover { background: #2e6078; }
 .priority-zone.stuck-open { min-height: 252px; }
 .priority-zone.stuck-open .priority-label { border-bottom: 1px solid rgba(78, 131, 156, .13); }

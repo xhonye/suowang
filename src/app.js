@@ -227,9 +227,7 @@ function renderCurrentDetail(state) {
 
 function todoRow(todo) {
   const ongoing = todo.kind === 'ongoing';
-  const ongoingBadge = ongoing
-    ? `<span class="todo-ongoing-badge" title="累计完成 ${todo.completionCount} 次">持续 ${todo.completionCount}</span>`
-    : '';
+  const ongoingDescription = `持续事项，累计 ${todo.completionCount} 次`;
   const minimalStep = todo.minimalStep ? `
     <span class="todo-separator" aria-hidden="true">｜</span>
     <button class="todo-minimal-step" type="button" data-edit-todo="${todo.id}" data-field="minimalStep" data-value="${html(todo.minimalStep)}">${html(todo.minimalStep)}</button>
@@ -237,12 +235,15 @@ function todoRow(todo) {
     <button class="todo-minimal-step todo-minimal-step-empty" type="button" data-edit-todo="${todo.id}" data-field="minimalStep" data-value="" aria-label="为${html(todo.title)}添加最小一步">＋ 最小一步</button>
   `;
   return `
-    <div class="todo-row ${ongoing ? 'todo-row-ongoing' : ''} ${todo.completedToday ? 'completed-today' : ''}" draggable="true" tabindex="0" data-todo-id="${todo.id}" aria-label="${ongoing ? `持续事项，累计完成 ${todo.completionCount} 次，` : '事项：'}${html(todo.title)}${todo.minimalStep ? `，最小一步：${html(todo.minimalStep)}` : ''}">
+    <div class="todo-row ${ongoing ? 'todo-row-ongoing' : ''}" draggable="true" tabindex="0" data-todo-id="${todo.id}" aria-label="${ongoing ? `${ongoingDescription}，` : '事项：'}${html(todo.title)}${todo.minimalStep ? `，最小一步：${html(todo.minimalStep)}` : ''}${ongoing && todo.completedToday ? '，今天已完成' : ''}">
       <div class="todo-copy ${todo.minimalStep ? 'has-minimal-step' : ''}">
-        <button class="todo-title" type="button" data-edit-todo="${todo.id}" data-field="title" data-value="${html(todo.title)}">${ongoingBadge}<span>${html(todo.title)}</span></button>
+        <button class="todo-title" type="button" data-edit-todo="${todo.id}" data-field="title" data-value="${html(todo.title)}">${html(todo.title)}</button>
         ${minimalStep}
       </div>
-      <button class="complete-button ${ongoing ? 'ongoing-complete' : ''}" type="button" ${ongoing ? `data-record-todo="${todo.id}"` : `data-complete-todo="${todo.id}"`} ${todo.completedToday ? 'disabled' : ''} aria-label="${ongoing ? (todo.completedToday ? `今天已完成，累计 ${todo.completionCount} 次` : `记录今天完成 ${html(todo.title)}`) : `完成 ${html(todo.title)}`}">✓</button>
+      <div class="todo-actions">
+        ${ongoing ? `<span class="todo-ongoing-count" title="${ongoingDescription}" aria-label="${ongoingDescription}">↻ ${todo.completionCount}</span>` : ''}
+        <button class="complete-button ${ongoing ? 'ongoing-complete' : ''} ${todo.completedToday ? 'is-completed-today' : ''}" type="button" ${ongoing ? `data-record-todo="${todo.id}"` : `data-complete-todo="${todo.id}"`} ${todo.completedToday ? 'disabled' : ''} aria-label="${ongoing ? (todo.completedToday ? `今天已完成，累计 ${todo.completionCount} 次` : `记录今天完成 ${html(todo.title)}`) : `完成 ${html(todo.title)}`}">✓</button>
+      </div>
     </div>
   `;
 }
@@ -339,12 +340,12 @@ function renderPriority(state) {
     <div class="priority-card" tabindex="0" data-todo-id="${priority.id}" aria-label="下一步：${html(priority.title)}">
       <div class="priority-copy">
         <button class="priority-title" type="button" data-edit-todo="${priority.id}" data-field="title" data-value="${html(priority.title)}">${html(priority.title)}</button>
-        ${priority.kind === 'ongoing' ? `<span class="priority-ongoing-status">持续事项 · 累计 ${priority.completionCount} 次</span>` : ''}
         <button class="priority-minimal-step ${priority.minimalStep ? '' : 'is-empty'}" type="button" data-edit-todo="${priority.id}" data-field="minimalStep" data-value="${html(priority.minimalStep)}">
           ${priority.minimalStep ? `<span>最小一步：</span>${html(priority.minimalStep)}` : '＋ 添加最小一步'}
         </button>
       </div>
       <div class="priority-footer">
+        ${priority.kind === 'ongoing' ? `<span class="priority-ongoing-count" title="持续事项，累计 ${priority.completionCount} 次" aria-label="持续事项，累计 ${priority.completionCount} 次">↻ ${priority.completionCount}</span>` : ''}
         <button class="complete-button priority-complete" type="button" ${priority.kind === 'ongoing' ? `data-record-todo="${priority.id}"` : `data-complete-todo="${priority.id}"`} aria-label="${priority.kind === 'ongoing' ? `记录今天完成 ${html(priority.title)}` : `完成 ${html(priority.title)}`}">${priority.kind === 'ongoing' ? '今天完成' : '完成'}</button>
       </div>
     </div>

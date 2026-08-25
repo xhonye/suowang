@@ -117,7 +117,11 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.doesNotMatch(stylesSource, /\.todo-column\s*\{\s*min-height:\s*260px/);
   assert.match(stylesSource, /@media \(max-width: 900px\)[\s\S]*?\.priority-zone\s*\{[^}]*min-height:\s*160px/);
   assert.match(stylesSource, /@media \(max-width: 900px\)[\s\S]*?\.priority-label p\s*\{\s*display:\s*none/);
-  assert.match(appSource, /持续事项 · 累计/);
+  assert.doesNotMatch(appSource, /持续事项 · 累计/);
+  assert.match(appSource, /class="todo-ongoing-count"/);
+  assert.match(appSource, /class="priority-ongoing-count"/);
+  assert.doesNotMatch(stylesSource, /\.todo-ongoing-badge/);
+  assert.doesNotMatch(stylesSource, /\.todo-row\.completed-today/);
   assert.match(appSource, /data-record-todo/);
   assert.match(appSource, /撤回今天/);
   assert.match(appSource, /mainline-todo-form'\)\.querySelector\('button\[type="submit"\]'\)/);
