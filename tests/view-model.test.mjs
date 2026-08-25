@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   currentMainline,
+  daylightEmojiForHour,
   focusDays,
   greetingForHour,
   priorityTodo,
@@ -31,6 +32,10 @@ test('greeting boundaries follow the fixed local-time contract', () => {
   assert.deepEqual(
     [5, 6, 8, 9, 10, 11, 12, 13, 16, 17, 21, 22].map(greetingForHour),
     ['夜深了', '早上好', '早上好', '上午好', '上午好', '中午好', '中午好', '下午好', '下午好', '晚上好', '晚上好', '夜深了'],
+  );
+  assert.deepEqual(
+    [5, 6, 16, 17, 21, 22].map(daylightEmojiForHour),
+    ['🌙', '☀️', '☀️', '🌙', '🌙', '🌙'],
   );
 });
 

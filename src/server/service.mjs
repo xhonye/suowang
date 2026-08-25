@@ -382,7 +382,7 @@ export class SuowangService {
       }
       if (Object.hasOwn(changes, 'successCriteria')) {
         fields.push('success_criteria = ?');
-        values.push(optionalText(changes.successCriteria, '完成标准', 240));
+        values.push(optionalText(changes.successCriteria, '现阶段完成标准', 240));
       }
       if (Object.hasOwn(changes, 'horizon')) {
         fields.push('horizon = ?');

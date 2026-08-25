@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#f2f6f5" />
     <meta name="description" content="所往 SUOWANG · 人生主线驾驶舱" />
     <title>所往 SUOWANG · 人生主线驾驶舱</title>
-    <link rel="stylesheet" href="/src/styles.css?v=19" />
+    <link rel="stylesheet" href="/src/styles.css?v=22" />
   </head>
   <body>
     <a class="skip-link" href="#dashboard-page">跳到驾驶舱</a>
@@ -57,6 +57,23 @@
             <span>充分参与这一次人生</span>
           </div>
         </header>
+        <script>
+          (() => {
+            const now = new Date();
+            const hour = now.getHours();
+            const greeting = hour >= 6 && hour < 9 ? '早上好'
+              : hour >= 9 && hour < 11 ? '上午好'
+              : hour >= 11 && hour < 13 ? '中午好'
+              : hour >= 13 && hour < 17 ? '下午好'
+              : hour >= 17 && hour < 22 ? '晚上好'
+              : '夜深了';
+            document.getElementById('daylight-icon').textContent = hour >= 6 && hour < 17 ? '☀️' : '🌙';
+            document.getElementById('greeting').textContent = greeting;
+            document.getElementById('local-date').textContent = new Intl.DateTimeFormat('zh-CN', {
+              month: 'long', day: 'numeric', weekday: 'short',
+            }).format(now);
+          })();
+        </script>
 
         <div class="error-banner" id="error-banner" role="alert" hidden>
           <div><strong id="error-title">操作没有完成</strong><p id="error-message"></p></div>
@@ -86,8 +103,8 @@
               <span class="road-stage-fade" aria-hidden="true"></span>
             </section>
 
-            <section class="mainline-deck" id="mainline-deck" aria-label="三个进行中主线槽">
-              <h2 class="visually-hidden">进行中主线</h2>
+            <section class="mainline-deck" id="mainline-deck" aria-label="三个主线槽">
+              <h2 class="visually-hidden">主线</h2>
               <div class="mainline-slots" id="mainline-slots"></div>
             </section>
 
@@ -219,6 +236,6 @@
       <p>正在连接本地驾驶舱</p>
     </div>
 
-    <script type="module" src="/src/app.js?v=8"></script>
+    <script type="module" src="/src/app.js?v=10"></script>
   </body>
 </html>

@@ -1,6 +1,7 @@
 import { api } from './api.js';
 import {
   currentMainline,
+  daylightEmojiForHour,
   focusDays,
   formatLocalDate,
   greetingForHour,
@@ -42,10 +43,6 @@ function modeIcon(stateId) {
     return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="7.5" width="17" height="12" rx="2"/><path d="M9 7.5V5.8c0-.7.6-1.3 1.3-1.3h3.4c.7 0 1.3.6 1.3 1.3v1.7M3.5 12h17M10 12v1.5h4V12"/></svg>';
   }
   return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.2 12 4.5l8.5 6.7V20h-17Z"/><path d="M9 20v-5.5h6V20"/></svg>';
-}
-
-function daylightEmojiForHour(hour) {
-  return hour >= 6 && hour < 18 ? '☀️' : '🌙';
 }
 
 function activeState() {
@@ -174,10 +171,12 @@ function renderMainlineSlots(state) {
           <div class="mainline-card ${mainline.id === state.currentMainlineId ? 'current' : ''}"
             role="button" tabindex="0" draggable="true" data-mainline-id="${mainline.id}"
             aria-label="${html(mainline.name)}${mainline.id === state.currentMainlineId ? '，当前主线' : '，点击设为当前主线'}">
-            <span class="mainline-state">${mainline.id === state.currentMainlineId ? '当前' : '进行中'}</span>
+            ${mainline.id === state.currentMainlineId ? '<span class="mainline-state">当前主线</span>' : ''}
             <span class="mainline-name">${html(mainline.name)}</span>
             <span class="mainline-goal">${html(mainline.goal || '添加一句话目标')}</span>
-            <button class="mainline-more" type="button" data-mainline-menu="${mainline.id}" aria-label="${html(mainline.name)}的更多操作">•••</button>
+            <button class="mainline-more" type="button" data-mainline-menu="${mainline.id}" aria-label="${html(mainline.name)}的更多操作">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.65"/><circle cx="12" cy="12" r="1.65"/><circle cx="18" cy="12" r="1.65"/></svg>
+            </button>
           </div>
         </div>
       `;
@@ -214,7 +213,7 @@ function renderCurrentDetail(state) {
   const fields = [
     ['name', '当前主线', current.name, '输入主线名称'],
     ['goal', '一句话目标', current.goal, '添加一句话目标'],
-    ['successCriteria', '完成标准', current.successCriteria, '添加完成标准'],
+    ['successCriteria', '现阶段完成标准', current.successCriteria, '添加现阶段完成标准'],
     ['horizon', '阶段跨度', current.horizon, '添加阶段跨度'],
   ];
   container.innerHTML = fields.map(([field, label, value, placeholder]) => `
@@ -398,7 +397,7 @@ function renderHistory() {
     const details = item.type === 'mainline' ? `
       <div class="history-details" ${expanded ? '' : 'hidden'}>
         <div><small>一句话目标</small><p>${html(item.goal || '未填写')}</p></div>
-        <div><small>完成标准</small><p>${html(item.successCriteria || '未填写')}</p></div>
+        <div><small>现阶段完成标准</small><p>${html(item.successCriteria || '未填写')}</p></div>
         <div><small>阶段跨度</small><p>${html(item.horizon || '未填写')}</p></div>
         <div class="history-bound-todos"><small>最终仍绑定的事项</small>
           ${item.boundTodos.length ? `<ul>${item.boundTodos.map((todo) => `<li>${html(todo.title)}${todo.minimalStep ? ` ｜ ${html(todo.minimalStep)}` : ''} · ${statusLabel(todo.status)}</li>`).join('')}</ul>` : '<p>没有。</p>'}
@@ -523,11 +522,12 @@ function openContextMenu(type, id, x, y) {
     `
     : todo?.kind === 'ongoing' ? `
       ${todo.completedToday ? `<button type="button" role="menuitem" data-context-action="undo-record" data-target-id="${id}">撤回今天</button>` : ''}
-      <button type="button" role="menuitem" data-context-action="complete-ongoing" data-target-id="${id}">达成并结束</button>
-      <button type="button" role="menuitem" data-context-action="abandon-todo" data-target-id="${id}">不再继续</button>
+      <button type="button" role="menuitem" data-context-action="complete-todo" data-target-id="${id}">完成事项</button>
+      <button type="button" role="menuitem" data-context-action="abandon-todo" data-target-id="${id}">放弃事项</button>
       <button class="danger" type="button" role="menuitem" data-context-action="delete-todo" data-target-id="${id}">删除事项</button>
     ` : `
       <button type="button" role="menuitem" data-context-action="make-ongoing" data-target-id="${id}">设为持续事项</button>
+      <button type="button" role="menuitem" data-context-action="complete-todo" data-target-id="${id}">完成事项</button>
       <button type="button" role="menuitem" data-context-action="abandon-todo" data-target-id="${id}">放弃事项</button>
       <button class="danger" type="button" role="menuitem" data-context-action="delete-todo" data-target-id="${id}">删除事项</button>
     `;
@@ -850,8 +850,8 @@ function setupContextMenu() {
       await mutate(() => api.updateTodo(id, { kind: 'ongoing' }), '已设为持续事项');
     } else if (action === 'undo-record') {
       await mutate(() => api.undoTodoRecord(id), '今天的完成记录已撤回');
-    } else if (action === 'complete-ongoing') {
-      await mutate(() => api.completeTodo(id), '持续事项已达成并进入行迹');
+    } else if (action === 'complete-todo') {
+      await mutate(() => api.completeTodo(id), '事项已完成并进入行迹');
     } else if (action === 'delete-todo') {
       const todo = todoById(id);
       if (todo) confirmDeleteTodo(todo);
@@ -981,7 +981,7 @@ function setupHistory() {
       openDialog({
         kicker: '从行迹重新出发',
         title: '复制为新的独立主线',
-        message: '新主线会获得新 ID，并预填目标、完成标准和阶段跨度；不会复制旧事项。',
+        message: '新主线会获得新 ID，并预填目标、现阶段完成标准和阶段跨度；不会复制旧事项。',
         fields: `<label><span>新的全局唯一名称</span><input name="name" maxlength="60" required value="${html(item.name)} · 新阶段" /></label>`,
         confirmLabel: '创建新主线',
         onConfirm: async ({ name }) => {
@@ -1058,6 +1058,14 @@ function setupSettings() {
 }
 
 function setup() {
+  const pageStage = document.querySelector('.page-stage');
+  const topbar = document.querySelector('.topbar');
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  pageStage.scrollTop = 0;
+  const syncTopbarSurface = () => topbar.classList.toggle('is-scrolled', pageStage.scrollTop > 20);
+  pageStage.addEventListener('scroll', syncTopbarSurface, { passive: true });
+  syncTopbarSurface();
+  requestAnimationFrame(() => topbar.classList.add('is-ready'));
   setupNavigation();
   setupDashboardEvents();
   setupContextMenu();

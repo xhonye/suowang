@@ -43,6 +43,10 @@ export function greetingForHour(hour) {
   return '夜深了';
 }
 
+export function daylightEmojiForHour(hour) {
+  return hour >= 6 && hour < 17 ? '☀️' : '🌙';
+}
+
 export function formatLocalDate(date = new Date()) {
   return new Intl.DateTimeFormat('zh-CN', {
     month: 'long', day: 'numeric', weekday: 'short',

@@ -105,9 +105,16 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.equal(styles.status, 200);
   const stylesSource = await styles.text();
   assert.match(stylesSource, /scrollbar-gutter:\s*stable/);
+  assert.match(stylesSource, /\.page-stage\s*\{[^}]*height:\s*100%[^}]*overflow-y:\s*auto/);
+  assert.match(stylesSource, /\.topbar\.is-scrolled\s*\{[^}]*background:\s*rgba\(242, 246, 245, \.92\)/);
+  assert.match(stylesSource, /\.topbar\.is-ready\s*\{[^}]*transition:/);
+  assert.match(stylesSource, /\.quick-add button\s*\{[^}]*min-width:\s*44px[^}]*height:\s*32px[^}]*font-size:\s*10px/);
+  assert.match(stylesSource, /\.todo-row \.complete-button\s*\{[^}]*width:\s*32px[^}]*height:\s*32px[^}]*border-radius:\s*8px[^}]*font-size:\s*10px/);
+  assert.match(stylesSource, /\.road-stage\s*\{[^}]*height:\s*clamp\(470px,\s*46vh,\s*500px\)/);
+  assert.match(stylesSource, /\.road-image\s*\{[^}]*object-fit:\s*cover[^}]*object-position:\s*center 58%/);
   assert.match(stylesSource, /\.page-stage::\-webkit-scrollbar-thumb/);
-  assert.match(stylesSource, /\.settings-page::\-webkit-scrollbar-thumb/);
-  assert.match(stylesSource, /html::\-webkit-scrollbar-thumb/);
+  assert.doesNotMatch(stylesSource, /\.settings-page::\-webkit-scrollbar-thumb/);
+  assert.doesNotMatch(stylesSource, /html::\-webkit-scrollbar-thumb/);
   assert.match(stylesSource, /\.road-stage\[data-active-state="restore"\]/);
   assert.match(stylesSource, /object-fit:\s*cover/);
   assert.match(stylesSource, /env\(safe-area-inset-bottom\)/);
@@ -124,6 +131,14 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.doesNotMatch(stylesSource, /\.todo-row\.completed-today/);
   assert.match(appSource, /data-record-todo/);
   assert.match(appSource, /撤回今天/);
+  assert.doesNotMatch(appSource, />进行中</);
+  assert.match(appSource, /<span class="mainline-state">当前主线<\/span>/);
+  assert.match(appSource, /<circle cx="6" cy="12" r="1\.65"\/>/);
+  assert.match(appSource, />完成事项<\/button>/);
+  assert.match(appSource, />放弃事项<\/button>/);
+  assert.match(appSource, /现阶段完成标准/);
+  assert.match(appSource, /pageStage\.scrollTop > 20/);
+  assert.match(appSource, /history\.scrollRestoration = 'manual'/);
   assert.match(appSource, /mainline-todo-form'\)\.querySelector\('button\[type="submit"\]'\)/);
 });
 
