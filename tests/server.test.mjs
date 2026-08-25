@@ -54,7 +54,7 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   const health = await fetch(`${baseUrl}/health`);
   assert.equal(health.status, 200);
   assert.deepEqual(await health.json(), {
-    status: 'ok', app: 'suowang', version: '0.1.0', database: 'ready',
+    status: 'ok', app: 'suowang', version: '0.1.1', database: 'ready',
   });
 
   const snapshot = await fetch(`${baseUrl}/api/snapshot`);

@@ -8,7 +8,7 @@ const cliPath = fileURLToPath(new URL('../scripts/cli.mjs', import.meta.url));
 test('CLI exposes stable start and shortcut commands', () => {
   const result = spawnSync(process.execPath, [cliPath, '--help'], { encoding: 'utf8' });
   assert.equal(result.status, 0);
-  assert.match(result.stdout, /SUOWANG 0\.1\.0/);
+  assert.match(result.stdout, /SUOWANG 0\.1\.1/);
   assert.match(result.stdout, /suowang start/);
   assert.match(result.stdout, /suowang access tailscale/);
   assert.match(result.stdout, /suowang install-shortcut/);

@@ -13,7 +13,7 @@
 发布到 npm 后：
 
 ```powershell
-npm install --global suowang@0.1.0
+npm install --global suowang@0.1.1
 suowang install-shortcut
 suowang
 ```
@@ -21,7 +21,7 @@ suowang
 仅有私有 GitHub 仓库权限、npm 包尚未发布时：
 
 ```powershell
-npm install --global github:xhonye/suowang#v0.1.0
+npm install --global github:xhonye/suowang#v0.1.1
 suowang install-shortcut
 ```
 
@@ -57,7 +57,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 正常返回包含：
 
 ```json
-{"status":"ok","app":"suowang","version":"0.1.0","database":"ready"}
+{"status":"ok","app":"suowang","version":"0.1.1","database":"ready"}
 ```
 
 默认正式数据库为 `D:/5Data/suowang/suowang.db`。不要手工编辑、复制运行中的数据库或把它放进仓库；使用设置页的 SQLite 导出取得一致性副本。

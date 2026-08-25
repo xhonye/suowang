@@ -168,7 +168,7 @@ async function handleApi(request, response, url, { runtime, service, clock }) {
   const method = request.method ?? 'GET';
 
   if (pathname === '/health' && method === 'GET') {
-    sendJson(response, 200, { status: 'ok', app: 'suowang', version: '0.1.0', database: 'ready' });
+    sendJson(response, 200, { status: 'ok', app: 'suowang', version: '0.1.1', database: 'ready' });
     return true;
   }
   if (pathname === '/api/snapshot' && method === 'GET') {

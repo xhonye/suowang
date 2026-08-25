@@ -21,6 +21,7 @@ progress.md
 *.sqlite
 *.sqlite3
 .cache/
+.release-cache/
 .pytest_cache/
 __pycache__/
 

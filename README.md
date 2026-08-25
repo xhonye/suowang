@@ -84,17 +84,21 @@
 
 ## 安装与运行
 
-需要 Node 22 或更高版本。
+### Windows 普通用户（推荐）
 
-### Windows 双击安装
+从 GitHub Release 下载 `SUOWANG-Setup-*.exe`：双击安装，随后从桌面「所往 SUOWANG」图标打开即可。它自带运行环境，不需要安装 Node.js、npm 或使用命令行。
 
-从 GitHub Release 下载并解压 `SUOWANG-0.1.0`，确认电脑已安装 Node.js 22+，然后双击 `INSTALL.cmd`。它会安装依赖、创建桌面 `SUOWANG` 快捷方式并打开应用。以后只需双击桌面图标。
+如果你不想安装，可下载 `SUOWANG-Portable-*.zip`，解压后双击 `SUOWANG.cmd`。请只从官方 Release 下载；首次运行新版本时，Windows 可能会要求确认。
+
+### 开发者与源码使用
+
+源码运行、`npm install --global` 安装与现有的 `INSTALL.cmd` 需要 Node 22 或更高版本。
 
 ### 交给本地 Agent
 
 把下面一句发给能使用终端的本地 Agent：
 
-> 请安装 SUOWANG 0.1.0：先用 `npm view suowang@0.1.0 version` 核对 npm 版本存在，再运行 `npm install --global suowang@0.1.0`；若 npm 包尚未发布但你有 GitHub 仓库权限，则运行 `npm install --global github:xhonye/suowang#v0.1.0`。然后运行 `suowang install-shortcut`，验证 `http://127.0.0.1:2037/health` 正常并打开 SUOWANG。不要读取、移动或覆盖已有的 `SUOWANG_DATA_DIR` 数据，也不要退回安装会漂移的最新 `main`。
+> 请安装 SUOWANG 0.1.1：先用 `npm view suowang@0.1.1 version` 核对 npm 版本存在，再运行 `npm install --global suowang@0.1.1`；若 npm 包尚未发布但你有 GitHub 仓库权限，则运行 `npm install --global github:xhonye/suowang#v0.1.1`。然后运行 `suowang install-shortcut`，验证 `http://127.0.0.1:2037/health` 正常并打开 SUOWANG。不要读取、移动或覆盖已有的 `SUOWANG_DATA_DIR` 数据，也不要退回安装会漂移的最新 `main`。
 
 安装为全局 npm 命令后也可以直接运行：
 

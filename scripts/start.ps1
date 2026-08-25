@@ -92,8 +92,13 @@ function Stop-VerifiedSuowangServer {
 
 try {
     $accessMode = Get-SuowangAccessMode
-    $nodeCommand = Get-Command node -ErrorAction Stop
-    $nodeMajor = [int]((& $nodeCommand.Source --version).TrimStart('v').Split('.')[0])
+    $bundledNode = Join-Path $projectRoot 'runtime/node.exe'
+    $nodePath = if (Test-Path -LiteralPath $bundledNode -PathType Leaf) {
+        $bundledNode
+    } else {
+        (Get-Command node -ErrorAction Stop).Source
+    }
+    $nodeMajor = [int]((& $nodePath --version).TrimStart('v').Split('.')[0])
     if ($nodeMajor -lt 22) {
         throw "检测到 Node $nodeMajor。SUOWANG 需要 Node 22 或更高版本。"
     }
@@ -124,7 +129,7 @@ try {
         $stderrLog = Join-Path $logsDir 'latest-stderr.log'
 
         Start-Process `
-            -FilePath $nodeCommand.Source `
+            -FilePath $nodePath `
             -ArgumentList 'scripts/serve.mjs' `
             -WorkingDirectory $projectRoot `
             -WindowStyle Hidden `
