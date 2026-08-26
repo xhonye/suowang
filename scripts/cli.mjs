@@ -18,7 +18,7 @@ function run(executable, args) {
 }
 
 function printHelp() {
-  console.log(`所往 SUOWANG 0.1.1
+  console.log(`所往 SUOWANG 0.1.2
 
 Usage:
   suowang                    Start SUOWANG and open it

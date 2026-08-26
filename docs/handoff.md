@@ -9,6 +9,7 @@
 - 主线结束时逐条处理 active 事项，行迹主线复制为新主线。
 - SQLite migration、每日备份、JSON/SQLite 导出、整库安全恢复和本地头像。
 - Windows 双击入口、重复启动保护和桌面快捷方式。
+- macOS Apple Silicon `.app` / `.dmg` 启动壳与 GitHub Actions 构建入口；内置 arm64 Node 和 SQLite 依赖，仍使用浏览器 UI。
 - npm CLI（`suowang`）与双击安装入口（`INSTALL.cmd`）。
 - 1920×1080、2560×1440 与 320px 响应式驾驶舱。
 
@@ -17,6 +18,7 @@
 ## 真实运行边界
 
 - 正式数据在仓库外，当前本机默认目录为 `D:/5Data/suowang`。
+- macOS 正式数据在 `~/Library/Application Support/SUOWANG/`；首版仅面向 Apple Silicon，未签名、未公证。
 - V0.1 不依赖 LLM、账号、云服务、遥测或远程数据库。
 - 本地 HTTP 服务默认只接受 loopback Host 和同源浏览器请求；可显式启用受限 Tailscale 双监听。
 - JSON 是阅读导出；只有 SQLite 导出能用于恢复。
@@ -33,6 +35,7 @@
 - 内部端点：`docs/integration-guide.md`
 - 启动、备份与故障处理：`docs/operator-runbook.md`
 - 发布记录：`CHANGELOG.md`
+- macOS 发行构建：`scripts/build-macos-release.sh`、`scripts/macos-launcher.sh`、`.github/workflows/release-macos.yml`
 
 ## 变更闸门
 

@@ -90,6 +90,12 @@
 
 如果你不想安装，可下载 `SUOWANG-Portable-*.zip`，解压后双击 `SUOWANG.cmd`。请只从官方 Release 下载；首次运行新版本时，Windows 可能会要求确认。
 
+### macOS（Apple Silicon，0.1.2 起）
+
+适用于 M1 及以后芯片的 Mac。从 GitHub Release 下载 `SUOWANG-*-mac-arm64.dmg`，打开后将「所往 SUOWANG」拖入 Applications（应用程序），然后双击打开。它自带运行环境，会自动打开浏览器，不需要安装 Node.js、npm 或使用终端。
+
+首个未签名测试版首次打开时，macOS 可能会提示未知开发者：按住 Control 点击「所往 SUOWANG」并选择“打开”，再确认一次即可。
+
 ### 开发者与源码使用
 
 源码运行、`npm install --global` 安装与现有的 `INSTALL.cmd` 需要 Node 22 或更高版本。
@@ -98,7 +104,7 @@
 
 把下面一句发给能使用终端的本地 Agent：
 
-> 请安装 SUOWANG 0.1.1：先用 `npm view suowang@0.1.1 version` 核对 npm 版本存在，再运行 `npm install --global suowang@0.1.1`；若 npm 包尚未发布但你有 GitHub 仓库权限，则运行 `npm install --global github:xhonye/suowang#v0.1.1`。然后运行 `suowang install-shortcut`，验证 `http://127.0.0.1:2037/health` 正常并打开 SUOWANG。不要读取、移动或覆盖已有的 `SUOWANG_DATA_DIR` 数据，也不要退回安装会漂移的最新 `main`。
+> 请安装已确认版本的 SUOWANG：若该版本已发布到 npm，先用 `npm view suowang@<version> version` 核对后运行 `npm install --global suowang@<version>`；若你有 GitHub 仓库权限，则运行 `npm install --global github:xhonye/suowang#v<version>`。在 Windows 运行 `suowang install-shortcut`，验证 `http://127.0.0.1:2037/health` 正常并打开 SUOWANG。不要读取、移动或覆盖已有的 `SUOWANG_DATA_DIR` 数据，也不要退回安装会漂移的最新 `main`。
 
 安装为全局 npm 命令后也可以直接运行：
 
@@ -145,6 +151,7 @@ suowang access tailscale
 1. 设置 `SUOWANG_DATA_DIR` 时使用该绝对路径。
 2. 当前 Windows 机器存在 `D:/5Data` 时使用 `D:/5Data/suowang`。
 3. 其他 Windows 机器使用 `%LOCALAPPDATA%/SUOWANG`。
+4. macOS 使用 `~/Library/Application Support/SUOWANG/`。
 
 目录内包含 SQLite 数据库、每日备份、本地头像和启动日志。正式库首次启动没有 demo 主线、事项或假统计。
 

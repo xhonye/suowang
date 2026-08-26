@@ -22,6 +22,10 @@ export function resolveDataDir({ env = process.env, platform = process.platform 
     return normalize(join(env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'), 'SUOWANG'));
   }
 
+  if (platform === 'darwin') {
+    return normalize(join(homedir(), 'Library', 'Application Support', 'SUOWANG'));
+  }
+
   return normalize(join(env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), 'suowang'));
 }
 

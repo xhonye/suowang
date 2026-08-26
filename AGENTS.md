@@ -67,7 +67,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - 浏览器 UI 只通过本地 JSON API 读写；SQLite 是业务数据唯一真源，`localStorage` 不得保存主线、事项或指针。
 - 正式库首次启动只有固定三模式和设置，不注入 demo 主线、事项或假统计。
 - migration 文件进入 Git；个人数据库、备份、头像、日志和导出必须在仓库外。
-- `SUOWANG_DATA_DIR` 可显式指定数据目录；当前 Windows 机器默认使用 `D:/5Data/suowang`，其他机器回退到系统应用数据目录。
+- `SUOWANG_DATA_DIR` 可显式指定数据目录；当前 Windows 机器默认使用 `D:/5Data/suowang`，macOS 使用 `~/Library/Application Support/SUOWANG/`，其他机器回退到系统应用数据目录。
 - 每天第一次启动自动备份 SQLite，按备份时间保留最后 30 份。手动导出不限；整库恢复前必须先备份当前库，不做 merge。
 - 不建立点击、切模式、切当前主线、拖拽或文字修改的 audit/event 流水；`todo_occurrences` 只保存用户明确确认的持续事项完成事实，不承担行为监控。
 
@@ -109,6 +109,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - `src/app.js`：页面渲染与交互编排。
 - `src/styles.css`：桌面第一屏与窄屏视觉系统。
 - `scripts/start.ps1`、`SUOWANG.cmd`：Windows 一键启动。
+- `scripts/macos-launcher.sh`、`scripts/build-macos-release.sh`：macOS Apple Silicon 应用启动与 DMG 组装；只在 arm64 macOS 上构建。
 - `scripts/install-shortcut.ps1`：安装桌面快捷方式。
 - `INSTALL.cmd`：Release 解压后的 Windows 双击安装入口。
 - `scripts/cli.mjs`：npm 全局命令 `suowang` 的启动与快捷方式入口。
@@ -116,6 +117,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - `docs/architecture.md`、`docs/integration-guide.md`、`docs/operator-runbook.md`：架构、内部端点和本地运维真相。
 - `docs/handoff.md`：当前已实现边界与后续维护入口。
 - `docs/visual-final-preview.html`：正式页面当前 2172×724 分层视觉的静态交互基准；图片基座、透明箭头与生成溯源见 `assets/milestones/2026-08-23-arrow-pipeline/`。
+- `.github/workflows/release-macos.yml`：标签或手动构建产生可审阅的 macOS DMG artifact；Release 发布事件才上传正式附件，不能把 DMG 构建接入视觉资产或更改浏览器 UI。
 
 在仓库根目录运行：
 

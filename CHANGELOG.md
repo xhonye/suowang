@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.1.1 — Unreleased
+## 0.1.2 — Unreleased
+
+- 新增 macOS Apple Silicon（M1 及以后）自包含发行构建：GitHub Actions 在 arm64 macOS runner 上安装原生 `better-sqlite3`，组装 `.app`、DMG、SHA-256 与发布附件。
+- macOS 双击应用后使用内置 Node 后台启动本地服务、确认健康检查并打开默认浏览器；数据保存到 `~/Library/Application Support/SUOWANG/`。
+- 首版 macOS 发行不含 Developer ID 签名或 notarization；首次打开可能需要在 Gatekeeper 中按住 Control 选择“打开”。
+
+## 0.1.1 — 2026-08-25
 
 - 新增 Windows 自包含发行构建：Portable ZIP 与 Setup.exe 共用同一运行时，不要求用户安装 Node.js 或 npm。
 - Windows 启动器优先使用发行包内置的 Node.js；源码与 npm 安装方式仍可使用系统 Node.js。

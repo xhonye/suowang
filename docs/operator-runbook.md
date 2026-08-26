@@ -2,18 +2,22 @@
 
 ## 首次安装
 
-需要 Node 22 或更高版本。
+源码和 npm 使用需要 Node 22 或更高版本；自包含的 Windows Setup/Portable 与 macOS `.dmg` 不需要用户安装 Node。
 
 ### GitHub Release / 双击入口
 
-解压 Release 包后双击 `INSTALL.cmd`。它会在当前目录安装生产依赖、创建桌面快捷方式并打开应用。该入口不会读取或覆盖已有数据目录。
+Windows 从 Release 下载 `SUOWANG-Setup-*.exe` 后双击安装，再从桌面图标打开。Portable ZIP 解压后双击 `SUOWANG.cmd`。两种方式均自带运行环境，不读取或覆盖已有数据目录。
+
+### macOS Apple Silicon / 双击入口
+
+下载 `SUOWANG-*-mac-arm64.dmg`，将「所往 SUOWANG」拖入 Applications（应用程序）后双击打开。仅支持 M1 及以后芯片的 Mac；应用内置 arm64 Node 与 SQLite 依赖，自动打开浏览器。未签名测试版第一次使用时，按住 Control 点击应用并选择“打开”，再确认一次。
 
 ### npm / Agent 入口
 
 发布到 npm 后：
 
 ```powershell
-npm install --global suowang@0.1.1
+npm install --global suowang@<version>
 suowang install-shortcut
 suowang
 ```
@@ -21,7 +25,7 @@ suowang
 仅有私有 GitHub 仓库权限、npm 包尚未发布时：
 
 ```powershell
-npm install --global github:xhonye/suowang#v0.1.1
+npm install --global github:xhonye/suowang#v<version>
 suowang install-shortcut
 ```
 
@@ -39,7 +43,7 @@ npm run install-shortcut
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `SUOWANG_DATA_DIR` | 本机优先 `D:/5Data/suowang`，否则系统应用数据目录 | 必须是绝对路径；保存数据库、备份、头像和日志 |
+| `SUOWANG_DATA_DIR` | Windows 优先 `D:/5Data/suowang`；macOS 为 `~/Library/Application Support/SUOWANG/`；其他系统为系统应用数据目录 | 必须是绝对路径；保存数据库、备份、头像和日志 |
 | `SUOWANG_PORT` | `2037` | 本地开发服务端口，范围 1–65535 |
 | `SUOWANG_ACCESS` | `local` | `tailscale` 时保留本机监听，并额外绑定自动发现的 Tailscale IPv4 |
 | `SUOWANG_TAILSCALE_IP` | 自动发现 | 仅在机器存在多个 Tailscale IPv4 时显式指定；必须属于本机 `100.64.0.0/10` |
@@ -57,7 +61,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 正常返回包含：
 
 ```json
-{"status":"ok","app":"suowang","version":"0.1.1","database":"ready"}
+{"status":"ok","app":"suowang","version":"0.1.2","database":"ready"}
 ```
 
 默认正式数据库为 `D:/5Data/suowang/suowang.db`。不要手工编辑、复制运行中的数据库或把它放进仓库；使用设置页的 SQLite 导出取得一致性副本。
@@ -77,10 +81,10 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 
 按下面顺序检查：
 
-1. Node 版本是否满足 `node --version` ≥ 22。
-2. `http://127.0.0.1:2037/health` 是否返回正常状态。
-3. 2037 端口是否被其他程序占用。
-4. 数据目录是否可写，数据库或备份盘是否有空间。
+1. 自包含安装先检查 `http://127.0.0.1:2037/health` 是否返回正常状态；源码/npx 入口再检查 Node 版本是否满足 `node --version` ≥ 22。
+2. 2037 端口是否被其他程序占用。
+3. 数据目录是否可写，数据库或备份盘是否有空间。
+4. macOS 启动失败时检查 `~/Library/Application Support/SUOWANG/logs/latest-stderr.log`。
 5. 在仓库根目录运行 `npm run check`，确认代码与测试未损坏。
 
 若健康检查正常但页面未更新，关闭旧的 SUOWANG Node 进程后重新双击入口。只终止命令行明确指向本仓库 `scripts/serve.mjs` 的进程，不按端口号盲目结束进程。

@@ -53,7 +53,11 @@ scripts/serve.mjs
 2. 当天首次启动前创建一致性 SQLite 备份，自动备份滚动保留 30 份。
 3. 手动 SQLite 导出使用数据库备份 API 创建一致性快照；JSON 导出只用于人类阅读。
 4. 整库恢复先验证文件结构，再备份当前库，关闭连接并原子替换；失败时恢复安全副本。
-5. 正式数据、备份、头像、日志和临时导出始终位于仓库外。
+5. 正式数据、备份、头像、日志和临时导出始终位于仓库外。Windows 优先使用 `D:/5Data/suowang`，macOS 使用 `~/Library/Application Support/SUOWANG/`。
+
+## 发行壳
+
+Windows 安装包与 macOS Apple Silicon `.app` 都只是本地服务的启动壳，不改变浏览器 UI、HTTP API 或 SQLite 结构。macOS `SUOWANG.app` 内置 arm64 Node.js 和在 Apple Silicon 上安装的 `better-sqlite3`，启动器先确认 `127.0.0.1` 的 `/health`，未运行时后台启动服务，再交给默认浏览器打开。`.dmg` 仅面向 Apple Silicon（M1 及以后）；首版未签名、未公证，因此首次打开可能需要用户在 Gatekeeper 中明确确认。
 
 ## 取舍
 

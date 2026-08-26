@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { homedir, tmpdir } from 'node:os';
+import { join, normalize } from 'node:path';
 import test from 'node:test';
-import { resolveAccessMode, resolveTailscaleIPv4 } from '../src/server/config.mjs';
+import { resolveAccessMode, resolveDataDir, resolveTailscaleIPv4 } from '../src/server/config.mjs';
 
 const interfaces = {
   Ethernet: [{ family: 'IPv4', internal: false, address: '192.168.1.20' }],
@@ -40,4 +40,17 @@ test('tailscale address is discovered without storing a personal IP in the proje
     env: { SUOWANG_TAILSCALE_IP: '192.168.1.20' },
     interfaces,
   }), /100\.64\.0\.0\/10/);
+});
+
+test('macOS stores SUOWANG data in the standard Application Support location', () => {
+  const actual = resolveDataDir({ env: {}, platform: 'darwin' });
+  assert.equal(actual, normalize(join(homedir(), 'Library', 'Application Support', 'SUOWANG')));
+});
+
+test('an explicit data directory overrides the platform default', () => {
+  const actual = resolveDataDir({
+    env: { SUOWANG_DATA_DIR: 'C:/Users/example/SUOWANG-data' },
+    platform: 'darwin',
+  });
+  assert.equal(actual, normalize('C:/Users/example/SUOWANG-data'));
 });
