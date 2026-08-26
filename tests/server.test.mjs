@@ -99,6 +99,7 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.doesNotMatch(appSource, /MAINLINE SLOT/);
   assert.doesNotMatch(appSource, /priority-source|class="priority-card" draggable/);
   assert.match(shell, /id="stuck-toggle"/);
+  assert.match(shell, /id="workspace-density-form"/);
   assert.equal(shell.match(/class="todo-kind-toggle"/g)?.length, 2);
 
   const styles = await fetch(`${baseUrl}/src/styles.css`);
@@ -118,6 +119,8 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.match(stylesSource, /\.road-stage\[data-active-state="restore"\]/);
   assert.match(stylesSource, /object-fit:\s*cover/);
   assert.match(stylesSource, /env\(safe-area-inset-bottom\)/);
+  assert.match(stylesSource, /--workspace-sky-crop/);
+  assert.match(stylesSource, /data-workspace-density="max"/);
   assert.match(stylesSource, /\.mainline-slots:has\(\.create-mainline-form\)/);
   assert.doesNotMatch(stylesSource, /grid-auto-columns:\s*min\(82vw/);
   assert.match(stylesSource, /\.todo-list\s*\{[^}]*max-height:\s*230px/);

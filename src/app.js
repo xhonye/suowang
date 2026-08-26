@@ -86,6 +86,7 @@ function showError(title, error) {
 
 function applySnapshot(snapshot) {
   ui.snapshot = snapshot;
+  document.documentElement.dataset.workspaceDensity = snapshot.settings.workspaceDensity;
   ui.stuckOpen = false;
   ui.stuckView = 'menu';
   if (!stateById(snapshot, ui.activeStateId)) {
@@ -427,6 +428,8 @@ function renderHistory() {
 
 function renderSettings() {
   byId('display-name-input').value = ui.snapshot.settings.displayName;
+  const densityInput = document.querySelector(`[name="workspace-density"][value="${ui.snapshot.settings.workspaceDensity}"]`);
+  if (densityInput) densityInput.checked = true;
   document.querySelectorAll('[data-cue-state]').forEach((input) => {
     input.value = stateById(ui.snapshot, input.dataset.cueState)?.cue ?? '';
   });
@@ -1005,6 +1008,12 @@ function setupSettings() {
   byId('display-name-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     await mutate(() => api.updateSettings({ displayName: byId('display-name-input').value }), '显示名称已保存');
+  });
+  byId('workspace-density-form').addEventListener('change', async (event) => {
+    const input = event.target.closest('[name="workspace-density"]');
+    if (!input?.checked) return;
+    const labels = { small: '小', medium: '中', large: '大', max: '最大' };
+    await mutate(() => api.updateSettings({ workspaceDensity: input.value }), `工作区空间已切换为${labels[input.value]}`);
   });
   byId('avatar-form').addEventListener('submit', async (event) => {
     event.preventDefault();

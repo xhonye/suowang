@@ -6,7 +6,7 @@ import test from 'node:test';
 import { DatabaseRuntime } from '../src/server/database.mjs';
 import { migrationsDir } from './helpers.mjs';
 
-test('an existing v1 database gains minimal steps and ongoing-item support without losing todos', (context) => {
+test('an existing v1 database gains minimal steps, ongoing-item support, and workspace preference without losing todos', (context) => {
   const root = mkdtempSync(join(tmpdir(), 'suowang-migration-test-'));
   const dataDir = join(root, 'data');
   const v1Migrations = join(root, 'v1-migrations');
@@ -32,5 +32,6 @@ test('an existing v1 database gains minimal steps and ongoing-item support witho
     SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'todo_occurrences'
   `).get());
   assert.equal(upgradedRuntime.db.prepare('SELECT cue FROM states WHERE id = ?').get('restore').cue, '休息好，才能重新出发。');
-  assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 4);
+  assert.equal(upgradedRuntime.db.prepare('SELECT workspace_density FROM app_settings WHERE singleton = 1').get().workspace_density, 'small');
+  assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 5);
 });

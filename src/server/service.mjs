@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 const STATE_IDS = new Set(['restore', 'work', 'life']);
 const END_STATUSES = new Set(['completed', 'abandoned']);
 const TODO_KINDS = new Set(['single', 'ongoing']);
+const WORKSPACE_DENSITIES = new Set(['small', 'medium', 'large', 'max']);
 
 export class AppError extends Error {
   constructor(status, code, message, details = null) {
@@ -306,6 +307,7 @@ export class SuowangService {
         avatarUrl: settings.avatar_path ? '/api/avatar' : null,
         initializedOn: settings.initialized_on,
         lastViewedStateId: settings.last_viewed_state_id,
+        workspaceDensity: settings.workspace_density,
       },
       states,
       history,
@@ -320,9 +322,20 @@ export class SuowangService {
     return this.snapshot();
   }
 
-  updateSettings({ displayName }) {
-    const name = requiredText(displayName, '显示名称', 40);
-    this.db.prepare('UPDATE app_settings SET display_name = ? WHERE singleton = 1').run(name);
+  updateSettings({ displayName, workspaceDensity }) {
+    if (displayName === undefined && workspaceDensity === undefined) {
+      throw new AppError(400, 'validation_error', '请选择要保存的设置。');
+    }
+    if (displayName !== undefined) {
+      const name = requiredText(displayName, '显示名称', 40);
+      this.db.prepare('UPDATE app_settings SET display_name = ? WHERE singleton = 1').run(name);
+    }
+    if (workspaceDensity !== undefined) {
+      if (!WORKSPACE_DENSITIES.has(workspaceDensity)) {
+        throw new AppError(400, 'validation_error', '工作区空间选项无效。');
+      }
+      this.db.prepare('UPDATE app_settings SET workspace_density = ? WHERE singleton = 1').run(workspaceDensity);
+    }
     return this.snapshot();
   }
 

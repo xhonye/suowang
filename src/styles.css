@@ -214,6 +214,17 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 .settings-card input { width: 100%; min-width: 0; height: 40px; padding: 0 11px; background: white; border: 1px solid var(--line-strong); border-radius: 9px; }
 .settings-card input[type="file"] { height: auto; padding: 9px; }
 .settings-card small { color: var(--quiet); font-size: 10px; line-height: 1.5; }
+.settings-intro { margin: -4px 0 14px; color: var(--quiet); font-size: 11px; line-height: 1.55; }
+.workspace-density-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin: 0; }
+.workspace-density-option { position: relative; display: block; min-width: 0; cursor: pointer; }
+.workspace-density-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.workspace-density-option span { display: grid; min-height: 66px; align-content: center; gap: 4px; padding: 9px 10px; color: var(--muted); background: rgba(242, 247, 247, .72); border: 1px solid transparent; border-radius: 10px; transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
+.workspace-density-option strong { color: #3b5763; font-size: 13px; }
+.workspace-density-option small { font-size: 9px; line-height: 1.35; }
+.workspace-density-option:hover span { background: white; border-color: rgba(78, 131, 156, .24); }
+.workspace-density-option input:checked + span { color: var(--signal-strong); background: var(--signal-soft); border-color: rgba(78, 131, 156, .52); box-shadow: inset 0 0 0 1px rgba(78, 131, 156, .1); }
+.workspace-density-option input:checked + span strong { color: var(--signal-strong); }
+.workspace-density-option input:focus-visible + span { outline: 2px solid var(--signal); outline-offset: 2px; }
 .field-action { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .field-action button, .cue-settings button { padding: 0 15px; color: white; background: var(--signal-strong); border: 0; border-radius: 9px; cursor: pointer; }
 .cue-settings form > button { min-height: 40px; margin-top: 4px; }
@@ -406,12 +417,12 @@ body.busy button, body.busy input, body.busy select { pointer-events: none; }
 .create-mainline-form { padding: 14px; background: rgba(251, 253, 252, .94); box-shadow: 0 14px 38px rgba(37, 62, 72, .1); backdrop-filter: blur(18px); }
 
 .cockpit { position: relative; z-index: 5; overflow: hidden; margin-top: 12px; background: rgba(251, 252, 250, .95); border: 1px solid rgba(255, 255, 255, .82); border-radius: 22px; box-shadow: 0 24px 65px rgba(43, 68, 77, .11); }
-.current-detail { z-index: auto; min-height: 74px; grid-template-columns: repeat(4, minmax(0, 1fr)); background: rgba(248, 251, 250, .88); border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
-.detail-field { padding: 11px 18px; }
+.current-detail { z-index: auto; min-height: 68px; grid-template-columns: repeat(4, minmax(0, 1fr)); background: rgba(248, 251, 250, .88); border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
+.detail-field { padding: 9px 16px; }
 .detail-field small { font-size: 9px; letter-spacing: .04em; }
 .detail-field span { font-size: 12px; }
 
-.work-area { display: grid; min-height: 280px; grid-template-columns: minmax(0, 1fr) 370px; align-items: stretch; }
+.work-area { display: grid; min-height: 256px; grid-template-columns: minmax(0, 1fr) 370px; align-items: stretch; }
 .priority-zone { grid-column: 2; grid-row: 1; display: flex; height: 252px; min-height: 0; flex-direction: column; margin: 14px; overflow: hidden; background: linear-gradient(145deg, rgba(230, 241, 247, .96), rgba(246, 250, 252, .98)); border-color: rgba(78, 131, 156, .25); border-radius: 18px; box-shadow: none; }
 .priority-label { display: grid; min-height: 48px; grid-template-columns: minmax(0, 1fr) auto; padding: 12px 20px 5px; border: 0; }
 .priority-pulse { display: none; }
@@ -448,13 +459,13 @@ body.busy button, body.busy input, body.busy select { pointer-events: none; }
 .stuck-pick-list small, .stuck-pick-list p { margin: 0; color: var(--muted); font-size: 9px; }
 
 .todo-grid { grid-column: 1; grid-row: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
-.todo-column { min-height: 280px; grid-template-rows: 58px minmax(124px, 1fr) 48px; overflow: hidden; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+.todo-column { min-height: 256px; grid-template-rows: 46px minmax(110px, 1fr) 42px; overflow: hidden; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
 .todo-column + .todo-column { border-left: 1px solid var(--line); }
-.todo-column > header { padding-inline: 20px; }
+.todo-column > header { padding-inline: 16px; }
 .todo-column > header h2 { font-size: 15px; }
-.todo-list { padding: 8px 11px; }
-.todo-row { min-height: 42px; }
-.quick-add { padding: 7px 11px; }
+.todo-list { padding: 4px 8px; }
+.todo-row { min-height: 40px; }
+.quick-add { padding: 5px 8px; }
 
 @media (max-height: 820px) and (min-width: 901px) {
   .road-stage { height: 460px; min-height: 460px; }
@@ -550,4 +561,19 @@ body.busy button, body.busy input, body.busy select { pointer-events: none; }
   .priority-zone.stuck-open { height: 236px; min-height: 0; }
   .stuck-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stuck-options > button { min-height: 66px; }
+}
+
+/* Kept last so the workspace control wins over the desktop comfort rules above. */
+@media (min-width: 901px) {
+  .dashboard-page { --road-stage-base-height: clamp(430px, 42vh, 460px); --workspace-sky-crop: 0px; }
+  html[data-workspace-density="medium"] .dashboard-page { --workspace-sky-crop: 28px; }
+  html[data-workspace-density="large"] .dashboard-page { --workspace-sky-crop: 50px; }
+  html[data-workspace-density="max"] .dashboard-page { --workspace-sky-crop: 72px; }
+  .road-stage { height: calc(var(--road-stage-base-height) - var(--workspace-sky-crop)); min-height: calc(430px - var(--workspace-sky-crop)); }
+  .road-image { top: calc(var(--workspace-sky-crop) * -1); bottom: auto; height: var(--road-stage-base-height); object-position: center 68%; }
+  .mainline-deck { margin-top: -90px; }
+}
+
+@media (max-width: 900px) {
+  .workspace-settings { display: none; }
 }

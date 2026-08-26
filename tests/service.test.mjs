@@ -12,9 +12,23 @@ test('a new database contains only the immutable states and honest settings', (c
   assert.deepEqual(snapshot.states.map((state) => state.mainlines), [[], [], []]);
   assert.deepEqual(snapshot.states.map((state) => state.stateTodos), [[], [], []]);
   assert.equal(snapshot.settings.lastViewedStateId, 'work');
+  assert.equal(snapshot.settings.workspaceDensity, 'small');
   assert.throws(
     () => runtime.db.prepare("UPDATE states SET name = '别名' WHERE id = 'work'").run(),
     /state_identity_is_immutable/,
+  );
+});
+
+test('workspace density is a persisted display preference with a fixed option set', (context) => {
+  const { service } = createServiceHarness(context);
+  let snapshot = service.updateSettings({ workspaceDensity: 'large' });
+  assert.equal(snapshot.settings.workspaceDensity, 'large');
+  snapshot = service.updateSettings({ displayName: '所往用户' });
+  assert.equal(snapshot.settings.displayName, '所往用户');
+  assert.equal(snapshot.settings.workspaceDensity, 'large');
+  assert.throws(
+    () => service.updateSettings({ workspaceDensity: 'huge' }),
+    (error) => error instanceof AppError && error.code === 'validation_error',
   );
 });
 

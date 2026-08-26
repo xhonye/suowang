@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>所往 · 道路空间取舍预览</title>
+  <style>
+    :root { color-scheme: light; font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif; color: #213a48; background: #eef4f5; }
+    * { box-sizing: border-box; }
+    body { --scene-height: 430px; --sky-crop: 0px; --dock-bottom: -12px; --workbench-gap: 28px; margin: 0; min-width: 980px; background: #eef4f5; }
+    .preview-bar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 14px; padding: 13px clamp(24px, 4vw, 64px); background: rgba(251,253,252,.95); border-bottom: 1px solid rgba(94,125,139,.18); backdrop-filter: blur(12px); }
+    .preview-bar strong { font-size: 15px; white-space: nowrap; }
+    .preview-bar span { color: #70818a; font-size: 12px; }
+    .choices { display: flex; gap: 8px; margin-left: auto; }
+    .choice { min-width: 144px; padding: 8px 12px; border: 1px solid rgba(86,119,135,.2); border-radius: 10px; background: #fff; color: #506873; text-align: left; cursor: pointer; transition: .18s ease; }
+    .choice b { display: block; color: #253f4c; font-size: 12px; }
+    .choice small { display: block; margin-top: 2px; color: #85949b; font-size: 10px; }
+    .choice[aria-pressed="true"] { border-color: #5f9fb9; background: #eaf6fa; box-shadow: inset 0 0 0 1px rgba(95,159,185,.15); }
+    .choice[data-mode="crop"] b::after { content: " · 对照"; color: #a77a6b; font-weight: 500; }
+    .app-shell { display: grid; grid-template-columns: 196px minmax(0,1fr); min-height: calc(100vh - 59px); }
+    .app-shell > aside { padding: 31px 22px; border-right: 1px solid rgba(99,132,146,.18); background: rgba(248,251,251,.74); }
+    .brand { margin: 0 0 48px; font: 600 21px/1 "Segoe UI Variable Display", "Microsoft YaHei UI", sans-serif; letter-spacing: -.7px; }
+    .nav { display: grid; gap: 7px; }
+    .nav div { padding: 10px 12px; color: #7b8c93; font-size: 13px; border-radius: 8px; }
+    .nav div:first-child { color: #33687c; background: #e6f1f4; }
+    main { min-width: 0; padding-bottom: 72px; }
+    .scene { position: relative; height: calc(var(--scene-height) - var(--sky-crop)); overflow: hidden; isolation: isolate; background: #dce9ee; }
+    .scene::after { content: ""; position: absolute; z-index: 3; right: 0; bottom: 0; left: 0; height: 84px; background: linear-gradient(to bottom, rgba(238,244,245,0), #eef4f5 90%); pointer-events: none; }
+    .road { position: absolute; z-index: 0; top: calc(var(--sky-crop) * -1); right: 0; bottom: auto; left: 0; width: 100%; height: var(--scene-height); object-fit: cover; object-position: center; }
+    .arrow { position: absolute; z-index: 1; top: calc(var(--sky-crop) * -1); right: 0; bottom: auto; left: 0; width: 100%; height: var(--scene-height); object-fit: cover; object-position: center; opacity: .94; }
+    .scene-copy { position: absolute; z-index: 5; top: 36px; left: clamp(28px, 4.2vw, 76px); color: #223e4a; text-shadow: 0 1px 11px rgba(255,255,255,.88); }
+    .scene-copy h1 { margin: 0; font: 630 clamp(28px, 2.7vw, 44px)/1.1 "Segoe UI Variable Display", "Microsoft YaHei UI", sans-serif; letter-spacing: -.05em; }
+    .scene-copy p { margin: 8px 0 0; font-size: 13px; color: #55717b; }
+    .cue { position: absolute; z-index: 5; top: 30px; right: clamp(28px, 4vw, 70px); text-align: right; color: #3f5d69; font-size: 12px; text-shadow: 0 1px 10px #fff; }
+    .cue b { color: #2f4f5d; }
+    .route-hint { position: absolute; z-index: 5; top: 132px; left: clamp(28px, 4.2vw, 76px); color: #365462; text-shadow: 0 1px 10px rgba(255,255,255,.9); }
+    .route-hint b { display: block; font-size: 16px; }
+    .route-hint span { display: block; margin-top: 5px; color: #68808a; font-size: 11px; }
+    .dock { position: absolute; z-index: 7; right: clamp(28px, 3.5vw, 64px); bottom: var(--dock-bottom); left: clamp(28px, 3.5vw, 64px); display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .route-card { display: flex; align-items: center; gap: 12px; min-height: 78px; padding: 14px 16px; border: 1px solid rgba(227,235,238,.94); border-radius: 14px; background: rgba(255,255,255,.91); box-shadow: 0 12px 26px rgba(55,84,96,.12); }
+    .route-card.active { border-color: #6ea9bf; box-shadow: 0 12px 26px rgba(55,84,96,.13), inset 0 0 0 1px rgba(110,169,191,.25); }
+    .route-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 12px; background: #eaf3f5; color: #4b8da8; font-size: 18px; }
+    .route-card b { display: block; font-size: 15px; }
+    .route-card small { display: block; margin-top: 4px; color: #819199; font-size: 10px; }
+    .route-card.active small { color: #4e899f; }
+    .workbench { width: min(calc(100% - 72px), 1500px); margin: var(--workbench-gap) auto 0; padding: 22px 24px 30px; border: 1px solid rgba(138,166,177,.24); border-radius: 16px; background: rgba(255,255,255,.84); box-shadow: 0 14px 35px rgba(78,111,126,.08); }
+    .workbench-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 15px; border-bottom: 1px solid #e4edef; }
+    .workbench-header b { font-size: 15px; }
+    .workbench-header span { color: #82929a; font-size: 11px; }
+    .cards { display: grid; grid-template-columns: 1.45fr .9fr; gap: 18px; padding-top: 18px; }
+    .list, .next { min-height: 174px; padding: 16px; border: 1px solid #edf1f1; border-radius: 12px; background: #fbfcfc; }
+    .list h2, .next h2 { margin: 0 0 13px; color: #355462; font-size: 14px; }
+    .todo { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 6px 0; border-top: 1px solid #edf1f1; color: #49616c; font-size: 12px; }
+    .todo:first-of-type { border-top: 0; }
+    .tick { display: grid; width: 18px; height: 18px; place-items: center; border: 1px solid #aebdc2; border-radius: 6px; color: #5589a1; font-size: 10px; }
+    .todo em { margin-left: auto; color: #7f929b; font-size: 10px; font-style: normal; }
+    .next { background: linear-gradient(145deg, #f7fbfc, #edf6f8); }
+    .next p { margin: 5px 0; color: #314d59; font-size: 16px; font-weight: 600; }
+    .next small { color: #718791; font-size: 11px; }
+    .complete { display: block; width: 100%; margin-top: 18px; padding: 9px; border: 0; border-radius: 8px; background: #5f98ae; color: #fff; font: 600 12px "Microsoft YaHei UI", sans-serif; }
+    body[data-mode="sky-28"] { --sky-crop: 28px; }
+    body[data-mode="sky-50"] { --sky-crop: 50px; }
+    body[data-mode="sky-72"] { --sky-crop: 72px; }
+    @media (max-width: 1050px) { body { min-width: 0; } .app-shell { grid-template-columns: 0 1fr; } .app-shell > aside { display: none; } .preview-bar { flex-wrap: wrap; } .choices { width: 100%; margin-left: 0; } .choice { flex: 1; min-width: 0; } .dock { gap: 8px; } .route-card { padding: 11px; } .workbench { width: calc(100% - 36px); } }
+  </style>
+</head>
+<body data-mode="sky-0">
+  <header class="preview-bar">
+    <strong>道路空间取舍 · 隔离预览</strong>
+    <span>固定 B 的搭桥关系：主线 Dock 压住路面，卡底低于道路 12px；底图尺度固定，只从顶部真实裁去天空。</span>
+    <div class="choices" role="group" aria-label="道路空间方案">
+      <button class="choice" data-mode="sky-0" aria-pressed="true"><b>A · 原窗口</b><small>固定 B · 不额外裁天空</small></button>
+      <button class="choice" data-mode="sky-28" aria-pressed="false"><b>B · 真实裁 28px</b><small>道路尺度不变 · 工作区上移 28px</small></button>
+      <button class="choice" data-mode="sky-50" aria-pressed="false"><b>C · 真实裁 50px</b><small>道路尺度不变 · 工作区上移 50px</small></button>
+      <button class="choice" data-mode="sky-72" aria-pressed="false"><b>D · 真实裁 72px</b><small>道路尺度不变 · 工作区上移 72px</small></button>
+    </div>
+  </header>
+  <div class="app-shell">
+    <aside><p class="brand">所往</p><nav class="nav"><div>驾驶舱</div><div>行迹</div><div>设置</div></nav></aside>
+    <main>
+      <section class="scene" aria-label="三岔道路">
+        <img class="road" src="../assets/mainline-scene-bright-office-v1-no-arrows-geometry-v5.png" alt="">
+        <img class="arrow" src="../assets/mainline-scene-bright-office-v1-arrow-work-light-v4.png" alt="">
+        <div class="scene-copy"><h1>人生主线</h1><p>聚焦当下，选择一条路，坚定向前走。</p></div>
+        <div class="cue"><b>☀ 早上好，Alex</b><br>工作模式 · 专注一件值得推进的事。</div>
+        <div class="route-hint"><b>三条可选路径</b><span>根据你当前的模式，选择最需要聚焦的主线。</span></div>
+        <div class="dock" aria-label="模式主线槽">
+          <article class="route-card"><span class="route-icon">⌁</span><div><b>恢复模式</b><small>休息好，才能重新出发。</small></div></article>
+          <article class="route-card active"><span class="route-icon">▣</span><div><b>工作模式</b><small>当前主线 · 产品发布</small></div></article>
+          <article class="route-card"><span class="route-icon">⌂</span><div><b>生活模式</b><small>让重要关系有稳定位置。</small></div></article>
+        </div>
+      </section>
+      <section class="workbench">
+        <div class="workbench-header"><b>当前主线 · 产品发布</b><span>主线目标 · 让首批用户能轻松开始</span></div>
+        <div class="cards"><div class="list"><h2>主线事项</h2><div class="todo"><i class="tick">✓</i>整理发布说明 <em>↻ 4</em></div><div class="todo"><i class="tick"></i>确认安装包 <em>今天</em></div><div class="todo"><i class="tick"></i>回复首批用户 <em></em></div></div><section class="next"><h2>下一步</h2><p>确认安装包</p><small>最小一步：打开 Release 页面检查下载文件</small><button class="complete">完成事项</button></section></div>
+      </section>
+    </main>
+  </div>
+  <script>
+    const choices = document.querySelectorAll('.choice');
+    choices.forEach((choice) => choice.addEventListener('click', () => {
+      document.body.dataset.mode = choice.dataset.mode;
+      choices.forEach((button) => button.setAttribute('aria-pressed', String(button === choice)));
+    }));
+  </script>
+</body>
+</html>
