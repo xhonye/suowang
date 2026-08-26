@@ -46,17 +46,6 @@
       </aside>
 
       <div class="workspace-shell">
-        <header class="topbar">
-          <div class="greeting-block">
-            <span class="daylight-icon" id="daylight-icon" aria-hidden="true">☀️</span>
-            <strong id="greeting">正在打开 SUOWANG</strong>
-          </div>
-          <div class="topbar-context">
-            <time id="local-date"></time>
-            <span aria-hidden="true">·</span>
-            <span>充分参与这一次人生</span>
-          </div>
-        </header>
         <script>
           (() => {
             const now = new Date();
@@ -89,6 +78,17 @@
                 <img class="road-image road-state road-arrow" data-road-scene="work" src="/assets/mainline-scene-bright-office-v1-arrow-work-light-v4.png" alt="" />
                 <img class="road-image road-state road-arrow" data-road-scene="life" src="/assets/mainline-scene-bright-office-v1-arrow-life-light-v2.png" alt="" />
               </div>
+              <div class="road-chrome" aria-label="今日信息">
+                <div class="greeting-block">
+                  <span class="daylight-icon" id="daylight-icon" aria-hidden="true">☀️</span>
+                  <strong id="greeting">正在打开 SUOWANG</strong>
+                </div>
+                <div class="road-context">
+                  <time id="local-date"></time>
+                  <span aria-hidden="true">·</span>
+                  <span>充分参与这一次人生</span>
+                </div>
+              </div>
               <div class="road-stage-copy">
                 <div class="dashboard-heading">
                   <div>
@@ -114,7 +114,6 @@
                 <section class="priority-zone" id="priority-zone" aria-labelledby="priority-heading">
                   <div class="priority-label">
                     <div>
-                      <p>NEXT STEP</p>
                       <h2 id="priority-heading">下一步</h2>
                     </div>
                     <button class="stuck-toggle" id="stuck-toggle" type="button" aria-expanded="false" aria-controls="priority-content" hidden>卡住了？</button>
@@ -124,7 +123,7 @@
 
                 <section class="todo-grid" aria-label="事项工作区">
                   <article class="todo-column" id="mainline-todo-column">
-                    <header><h2 id="mainline-todo-heading">当前主线</h2><span id="mainline-todo-count">0</span></header>
+                    <header><h2 id="mainline-todo-heading">主线事项</h2><span id="mainline-todo-count">0</span></header>
                     <div class="todo-list" id="mainline-todos" data-todo-scope="mainline"></div>
                     <form class="quick-add" id="mainline-todo-form">
                       <label class="visually-hidden" for="mainline-todo-input">添加当前主线事项</label>

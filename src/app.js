@@ -173,7 +173,7 @@ function renderMainlineSlots(state) {
             aria-label="${html(mainline.name)}${mainline.id === state.currentMainlineId ? '，当前主线' : '，点击设为当前主线'}">
             ${mainline.id === state.currentMainlineId ? '<span class="mainline-state">当前主线</span>' : ''}
             <span class="mainline-name">${html(mainline.name)}</span>
-            <span class="mainline-goal">${html(mainline.goal || '添加一句话目标')}</span>
+            <span class="mainline-goal">${html(mainline.goal || '添加主线目标')}</span>
             <button class="mainline-more" type="button" data-mainline-menu="${mainline.id}" aria-label="${html(mainline.name)}的更多操作">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.65"/><circle cx="12" cy="12" r="1.65"/><circle cx="18" cy="12" r="1.65"/></svg>
             </button>
@@ -211,10 +211,10 @@ function renderCurrentDetail(state) {
     return;
   }
   const fields = [
-    ['name', '当前主线', current.name, '输入主线名称'],
-    ['goal', '一句话目标', current.goal, '添加一句话目标'],
-    ['successCriteria', '现阶段完成标准', current.successCriteria, '添加现阶段完成标准'],
-    ['horizon', '阶段跨度', current.horizon, '添加阶段跨度'],
+    ['name', '主线名称', current.name, '输入主线名称'],
+    ['goal', '主线目标', current.goal, '添加主线目标'],
+    ['successCriteria', '本阶段完成标准', current.successCriteria, '添加本阶段完成标准'],
+    ['horizon', '本阶段时间范围', current.horizon, '添加本阶段时间范围'],
   ];
   container.innerHTML = fields.map(([field, label, value, placeholder]) => `
     <button class="detail-field" type="button" data-edit-mainline="${current.id}" data-field="${field}" data-value="${html(value)}">
@@ -354,7 +354,7 @@ function renderPriority(state) {
 function renderTodos(state) {
   const current = currentMainline(state);
   const mainlineTodos = current?.todos ?? [];
-  byId('mainline-todo-heading').textContent = current ? `当前主线 · ${current.name}` : '当前主线';
+  byId('mainline-todo-heading').textContent = '主线事项';
   byId('mainline-todo-count').textContent = mainlineTodos.length;
   byId('state-todo-count').textContent = state.stateTodos.length;
   byId('mainline-todos').dataset.mainlineId = current?.id ?? '';
@@ -396,9 +396,9 @@ function renderHistory() {
     const expanded = ui.expandedHistory.has(`${item.type}:${item.id}`);
     const details = item.type === 'mainline' ? `
       <div class="history-details" ${expanded ? '' : 'hidden'}>
-        <div><small>一句话目标</small><p>${html(item.goal || '未填写')}</p></div>
-        <div><small>现阶段完成标准</small><p>${html(item.successCriteria || '未填写')}</p></div>
-        <div><small>阶段跨度</small><p>${html(item.horizon || '未填写')}</p></div>
+        <div><small>主线目标</small><p>${html(item.goal || '未填写')}</p></div>
+        <div><small>本阶段完成标准</small><p>${html(item.successCriteria || '未填写')}</p></div>
+        <div><small>本阶段时间范围</small><p>${html(item.horizon || '未填写')}</p></div>
         <div class="history-bound-todos"><small>最终仍绑定的事项</small>
           ${item.boundTodos.length ? `<ul>${item.boundTodos.map((todo) => `<li>${html(todo.title)}${todo.minimalStep ? ` ｜ ${html(todo.minimalStep)}` : ''} · ${statusLabel(todo.status)}</li>`).join('')}</ul>` : '<p>没有。</p>'}
         </div>
@@ -981,7 +981,7 @@ function setupHistory() {
       openDialog({
         kicker: '从行迹重新出发',
         title: '复制为新的独立主线',
-        message: '新主线会获得新 ID，并预填目标、现阶段完成标准和阶段跨度；不会复制旧事项。',
+        message: '新主线会获得新 ID，并预填主线目标、本阶段完成标准和本阶段时间范围；不会复制旧事项。',
         fields: `<label><span>新的全局唯一名称</span><input name="name" maxlength="60" required value="${html(item.name)} · 新阶段" /></label>`,
         confirmLabel: '创建新主线',
         onConfirm: async ({ name }) => {
@@ -1059,13 +1059,8 @@ function setupSettings() {
 
 function setup() {
   const pageStage = document.querySelector('.page-stage');
-  const topbar = document.querySelector('.topbar');
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   pageStage.scrollTop = 0;
-  const syncTopbarSurface = () => topbar.classList.toggle('is-scrolled', pageStage.scrollTop > 20);
-  pageStage.addEventListener('scroll', syncTopbarSurface, { passive: true });
-  syncTopbarSurface();
-  requestAnimationFrame(() => topbar.classList.add('is-ready'));
   setupNavigation();
   setupDashboardEvents();
   setupContextMenu();
