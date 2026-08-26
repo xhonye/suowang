@@ -48,9 +48,10 @@ test('macOS stores SUOWANG data in the standard Application Support location', (
 });
 
 test('an explicit data directory overrides the platform default', () => {
+  const explicitDataDir = join(tmpdir(), 'suowang-explicit-data');
   const actual = resolveDataDir({
-    env: { SUOWANG_DATA_DIR: 'C:/Users/example/SUOWANG-data' },
+    env: { SUOWANG_DATA_DIR: explicitDataDir },
     platform: 'darwin',
   });
-  assert.equal(actual, normalize('C:/Users/example/SUOWANG-data'));
+  assert.equal(actual, normalize(explicitDataDir));
 });
