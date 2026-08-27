@@ -33,5 +33,6 @@ test('an existing v1 database gains minimal steps, ongoing-item support, and wor
   `).get());
   assert.equal(upgradedRuntime.db.prepare('SELECT cue FROM states WHERE id = ?').get('restore').cue, '休息好，才能重新出发。');
   assert.equal(upgradedRuntime.db.prepare('SELECT workspace_density FROM app_settings WHERE singleton = 1').get().workspace_density, 'small');
-  assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 5);
+  assert.equal(upgradedRuntime.db.prepare('SELECT started_todo_id FROM states WHERE id = ?').get('work').started_todo_id, null);
+  assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 6);
 });

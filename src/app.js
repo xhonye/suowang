@@ -24,6 +24,7 @@ const ui = {
   dialogAction: null,
   stuckOpen: false,
   stuckView: 'menu',
+  departureTodoId: null,
   expandedHistory: new Set(),
 };
 
@@ -336,9 +337,16 @@ function renderPriority(state) {
     container.innerHTML = renderStuckPanel(state, priority);
     return;
   }
+  const started = state.startedTodoId === priority.id;
+  const departing = ui.departureTodoId === priority.id;
+  const completionLabel = priority.kind === 'ongoing' ? '今天完成' : '完成这一步';
+  const completionAriaLabel = priority.kind === 'ongoing'
+    ? `记录今天完成 ${html(priority.title)}`
+    : `完成 ${html(priority.title)}`;
   container.innerHTML = `
-    <div class="priority-card" tabindex="0" data-todo-id="${priority.id}" aria-label="下一步：${html(priority.title)}">
+    <div class="priority-card ${started ? 'is-started' : ''} ${departing ? 'is-departing' : ''}" tabindex="0" data-todo-id="${priority.id}" aria-label="${started ? '正在走：' : '下一步：'}${html(priority.title)}">
       <div class="priority-copy">
+        ${started ? '<p class="priority-journey-state">正在走这一步</p>' : ''}
         <button class="priority-title" type="button" data-edit-todo="${priority.id}" data-field="title" data-value="${html(priority.title)}">${html(priority.title)}</button>
         <button class="priority-minimal-step ${priority.minimalStep ? '' : 'is-empty'}" type="button" data-edit-todo="${priority.id}" data-field="minimalStep" data-value="${html(priority.minimalStep)}">
           ${priority.minimalStep ? `<span>最小一步：</span>${html(priority.minimalStep)}` : '＋ 添加最小一步'}
@@ -346,7 +354,21 @@ function renderPriority(state) {
       </div>
       <div class="priority-footer">
         ${priority.kind === 'ongoing' ? `<span class="priority-ongoing-count" title="持续事项，累计 ${priority.completionCount} 次" aria-label="持续事项，累计 ${priority.completionCount} 次">↻ ${priority.completionCount}</span>` : ''}
-        <button class="complete-button priority-complete" type="button" ${priority.kind === 'ongoing' ? `data-record-todo="${priority.id}"` : `data-complete-todo="${priority.id}"`} aria-label="${priority.kind === 'ongoing' ? `记录今天完成 ${html(priority.title)}` : `完成 ${html(priority.title)}`}">${priority.kind === 'ongoing' ? '今天完成' : '完成'}</button>
+        ${started
+          ? `<div class="priority-running-actions">
+              <button class="priority-pause" type="button" data-pause-todo="${priority.id}" aria-label="暂停 ${html(priority.title)}">
+                <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M7 5.5v9M13 5.5v9"/></svg>
+                <span>暂停</span>
+              </button>
+              <button class="complete-button priority-complete" type="button" ${priority.kind === 'ongoing' ? `data-record-todo="${priority.id}"` : `data-complete-todo="${priority.id}"`} aria-label="${completionAriaLabel}">
+                <svg aria-hidden="true" viewBox="0 0 20 20"><path d="m5 10.3 3.1 3.1L15.3 6"/></svg>
+                <span>${completionLabel}</span>
+              </button>
+            </div>`
+          : `<button class="priority-start" type="button" data-start-todo="${priority.id}" aria-label="开始 ${html(priority.title)}">
+              <span>开始这一步</span>
+              <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M4.5 10h10.2M11 6.3l3.7 3.7-3.7 3.7"/></svg>
+            </button>`}
       </div>
     </div>
   `;
@@ -811,6 +833,28 @@ function setupDashboardEvents() {
       const record = event.target.closest('[data-record-todo]');
       if (record) {
         mutate(() => api.recordTodo(record.dataset.recordTodo), '今天已完成一次');
+        return;
+      }
+      const start = event.target.closest('[data-start-todo]');
+      if (start) {
+        const id = start.dataset.startTodo;
+        ui.departureTodoId = id;
+        const snapshot = await mutate(() => api.startPriority(id), '已出发，先迈出这一小步');
+        if (!snapshot) {
+          ui.departureTodoId = null;
+          return;
+        }
+        window.setTimeout(() => {
+          if (ui.departureTodoId !== id) return;
+          ui.departureTodoId = null;
+          renderPriority(activeState());
+        }, 900);
+        return;
+      }
+      const pause = event.target.closest('[data-pause-todo]');
+      if (pause) {
+        ui.departureTodoId = null;
+        await mutate(() => api.pausePriority(pause.dataset.pauseTodo), '已暂停，事项仍留在下一步');
         return;
       }
       const edit = event.target.closest('[data-edit-todo]');

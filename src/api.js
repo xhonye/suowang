@@ -62,6 +62,8 @@ export const api = {
   deleteTodo: (id) => request(`/api/todos/${id}`, { method: 'DELETE' }),
   moveTodo: (id, data) => request(`/api/todos/${id}/move`, { method: 'POST', body: data }),
   setPriority: (id) => request(`/api/todos/${id}/priority`, { method: 'POST', body: {} }),
+  startPriority: (id) => request(`/api/todos/${id}/start`, { method: 'POST', body: {} }),
+  pausePriority: (id) => request(`/api/todos/${id}/pause`, { method: 'POST', body: {} }),
   uploadAvatar: (file) => upload('/api/avatar', file),
   restoreDatabase: (file) => upload('/api/import/sqlite', file),
 };

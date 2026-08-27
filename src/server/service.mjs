@@ -231,8 +231,12 @@ export class SuowangService {
     if (!priorityId) priorityId = this.firstEligibleTodo(stateId, currentId);
 
     this.db.prepare(`
-      UPDATE states SET current_mainline_id = ?, priority_todo_id = ? WHERE id = ?
-    `).run(currentId, priorityId, stateId);
+      UPDATE states
+      SET current_mainline_id = ?,
+          priority_todo_id = ?,
+          started_todo_id = CASE WHEN started_todo_id = ? THEN started_todo_id ELSE NULL END
+      WHERE id = ?
+    `).run(currentId, priorityId, priorityId, stateId);
     return { currentId, priorityId };
   }
 
@@ -268,6 +272,7 @@ export class SuowangService {
         cue: state.cue,
         currentMainlineId: state.current_mainline_id,
         priorityTodoId: state.priority_todo_id,
+        startedTodoId: state.started_todo_id,
         mainlines,
         stateTodos: todoRows
           .filter((todo) => todo.state_id === state.id && todo.mainline_id === null)
@@ -417,7 +422,7 @@ export class SuowangService {
         ? preferred.id
         : preferred?.mainline_id === id ? preferred.id : null;
       this.db.prepare(`
-        UPDATE states SET current_mainline_id = NULL, priority_todo_id = NULL WHERE id = ?
+        UPDATE states SET current_mainline_id = NULL, priority_todo_id = NULL, started_todo_id = NULL WHERE id = ?
       `).run(mainline.state_id);
       this.reconcilePointers(mainline.state_id, id, keepPriority);
       return this.snapshot();
@@ -461,7 +466,7 @@ export class SuowangService {
       const state = this.assertState(mainline.state_id);
       const preferredPriorityId = state.priority_todo_id;
       this.db.prepare(`
-        UPDATE states SET current_mainline_id = NULL, priority_todo_id = NULL WHERE id = ?
+        UPDATE states SET current_mainline_id = NULL, priority_todo_id = NULL, started_todo_id = NULL WHERE id = ?
       `).run(mainline.state_id);
 
       const activeTodos = this.db.prepare(`
@@ -515,7 +520,7 @@ export class SuowangService {
       const state = this.assertState(mainline.state_id);
       const preferredPriorityId = state.priority_todo_id;
       this.db.prepare(`
-        UPDATE states SET current_mainline_id = NULL, priority_todo_id = NULL WHERE id = ?
+        UPDATE states SET current_mainline_id = NULL, priority_todo_id = NULL, started_todo_id = NULL WHERE id = ?
       `).run(mainline.state_id);
 
       const boundTodos = this.db.prepare(`
@@ -650,7 +655,7 @@ export class SuowangService {
       }
       const state = this.assertState(todo.state_id);
       if (state.priority_todo_id === id) {
-        this.db.prepare('UPDATE states SET priority_todo_id = NULL WHERE id = ?').run(todo.state_id);
+        this.db.prepare('UPDATE states SET priority_todo_id = NULL, started_todo_id = NULL WHERE id = ?').run(todo.state_id);
       }
       this.db.prepare('UPDATE todos SET status = ?, ended_at = ? WHERE id = ?')
         .run(status, this.now(), id);
@@ -678,7 +683,7 @@ export class SuowangService {
         VALUES (?, ?, ?, ?)
       `).run(`oc_${randomUUID()}`, id, completedOn, this.now());
       if (state.priority_todo_id === id) {
-        this.db.prepare('UPDATE states SET priority_todo_id = NULL WHERE id = ?').run(todo.state_id);
+        this.db.prepare('UPDATE states SET priority_todo_id = NULL, started_todo_id = NULL WHERE id = ?').run(todo.state_id);
       }
       this.reconcilePointers(
         todo.state_id,
@@ -736,7 +741,7 @@ export class SuowangService {
       const todo = this.requireTodo(id);
       const state = this.assertState(todo.state_id);
       if (state.priority_todo_id === id) {
-        this.db.prepare('UPDATE states SET priority_todo_id = NULL WHERE id = ?').run(todo.state_id);
+        this.db.prepare('UPDATE states SET priority_todo_id = NULL, started_todo_id = NULL WHERE id = ?').run(todo.state_id);
       }
       this.db.prepare('DELETE FROM todos WHERE id = ?').run(id);
       if (todo.status === 'active') this.renumberScope(todo.state_id, todo.mainline_id);
@@ -760,7 +765,7 @@ export class SuowangService {
         throw new AppError(400, 'validation_error', '事项排序位置必须是正整数。');
       }
       if (state.priority_todo_id === id) {
-        this.db.prepare('UPDATE states SET priority_todo_id = NULL WHERE id = ?').run(todo.state_id);
+        this.db.prepare('UPDATE states SET priority_todo_id = NULL, started_todo_id = NULL WHERE id = ?').run(todo.state_id);
       }
       const oldMainlineId = todo.mainline_id;
       this.db.prepare('UPDATE todos SET mainline_id = ?, position = ? WHERE id = ?')
@@ -794,7 +799,36 @@ export class SuowangService {
       if (todo.mainline_id !== null && todo.mainline_id !== state.current_mainline_id) {
         throw new AppError(409, 'priority_not_eligible', '下一步只能来自当前主线事项或其他事项。');
       }
-      this.db.prepare('UPDATE states SET priority_todo_id = ? WHERE id = ?').run(id, todo.state_id);
+      this.db.prepare(`
+        UPDATE states
+        SET priority_todo_id = ?,
+            started_todo_id = CASE WHEN started_todo_id = ? THEN started_todo_id ELSE NULL END
+        WHERE id = ?
+      `).run(id, id, todo.state_id);
+      return this.snapshot();
+    });
+  }
+
+  startPriorityTodo(id) {
+    return this.mutate(() => {
+      const todo = this.requireTodo(id, { active: true });
+      const state = this.assertState(todo.state_id);
+      if (state.priority_todo_id !== id) {
+        throw new AppError(409, 'todo_is_not_priority', '只能开始当前的下一步。');
+      }
+      this.db.prepare('UPDATE states SET started_todo_id = ? WHERE id = ?').run(id, todo.state_id);
+      return this.snapshot();
+    });
+  }
+
+  pausePriorityTodo(id) {
+    return this.mutate(() => {
+      const todo = this.requireTodo(id, { active: true });
+      const state = this.assertState(todo.state_id);
+      if (state.started_todo_id !== id) {
+        throw new AppError(409, 'todo_is_not_started', '这件事当前没有在进行。');
+      }
+      this.db.prepare('UPDATE states SET started_todo_id = NULL WHERE id = ?').run(todo.state_id);
       return this.snapshot();
     });
   }

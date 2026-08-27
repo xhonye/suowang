@@ -13,6 +13,7 @@ test('a new database contains only the immutable states and honest settings', (c
   assert.deepEqual(snapshot.states.map((state) => state.stateTodos), [[], [], []]);
   assert.equal(snapshot.settings.lastViewedStateId, 'work');
   assert.equal(snapshot.settings.workspaceDensity, 'small');
+  assert.equal(snapshot.states.find((state) => state.id === 'work').startedTodoId, null);
   assert.throws(
     () => runtime.db.prepare("UPDATE states SET name = '别名' WHERE id = 'work'").run(),
     /state_identity_is_immutable/,
@@ -87,6 +88,38 @@ test('current and priority remain per-state pointers with deterministic fallback
   snapshot = service.updateAppState({ lastViewedStateId: 'life' });
   assert.equal(snapshot.settings.lastViewedStateId, 'life');
   assert.equal(snapshot.states.find((state) => state.id === 'work').currentMainlineId, a.id);
+});
+
+test('starting and pausing the next step keeps a persistent pointer that clears when the next step changes or completes', (context) => {
+  const { service } = createServiceHarness(context);
+  let snapshot = service.createMainline({ stateId: 'work', slotIndex: 1, name: '行动主线' });
+  const mainline = findMainline(snapshot, 'work', '行动主线');
+  snapshot = service.createTodo({ stateId: 'work', mainlineId: mainline.id, title: '先做这一件' });
+  const first = findMainline(snapshot, 'work', '行动主线').todos[0];
+  snapshot = service.createTodo({ stateId: 'work', mainlineId: mainline.id, title: '下一件事' });
+  const second = findMainline(snapshot, 'work', '行动主线').todos[1];
+
+  snapshot = service.startPriorityTodo(first.id);
+  assert.equal(snapshot.states.find((state) => state.id === 'work').startedTodoId, first.id);
+  snapshot = service.pausePriorityTodo(first.id);
+  assert.equal(snapshot.states.find((state) => state.id === 'work').startedTodoId, null);
+  assert.throws(
+    () => service.pausePriorityTodo(first.id),
+    (error) => error instanceof AppError && error.code === 'todo_is_not_started',
+  );
+  snapshot = service.startPriorityTodo(first.id);
+  assert.throws(
+    () => service.startPriorityTodo(second.id),
+    (error) => error instanceof AppError && error.code === 'todo_is_not_priority',
+  );
+
+  snapshot = service.setPriorityTodo(second.id);
+  assert.equal(snapshot.states.find((state) => state.id === 'work').startedTodoId, null);
+  snapshot = service.startPriorityTodo(second.id);
+  snapshot = service.endTodo(second.id, 'completed');
+  const work = snapshot.states.find((state) => state.id === 'work');
+  assert.equal(work.startedTodoId, null);
+  assert.equal(work.priorityTodoId, first.id);
 });
 
 test('todos keep an optional minimal step through create, edit, priority, and history', (context) => {

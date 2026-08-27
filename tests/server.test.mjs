@@ -99,6 +99,8 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.doesNotMatch(appSource, /MAINLINE SLOT/);
   assert.doesNotMatch(appSource, /priority-source|class="priority-card" draggable/);
   assert.match(shell, /id="stuck-toggle"/);
+  assert.match(appSource, /data-start-todo/);
+  assert.match(appSource, /data-pause-todo/);
   assert.match(shell, /id="workspace-density-form"/);
   assert.equal(shell.match(/class="todo-kind-toggle"/g)?.length, 2);
 
@@ -121,6 +123,7 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.match(stylesSource, /env\(safe-area-inset-bottom\)/);
   assert.match(stylesSource, /--workspace-sky-crop/);
   assert.match(stylesSource, /data-workspace-density="max"/);
+  assert.match(stylesSource, /priority-departure/);
   assert.match(stylesSource, /\.mainline-slots:has\(\.create-mainline-form\)/);
   assert.doesNotMatch(stylesSource, /grid-auto-columns:\s*min\(82vw/);
   assert.match(stylesSource, /\.todo-list\s*\{[^}]*max-height:\s*230px/);
@@ -175,6 +178,13 @@ test('API mutations return the new authoritative snapshot and readable errors', 
   });
   assert.equal(edited.response.status, 200);
   assert.equal(edited.body.states[1].mainlines[0].todos[0].minimalStep, '只写第一行');
+
+  const started = await jsonRequest(`${baseUrl}/api/todos/${todoId}/start`, { method: 'POST' });
+  assert.equal(started.response.status, 200);
+  assert.equal(started.body.states[1].startedTodoId, todoId);
+  const paused = await jsonRequest(`${baseUrl}/api/todos/${todoId}/pause`, { method: 'POST' });
+  assert.equal(paused.response.status, 200);
+  assert.equal(paused.body.states[1].startedTodoId, null);
 
   const completed = await jsonRequest(`${baseUrl}/api/todos/${todoId}/complete`, { method: 'POST' });
   assert.equal(completed.response.status, 200);
