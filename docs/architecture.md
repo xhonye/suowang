@@ -50,7 +50,7 @@ scripts/serve.mjs
 
 ## 数据生命周期
 
-1. 启动时按文件名顺序执行未运行的 migration。
+1. 启动时识别全部未运行的 migration。已有数据库升级前先 checkpoint WAL，并在 `backups/` 创建带起止 schema 版本和 UTC 时间戳的不可覆盖快照；全部待执行 migration 与 schema 记录在单一事务中执行，提交前必须通过 `integrity_check` 和 `foreign_key_check`。失败时事务完整回滚，迁移前快照保留。
 2. 当天首次启动前创建一致性 SQLite 备份，自动备份滚动保留 30 份。
 3. 手动 SQLite 导出使用数据库备份 API 创建一致性快照；JSON 导出只用于人类阅读。
 4. 整库恢复先验证文件结构，再备份当前库，关闭连接并原子替换；失败时恢复安全副本。

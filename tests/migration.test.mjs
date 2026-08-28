@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { copyFileSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import Database from 'better-sqlite3';
 import { DatabaseRuntime } from '../src/server/database.mjs';
 import { migrationsDir } from './helpers.mjs';
 
@@ -37,4 +38,92 @@ test('an existing v1 database gains minimal steps, ongoing-item support, and wor
   assert.equal(upgradedRuntime.db.prepare('SELECT started_todo_id FROM states WHERE id = ?').get('work').started_todo_id, null);
   assert.equal(upgradedRuntime.db.prepare('SELECT display_name FROM app_settings WHERE singleton = 1').get().display_name, 'Honye');
   assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 6);
+
+  const migrationBackups = readdirSync(join(dataDir, 'backups')).filter((name) => name.startsWith('pre-migrate-v1-to-v6-'));
+  assert.equal(migrationBackups.length, 1);
+  const backup = new Database(join(dataDir, 'backups', migrationBackups[0]), { readonly: true, fileMustExist: true });
+  try {
+    assert.equal(backup.pragma('integrity_check', { simple: true }), 'ok');
+    assert.equal(backup.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 1);
+    assert.equal(backup.prepare('SELECT title FROM todos WHERE id = ?').get('td_legacy').title, '旧事项');
+  } finally {
+    backup.close();
+  }
+});
+
+test('opening a current database creates no pre-migration backup', (context) => {
+  const root = mkdtempSync(join(tmpdir(), 'suowang-no-migration-test-'));
+  const dataDir = join(root, 'data');
+  context.after(() => rmSync(root, { recursive: true, force: true }));
+  const created = new DatabaseRuntime({ dataDir, migrationsDir });
+  created.close();
+  const reopened = new DatabaseRuntime({ dataDir, migrationsDir });
+  reopened.close();
+  assert.deepEqual(readdirSync(join(dataDir, 'backups')).filter((name) => name.startsWith('pre-migrate-')), []);
+});
+
+test('a failed migration rolls back the entire upgrade and keeps its pre-migration backup', (context) => {
+  const root = mkdtempSync(join(tmpdir(), 'suowang-failed-migration-test-'));
+  const dataDir = join(root, 'data');
+  const failingMigrations = join(root, 'failing-migrations');
+  mkdirSync(failingMigrations, { recursive: true });
+  copyFileSync(join(migrationsDir, '001_init.sql'), join(failingMigrations, '001_init.sql'));
+  context.after(() => rmSync(root, { recursive: true, force: true }));
+
+  const original = new DatabaseRuntime({ dataDir, migrationsDir: failingMigrations });
+  original.db.prepare(`
+    INSERT INTO todos(id, state_id, mainline_id, title, status, position, created_at, ended_at)
+    VALUES ('td_safe', 'work', NULL, '保持原样', 'active', 1, '2026-08-21T00:00:00.000Z', NULL)
+  `).run();
+  original.close();
+  writeFileSync(join(failingMigrations, '002_fail.sql'), 'ALTER TABLE todos ADD COLUMN temporary_value TEXT;\nTHIS IS NOT SQL;\n');
+
+  assert.throws(() => new DatabaseRuntime({ dataDir, migrationsDir: failingMigrations }));
+  const current = new Database(join(dataDir, 'suowang.db'), { readonly: true, fileMustExist: true });
+  try {
+    assert.equal(current.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 1);
+    assert.equal(current.prepare('SELECT title FROM todos WHERE id = ?').get('td_safe').title, '保持原样');
+    assert.equal(current.prepare("SELECT COUNT(*) AS count FROM pragma_table_info('todos') WHERE name = 'temporary_value'").get().count, 0);
+  } finally {
+    current.close();
+  }
+  const backups = readdirSync(join(dataDir, 'backups')).filter((name) => name.startsWith('pre-migrate-v1-to-v2-'));
+  assert.equal(backups.length, 1);
+  const backup = new Database(join(dataDir, 'backups', backups[0]), { readonly: true, fileMustExist: true });
+  try {
+    assert.equal(backup.pragma('integrity_check', { simple: true }), 'ok');
+    assert.equal(backup.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 1);
+  } finally {
+    backup.close();
+  }
+});
+
+test('foreign key violations block migration commit', (context) => {
+  const root = mkdtempSync(join(tmpdir(), 'suowang-foreign-key-migration-test-'));
+  const dataDir = join(root, 'data');
+  const invalidMigrations = join(root, 'invalid-migrations');
+  mkdirSync(invalidMigrations, { recursive: true });
+  copyFileSync(join(migrationsDir, '001_init.sql'), join(invalidMigrations, '001_init.sql'));
+  context.after(() => rmSync(root, { recursive: true, force: true }));
+
+  const original = new DatabaseRuntime({ dataDir, migrationsDir: invalidMigrations });
+  original.close();
+  writeFileSync(join(invalidMigrations, '002_orphan.sql'), `
+    DROP TRIGGER todo_mainline_matches_state_insert;
+    INSERT INTO todos(id, state_id, mainline_id, title, status, position, created_at, ended_at)
+    VALUES ('td_orphan', 'work', 'missing-mainline', '孤立事项', 'active', 1, '2026-08-21T00:00:00.000Z', NULL);
+  `);
+
+  assert.throws(
+    () => new DatabaseRuntime({ dataDir, migrationsDir: invalidMigrations }),
+    /foreign key check failed/,
+  );
+  const current = new Database(join(dataDir, 'suowang.db'), { readonly: true, fileMustExist: true });
+  try {
+    assert.equal(current.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 1);
+    assert.equal(current.prepare('SELECT COUNT(*) AS count FROM todos WHERE id = ?').get('td_orphan').count, 0);
+    assert.ok(current.prepare("SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name = 'todo_mainline_matches_state_insert'").get());
+  } finally {
+    current.close();
+  }
 });

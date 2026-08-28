@@ -34,9 +34,21 @@ function migrationVersion(fileName) {
   return match ? Number(match[1]) : null;
 }
 
-function assertDatabaseIntegrity(db, { requireCurrentSchema = true } = {}) {
+export function assertSQLiteIntegrity(db) {
   const integrity = db.pragma('integrity_check', { simple: true });
   if (integrity !== 'ok') throw new Error(`SQLite integrity check failed: ${integrity}`);
+}
+
+export function assertForeignKeyIntegrity(db) {
+  const violations = db.pragma('foreign_key_check');
+  if (violations.length > 0) {
+    throw new Error(`SQLite foreign key check failed with ${violations.length} violation(s).`);
+  }
+}
+
+function assertDatabaseIntegrity(db, { requireCurrentSchema = true } = {}) {
+  assertSQLiteIntegrity(db);
+  assertForeignKeyIntegrity(db);
 
   const required = new Set(['schema_migrations', 'states', 'mainlines', 'todos', 'app_settings']);
   if (requireCurrentSchema) required.add('todo_occurrences');
@@ -54,13 +66,14 @@ function assertDatabaseIntegrity(db, { requireCurrentSchema = true } = {}) {
 }
 
 export class DatabaseRuntime {
-  constructor({ dataDir, migrationsDir, databaseName = 'suowang.db' }) {
+  constructor({ dataDir, migrationsDir, databaseName = 'suowang.db', clock = () => new Date() }) {
     this.dataDir = dataDir;
     this.migrationsDir = migrationsDir;
     this.databasePath = join(dataDir, databaseName);
     this.backupsDir = join(dataDir, 'backups');
     this.tempDir = join(dataDir, 'tmp');
     this.profileDir = join(dataDir, 'profile');
+    this.clock = clock;
     this.initializeFreshDatabase = !existsSync(this.databasePath);
     ensureDirectory(this.dataDir);
     ensureDirectory(this.backupsDir);
@@ -69,22 +82,27 @@ export class DatabaseRuntime {
     this.open();
   }
 
-  open() {
+  open({ existingDatabase = existsSync(this.databasePath) } = {}) {
     this.db = new Database(this.databasePath);
-    this.db.pragma('foreign_keys = ON');
-    this.db.pragma('busy_timeout = 5000');
-    this.db.pragma('journal_mode = WAL');
-    this.runMigrations();
-    if (this.initializeFreshDatabase) {
-      // Migration 001 retains its published seed; only brand-new databases receive the neutral default.
-      this.db.prepare('UPDATE app_settings SET display_name = ? WHERE singleton = 1').run('所往用户');
-      this.initializeFreshDatabase = false;
+    try {
+      this.db.pragma('foreign_keys = ON');
+      this.db.pragma('busy_timeout = 5000');
+      this.db.pragma('journal_mode = WAL');
+      this.runMigrations({ existingDatabase });
+      if (this.initializeFreshDatabase) {
+        // Migration 001 retains its published seed; only brand-new databases receive the neutral default.
+        this.db.prepare('UPDATE app_settings SET display_name = ? WHERE singleton = 1').run('所往用户');
+        this.initializeFreshDatabase = false;
+      }
+      const schemaVersion = this.getCurrentSchemaVersion();
+      assertDatabaseIntegrity(this.db, { requireCurrentSchema: schemaVersion >= 4 });
+    } catch (error) {
+      if (this.db?.open) this.db.close();
+      throw error;
     }
-    const schemaVersion = this.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version;
-    assertDatabaseIntegrity(this.db, { requireCurrentSchema: schemaVersion >= 4 });
   }
 
-  runMigrations() {
+  ensureMigrationTable() {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
         version INTEGER PRIMARY KEY,
@@ -92,26 +110,74 @@ export class DatabaseRuntime {
         applied_at TEXT NOT NULL
       )
     `);
+  }
 
-    const applied = new Set(
-      this.db.prepare('SELECT version FROM schema_migrations').all().map((row) => row.version),
-    );
-    const files = readdirSync(this.migrationsDir)
+  listMigrationFiles() {
+    return readdirSync(this.migrationsDir)
       .map((name) => ({ name, version: migrationVersion(name) }))
       .filter((item) => item.version !== null)
       .sort((left, right) => left.version - right.version);
+  }
 
-    for (const file of files) {
-      if (applied.has(file.version)) continue;
-      const sql = readFileSync(join(this.migrationsDir, file.name), 'utf8');
-      this.db.transaction(() => {
-        this.db.exec(sql);
+  getCurrentSchemaVersion() {
+    return this.db.prepare('SELECT COALESCE(MAX(version), 0) AS version FROM schema_migrations').get().version;
+  }
+
+  getPendingMigrations() {
+    const applied = new Set(
+      this.db.prepare('SELECT version FROM schema_migrations').all().map((row) => row.version),
+    );
+    return this.listMigrationFiles().filter((file) => !applied.has(file.version));
+  }
+
+  createPreMigrationBackup(pendingMigrations) {
+    const fromVersion = this.getCurrentSchemaVersion();
+    const toVersion = pendingMigrations.at(-1).version;
+    const stem = `pre-migrate-v${fromVersion}-to-v${toVersion}-${timestampKey(this.clock())}`;
+    let destination = join(this.backupsDir, `${stem}.db`);
+    let suffix = 1;
+    while (existsSync(destination)) {
+      destination = join(this.backupsDir, `${stem}-${suffix}.db`);
+      suffix += 1;
+    }
+
+    this.db.pragma('wal_checkpoint(TRUNCATE)');
+    const escapedDestination = destination.replaceAll("'", "''");
+    this.db.exec(`VACUUM INTO '${escapedDestination}'`);
+    const candidate = new Database(destination, { readonly: true, fileMustExist: true });
+    try {
+      assertSQLiteIntegrity(candidate);
+    } finally {
+      candidate.close();
+    }
+    return destination;
+  }
+
+  applyPendingMigrations(pendingMigrations) {
+    const migrations = pendingMigrations.map((file) => ({
+      ...file,
+      sql: readFileSync(join(this.migrationsDir, file.name), 'utf8'),
+    }));
+    this.db.transaction(() => {
+      for (const file of migrations) {
+        this.db.exec(file.sql);
         this.db.prepare(`
           INSERT INTO schema_migrations(version, name, applied_at)
           VALUES (?, ?, ?)
-        `).run(file.version, file.name, new Date().toISOString());
-      })();
-    }
+        `).run(file.version, file.name, this.clock().toISOString());
+      }
+      assertSQLiteIntegrity(this.db);
+      assertForeignKeyIntegrity(this.db);
+    })();
+  }
+
+  runMigrations({ existingDatabase }) {
+    this.ensureMigrationTable();
+    const pendingMigrations = this.getPendingMigrations();
+    if (pendingMigrations.length === 0) return { backupPath: null, applied: [] };
+    const backupPath = existingDatabase ? this.createPreMigrationBackup(pendingMigrations) : null;
+    this.applyPendingMigrations(pendingMigrations);
+    return { backupPath, applied: pendingMigrations.map((file) => file.version) };
   }
 
   async backupTo(destination) {
@@ -168,7 +234,7 @@ export class DatabaseRuntime {
 
     try {
       copyFileSync(sourcePath, this.databasePath);
-      this.open();
+      this.open({ existingDatabase: true });
       removeIfPresent(rollbackPath);
       return { safetyBackup };
     } catch (error) {
@@ -179,7 +245,7 @@ export class DatabaseRuntime {
       }
       removeIfPresent(this.databasePath);
       renameSync(rollbackPath, this.databasePath);
-      this.open();
+      this.open({ existingDatabase: true });
       throw error;
     }
   }
