@@ -24,12 +24,12 @@ scripts/serve.mjs
 | 表 | 责任 | 关键约束 |
 |---|---|---|
 | `states` | 固定三模式及 cue、当前主线、下一步 | 仅 `restore/work/life`；身份和顺序不可变 |
-| `mainlines` | 阶段主线与槽位 | 模式不可变；每模式 active 槽位 1–3 唯一；名称全局归一化唯一 |
+| `mainlines` | 阶段主线与槽位 | 模式不可变；每模式 active 槽位 1–3 唯一；同模式 active 规范化名称唯一 |
 | `todos` | 主线事项与其他事项 | 模式不可变；归属主线必须同模式；`title` 必填、`minimal_step` 可空；`kind` 仅为 `single/ongoing`；作用域内持久排序 |
 | `todo_occurrences` | 持续事项的实际完成事实 | 每条记录属于一个事项；`todo_id + completed_on` 唯一，保证每个本地自然日最多一次；删除事项时级联删除 |
 | `app_settings` | 显示名称、头像、上次模式 | 单行设置；上次模式必须引用固定模式 |
 
-`current_mainline_id` 和 `priority_todo_id` 分别是当前主线与下一步指针。业务层在同一事务内完成指针更新、自动补位、槽位交换、事项重排和结束处理；当天已记录的持续事项不再参与当日下一步补位。数据库触发器和唯一约束防止跨模式引用、系统模式变形与持续事项同日重复记录。内部表与 API 保留 `states/todos/priority` 命名以兼容旧库，用户界面统一使用模式、事项和下一步。
+`current_mainline_id` 和 `priority_todo_id` 分别是当前主线与下一步指针。业务层在同一事务内完成指针更新、自动补位、槽位交换、事项重排和结束处理；当天已记录的持续事项不再参与当日下一步补位。数据库触发器和唯一约束防止跨模式引用、系统模式变形与持续事项同日重复记录。`mainlines.normalized_name` 是内部唯一键：active 使用 `active:{state_id}:{canonical_name}`，行迹使用 `history:{mainline_id}`；展示名称保持原样且不作为身份。内部表与 API 保留 `states/todos/priority` 命名以兼容旧库，用户界面统一使用模式、事项和下一步。
 
 ## 目录与模块
 

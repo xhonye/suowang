@@ -34,7 +34,7 @@ test('workspace density is a persisted display preference with a fixed option se
   );
 });
 
-test('mainlines use three stable slots, swap without reordering, and keep names globally unique', (context) => {
+test('mainlines use three stable slots, swap without reordering, and reject duplicate active names within one mode', (context) => {
   const { service } = createServiceHarness(context);
   let snapshot = service.createMainline({ stateId: 'work', slotIndex: 1, name: '第一战役' });
   snapshot = service.createMainline({ stateId: 'work', slotIndex: 2, name: '第二战役' });
@@ -60,6 +60,45 @@ test('mainlines use three stable slots, swap without reordering, and keep names 
     () => service.updateMainline(firstId, { name: ' 第二战役 ' }),
     (error) => error instanceof AppError && error.code === 'duplicate_mainline_name',
   );
+});
+
+test('mainline names are scoped to active mode while history keeps identity by id', (context) => {
+  const { runtime, service } = createServiceHarness(context);
+  let snapshot = service.createMainline({ stateId: 'work', slotIndex: 1, name: ' 共同计划 ' });
+  const first = findMainline(snapshot, 'work', '共同计划');
+  snapshot = service.createMainline({ stateId: 'restore', slotIndex: 1, name: '共同计划' });
+  assert.ok(findMainline(snapshot, 'restore', '共同计划'));
+
+  assert.throws(
+    () => service.createMainline({ stateId: 'work', slotIndex: 2, name: '共同计划' }),
+    (error) => error instanceof AppError
+      && error.code === 'duplicate_mainline_name'
+      && error.message === '同一模式中的进行中主线名称不能重复。',
+  );
+
+  snapshot = service.endMainline(first.id, { status: 'completed', resolutions: {} });
+  snapshot = service.copyMainline(first.id, { name: '共同计划' });
+  const copied = findMainline(snapshot, 'work', '共同计划');
+  assert.notEqual(copied.id, first.id);
+  snapshot = service.endMainline(copied.id, { status: 'abandoned', resolutions: {} });
+  snapshot = service.createMainline({ stateId: 'work', slotIndex: 1, name: '共同计划' });
+
+  const history = snapshot.history.filter((item) => item.type === 'mainline' && item.name === '共同计划');
+  assert.equal(history.length, 2);
+  assert.notEqual(history[0].id, history[1].id);
+  assert.equal(findMainline(snapshot, 'work', '共同计划').name, '共同计划');
+  assert.equal(findMainline(snapshot, 'restore', '共同计划').name, '共同计划');
+  assert.equal(JSON.stringify(snapshot).includes('normalized_name'), false);
+
+  const rows = runtime.db.prepare(`
+    SELECT id, state_id, status, normalized_name FROM mainlines WHERE name = ? ORDER BY status, id
+  `).all('共同计划');
+  for (const row of rows) {
+    const expected = row.status === 'active'
+      ? `active:${row.state_id}:共同计划`
+      : `history:${row.id}`;
+    assert.equal(row.normalized_name, expected);
+  }
 });
 
 test('current and priority remain per-state pointers with deterministic fallback', (context) => {

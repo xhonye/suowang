@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import Database from 'better-sqlite3';
 import { DatabaseRuntime } from '../src/server/database.mjs';
+import { SuowangService } from '../src/server/service.mjs';
 import { migrationsDir } from './helpers.mjs';
 
 test('an existing v1 database gains minimal steps, ongoing-item support, and workspace preference without losing todos', (context) => {
@@ -37,9 +38,9 @@ test('an existing v1 database gains minimal steps, ongoing-item support, and wor
   assert.equal(upgradedRuntime.db.prepare('SELECT workspace_density FROM app_settings WHERE singleton = 1').get().workspace_density, 'small');
   assert.equal(upgradedRuntime.db.prepare('SELECT started_todo_id FROM states WHERE id = ?').get('work').started_todo_id, null);
   assert.equal(upgradedRuntime.db.prepare('SELECT display_name FROM app_settings WHERE singleton = 1').get().display_name, 'Honye');
-  assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 6);
+  assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 7);
 
-  const migrationBackups = readdirSync(join(dataDir, 'backups')).filter((name) => name.startsWith('pre-migrate-v1-to-v6-'));
+  const migrationBackups = readdirSync(join(dataDir, 'backups')).filter((name) => name.startsWith('pre-migrate-v1-to-v7-'));
   assert.equal(migrationBackups.length, 1);
   const backup = new Database(join(dataDir, 'backups', migrationBackups[0]), { readonly: true, fileMustExist: true });
   try {
@@ -49,6 +50,49 @@ test('an existing v1 database gains minimal steps, ongoing-item support, and wor
   } finally {
     backup.close();
   }
+});
+
+test('a v0.1.2-style database rekeys mainline names without changing visible facts', (context) => {
+  const root = mkdtempSync(join(tmpdir(), 'suowang-mainline-rekey-test-'));
+  const dataDir = join(root, 'data');
+  const v6Migrations = join(root, 'v6-migrations');
+  let upgradedRuntime;
+  mkdirSync(v6Migrations, { recursive: true });
+  for (const file of readdirSync(migrationsDir).filter((name) => /^00[1-6]_/.test(name))) {
+    copyFileSync(join(migrationsDir, file), join(v6Migrations, file));
+  }
+  context.after(() => {
+    upgradedRuntime?.close();
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  const oldRuntime = new DatabaseRuntime({ dataDir, migrationsDir: v6Migrations });
+  oldRuntime.db.prepare(`
+    INSERT INTO mainlines(
+      id, state_id, slot_index, name, normalized_name,
+      goal, success_criteria, horizon, status, created_at, ended_at
+    ) VALUES
+      ('ml_active', 'work', 1, '原样 名称', '原样 名称', '', '', '', 'active', '2026-08-21T00:00:00.000Z', NULL),
+      ('ml_history', 'life', 1, '已经结束', '已经结束', '', '', '', 'completed', '2026-08-20T00:00:00.000Z', '2026-08-21T00:00:00.000Z')
+  `).run();
+  oldRuntime.close();
+
+  upgradedRuntime = new DatabaseRuntime({ dataDir, migrationsDir });
+  assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 7);
+  assert.deepEqual(
+    upgradedRuntime.db.prepare('SELECT id, name, normalized_name FROM mainlines ORDER BY id').all(),
+    [
+      { id: 'ml_active', name: '原样 名称', normalized_name: 'active:work:原样 名称' },
+      { id: 'ml_history', name: '已经结束', normalized_name: 'history:ml_history' },
+    ],
+  );
+
+  const service = new SuowangService(upgradedRuntime);
+  const snapshot = service.createMainline({ stateId: 'restore', slotIndex: 1, name: '原样 名称' });
+  assert.equal(
+    snapshot.states.find((state) => state.id === 'restore').mainlines[0].name,
+    '原样 名称',
+  );
 });
 
 test('opening a current database creates no pre-migration backup', (context) => {

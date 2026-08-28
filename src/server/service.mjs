@@ -40,6 +40,14 @@ export function normalizeMainlineName(value) {
     .toLowerCase();
 }
 
+export function activeMainlineNameKey(stateId, value) {
+  return `active:${stateId}:${normalizeMainlineName(value)}`;
+}
+
+export function historicalMainlineNameKey(mainlineId) {
+  return `history:${mainlineId}`;
+}
+
 function mapMainline(row) {
   return {
     id: row.id,
@@ -76,7 +84,7 @@ function translateDatabaseError(error) {
   if (error instanceof AppError) return error;
   const message = String(error?.message ?? error);
   if (message.includes('mainlines.normalized_name')) {
-    return new AppError(409, 'duplicate_mainline_name', '主线名称需要在全部行迹中保持唯一。');
+    return new AppError(409, 'duplicate_mainline_name', '同一模式中的进行中主线名称不能重复。');
   }
   if (message.includes('active_mainline_slot')) {
     return new AppError(409, 'slot_occupied', '这个主线槽已经被占用。');
@@ -381,7 +389,7 @@ export class SuowangService {
           id, state_id, slot_index, name, normalized_name,
           goal, success_criteria, horizon, status, created_at, ended_at
         ) VALUES (?, ?, ?, ?, ?, '', '', '', 'active', ?, NULL)
-      `).run(id, stateId, slot, title, normalizeMainlineName(title), this.now());
+      `).run(id, stateId, slot, title, activeMainlineNameKey(stateId, title), this.now());
       if (!state.current_mainline_id) {
         this.reconcilePointers(stateId, id, state.priority_todo_id);
       }
@@ -391,13 +399,13 @@ export class SuowangService {
 
   updateMainline(id, changes) {
     return this.mutate(() => {
-      this.requireMainline(id, { active: true });
+      const mainline = this.requireMainline(id, { active: true });
       const fields = [];
       const values = [];
       if (Object.hasOwn(changes, 'name')) {
         const name = requiredText(changes.name, '主线名称', 60);
         fields.push('name = ?', 'normalized_name = ?');
-        values.push(name, normalizeMainlineName(name));
+        values.push(name, activeMainlineNameKey(mainline.state_id, name));
       }
       if (Object.hasOwn(changes, 'goal')) {
         fields.push('goal = ?');
@@ -501,8 +509,8 @@ export class SuowangService {
       }
 
       this.db.prepare(`
-        UPDATE mainlines SET status = ?, ended_at = ? WHERE id = ?
-      `).run(status, this.now(), id);
+        UPDATE mainlines SET status = ?, normalized_name = ?, ended_at = ? WHERE id = ?
+      `).run(status, historicalMainlineNameKey(id), this.now(), id);
       this.renumberScope(mainline.state_id, null);
       for (const remaining of this.db.prepare(`
         SELECT id FROM mainlines WHERE state_id = ? AND status = 'active'
@@ -576,7 +584,7 @@ export class SuowangService {
         source.state_id,
         slot,
         title,
-        normalizeMainlineName(title),
+        activeMainlineNameKey(source.state_id, title),
         source.goal,
         source.success_criteria,
         source.horizon,

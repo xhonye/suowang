@@ -41,7 +41,7 @@
 | `POST` | `/api/mainlines/:id/current` | 设为当前主线 |
 | `POST` | `/api/mainlines/:id/slot` | 移动或交换槽位 |
 | `POST` | `/api/mainlines/:id/end` | 完成或放弃并处理 active 事项 |
-| `POST` | `/api/mainlines/:id/copy` | 从行迹复制新主线，不复制事项 |
+| `POST` | `/api/mainlines/:id/copy` | 从行迹复制新主线，不复制事项；同模式无同名 active 主线时可沿用原名称 |
 
 ## 事项（内部路径保留 `/api/todos`）
 
