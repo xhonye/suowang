@@ -1,5 +1,7 @@
 # SUOWANG 本地运维手册
 
+当前开发线为 `0.2.0-alpha.1`。它用于受邀 alpha 验证，不代表已正式发布；安装前先从现有版本导出 SQLite，测试数据中不要放无法承受丢失的唯一副本。
+
 ## 首次安装
 
 源码和 npm 使用需要 Node 22 或更高版本；自包含的 Windows Setup/Portable 与 macOS `.dmg` 不需要用户安装 Node。
@@ -17,7 +19,7 @@ Windows 从 Release 下载 `SUOWANG-Setup-*.exe` 后双击安装，再从桌面�
 发布到 npm 后：
 
 ```powershell
-npm install --global suowang@<version>
+npm install --ignore-scripts --global suowang@<version>
 suowang install-shortcut
 suowang
 ```
@@ -25,7 +27,7 @@ suowang
 仅有私有 GitHub 仓库权限、npm 包尚未发布时：
 
 ```powershell
-npm install --global github:xhonye/suowang#v<version>
+npm install --ignore-scripts --global github:xhonye/suowang#v<version>
 suowang install-shortcut
 ```
 
@@ -63,8 +65,10 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 正常返回包含：
 
 ```json
-{"status":"ok","app":"suowang","version":"0.1.2","database":"ready"}
+{"status":"ok","app":"suowang","version":"<package.json version>","database":"ready","schemaVersion":7,"pid":12345,"accessMode":"local"}
 ```
+
+实际 `version` 必须等于当前安装包的 `package.json` 版本；启动器据此决定复用还是安全切换旧服务。health 不会返回数据目录或事项内容。
 
 新安装的 Windows 数据库默认为 `%LOCALAPPDATA%/SUOWANG/suowang.db`；既有旧数据库继续留在 `D:/5Data/suowang/suowang.db`。不要手工编辑、复制运行中的数据库或把它放进仓库；使用设置页的 SQLite 导出取得一致性副本。
 
@@ -77,6 +81,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 - 设置页的“导出 SQLite”生成可恢复完整备份；“导出 JSON”只用于阅读，不可恢复。
 - 整库恢复会验证来源文件、先备份当前库，再整体替换；不会 merge。
 - 恢复前确认选择的是 SUOWANG SQLite 导出，并避免同时打开多个手工启动的服务进程。
+- 自动备份与原库通常仍在同一台设备；硬盘损坏、系统盘丢失或整机遗失时可能一起消失，因此它不等于异地灾备。重要数据请定期把“导出 SQLite”保存到另一设备或可信同步位置。
 
 ## 故障定位
 
@@ -97,9 +102,12 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 ```powershell
 Set-Location -LiteralPath 'A:/2Workspace/Projects/suowang'
 npm run check
+npm run test:e2e
+npm run verify
+npm run smoke:temp
 npm run release:check
 git diff --check
 git status --short
 ```
 
-`release:check` 会同时运行完整测试并审阅 npm tarball 文件清单。确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/事项或视觉探索归档。
+`release:check` 会同时运行完整测试并审阅 npm tarball 文件清单。`smoke:temp` 在系统临时目录和端口 24733 中完成创建、重启、导出与恢复后删除临时库。单元、浏览器和 smoke 必须显式使用临时数据目录与非默认端口。确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/事项或视觉探索归档。

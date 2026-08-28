@@ -57,6 +57,8 @@
 | `POST` | `/api/todos/:id/undo-record` | 撤回持续事项今天的完成记录 |
 | `POST` | `/api/todos/:id/move` | 同模式移动、改归属和重排 |
 | `POST` | `/api/todos/:id/priority` | 设为当前模式的下一步 |
+| `POST` | `/api/todos/:id/start` | 开始当前下一步；只设置行动中指针，不创建执行状态或日志 |
+| `POST` | `/api/todos/:id/pause` | 暂停当前行动；只清除行动中指针，不完成事项 |
 
 持续事项始终保持 active，直到显式调用 `complete`（达成并结束）或 `abandon`（不再继续）。Snapshot 中每条事项包含 `kind`、`completionCount` 和 `completedToday`；当天已完成的持续事项不会成为下一步补位候选。JSON 导出包含 `todoOccurrences`，SQLite 导出仍是唯一可恢复格式。
 
@@ -69,6 +71,24 @@
 | `POST` | `/api/import/sqlite` | 验证并覆盖恢复整库 |
 | `GET` | `/api/avatar` | 读取本地头像 |
 | `POST` | `/api/avatar` | 写入本地头像并更新设置 |
+
+## Health 与 snapshot 元信息
+
+`GET /health` 的应用版本直接来自 `package.json`，供启动器判断复用、安全切换或冲突。正常响应至少包含：
+
+```json
+{
+  "status": "ok",
+  "app": "suowang",
+  "version": "<package.json version>",
+  "database": "ready",
+  "schemaVersion": 7,
+  "pid": 12345,
+  "accessMode": "local"
+}
+```
+
+它不返回数据目录或业务内容。Snapshot 保留既有顶层 `version` 兼容语义，并在 `meta.appVersion` 与 `meta.schemaVersion` 中独立提供应用和 schema 版本；调用方不得把两种版本混用。
 
 ## 快速检查
 

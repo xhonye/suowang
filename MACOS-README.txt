@@ -1,6 +1,7 @@
 所往 SUOWANG · macOS Apple Silicon 版
 
 适用于 M1 及以后芯片的 Mac。
+0.2.0-alpha.1 是邀请测试版本，可能仍有未发现的问题。升级或开始测试前，请先在“设置”中导出一份 SQLite 备份；不要把数据库或私人事项作为反馈附件发送。
 
 1. 打开 SUOWANG-*-mac-arm64.dmg。
 2. 将“所往 SUOWANG”拖入 Applications（应用程序）。
@@ -15,3 +16,6 @@
 ~/Library/Application Support/SUOWANG/
 
 卸载应用不会删除这些个人数据。可在所往的“设置”中导出或恢复数据。
+自动备份与原数据库位于同一台 Mac，不等于异地灾备；重要数据请另外保存到另一设备或可信同步位置。
+
+本测试版没有 Developer ID 签名或 notarization，不应把能通过 Control 点击打开描述成已经完成签名。启动失败时请提供 DMG 文件名、macOS 版本、错误提示和 latest-stderr.log；不要发送 suowang.db、备份或私人事项。

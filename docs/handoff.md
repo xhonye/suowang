@@ -17,7 +17,7 @@
 
 ## 真实运行边界
 
-- 正式数据在仓库外，当前本机默认目录为 `D:/5Data/suowang`。
+- 正式数据在仓库外。Windows 新安装默认使用 `%LOCALAPPDATA%/SUOWANG`；只有检测到真实旧数据库时才兼容 `D:/5Data/suowang`，双库并存时必须显式选择且不自动合并。
 - macOS 正式数据在 `~/Library/Application Support/SUOWANG/`；首版仅面向 Apple Silicon，未签名、未公证。
 - V0.1 不依赖 LLM、账号、云服务、遥测或远程数据库。
 - 本地 HTTP 服务默认只接受 loopback Host 和同源浏览器请求；可显式启用受限 Tailscale 双监听。

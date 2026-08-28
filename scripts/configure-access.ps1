@@ -1,22 +1,33 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet('local', 'tailscale')]
-    [string]$Mode
+    [string]$Mode,
+    [string]$NodePath
 )
 
 $ErrorActionPreference = 'Stop'
+$projectRoot = Split-Path -Parent $PSScriptRoot
 
-function Get-SuowangDataDir {
-    if ($env:SUOWANG_DATA_DIR) {
-        return [System.IO.Path]::GetFullPath($env:SUOWANG_DATA_DIR)
+if (-not $NodePath) {
+    $bundledNode = Join-Path $projectRoot 'runtime/node.exe'
+    if (Test-Path -LiteralPath $bundledNode) {
+        $NodePath = $bundledNode
+    } else {
+        $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
+        if (-not $nodeCommand) {
+            throw '没有找到 SUOWANG 内置或系统 Node.js，无法读取统一启动配置。'
+        }
+        $NodePath = $nodeCommand.Source
     }
-    if (Test-Path -LiteralPath 'D:/5Data') {
-        return 'D:/5Data/suowang'
-    }
-    return (Join-Path $env:LOCALAPPDATA 'SUOWANG')
 }
 
-$dataDir = Get-SuowangDataDir
+$configJson = & $NodePath (Join-Path $projectRoot 'scripts/launcher-config.mjs')
+if ($LASTEXITCODE -ne 0 -or -not $configJson) {
+    throw '无法读取统一启动配置。请检查数据目录环境变量和安装文件。'
+}
+$config = $configJson | ConvertFrom-Json
+$dataDir = $config.dataDir
+$port = [int]$config.port
 $accessConfigPath = Join-Path $dataDir 'access.json'
 New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
 $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
@@ -32,7 +43,7 @@ if ($Mode -eq 'tailscale') {
     }
     [System.IO.File]::WriteAllText($accessConfigPath, '{"accessMode":"tailscale"}', $utf8WithoutBom)
     [Environment]::SetEnvironmentVariable('SUOWANG_ACCESS', $null, 'User')
-    Write-Output "已启用 SUOWANG 手机访问模式：双击桌面 SUOWANG 后，用手机访问 http://$($addresses[0]):2037/"
+    Write-Output "已启用 SUOWANG 手机访问模式：双击桌面 SUOWANG 后，用手机访问 http://$($addresses[0]):$port/"
     Write-Output '手机必须登录同一 Tailnet；不要把这个地址作为公网链接分享。'
 } else {
     [System.IO.File]::WriteAllText($accessConfigPath, '{"accessMode":"local"}', $utf8WithoutBom)

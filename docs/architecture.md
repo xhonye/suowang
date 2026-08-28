@@ -1,4 +1,4 @@
-# SUOWANG V0.1 架构
+# SUOWANG 0.2 alpha 架构
 
 ## 系统边界
 
@@ -19,7 +19,7 @@ scripts/serve.mjs
 
 ## 数据模型
 
-`migrations/001_init.sql` 创建核心表，后续 migration 无损增加最小一步、默认提示语和持续事项结构。`004_add_ongoing_todos.sql` 给事项增加 `kind`，并创建按自然日保存完成事实的 `todo_occurrences`：
+`migrations/001_init.sql` 创建核心表，后续 migration 无损增加最小一步、默认提示语、持续事项、行动中指针和工作区空间。`007_rekey_mainline_names.sql` 将 active 主线内部名称键限定到模式，并把行迹键改为 ID。`004_add_ongoing_todos.sql` 给事项增加 `kind`，并创建按自然日保存完成事实的 `todo_occurrences`：
 
 | 表 | 责任 | 关键约束 |
 |---|---|---|
@@ -34,6 +34,7 @@ scripts/serve.mjs
 ## 目录与模块
 
 - `src/server/config.mjs`：项目、数据目录和端口解析；Windows 只按真实数据库文件兼容旧目录，并拒绝双库歧义。
+- `src/server/app-meta.mjs`：直接从 `package.json` 读取应用名称、完整 SemVer，并派生 macOS 合法数值版本。
 - `scripts/launcher-config.mjs`：供 Node 服务、Windows 与 macOS 启动壳共享的版本、数据目录、端口和访问模式配置。
 - `src/server/launcher-policy.mjs`：以纯函数决定复用、安全重启或端口冲突；启动壳不得凭端口号盲目终止进程。
 - `src/server/database.mjs`：migration、连接生命周期、每日备份、下载备份与整库恢复。
@@ -60,6 +61,14 @@ scripts/serve.mjs
 ## 发行壳
 
 Windows 安装包与 macOS Apple Silicon `.app` 都只是本地服务的启动壳，不改变浏览器 UI、HTTP API 或 SQLite 结构。两端先用统一配置查询预期版本、端口和访问模式，再读取 `/health` 与监听进程身份：完全匹配时复用，确认是旧 SUOWANG 时安全切换，无法验证时报告冲突且不终止进程。`/health` 只暴露应用、版本、数据库状态、schema 版本、PID 和访问模式，不暴露数据目录或业务数据。macOS `SUOWANG.app` 内置 arm64 Node.js 和在 Apple Silicon 上安装的 `better-sqlite3`。`.dmg` 仅面向 Apple Silicon（M1 及以后）；首版未签名、未公证，因此首次打开可能需要用户在 Gatekeeper 中明确确认。
+
+## 验证与发行边界
+
+Node 单元测试、Playwright 浏览器测试和临时 smoke 都显式使用仓库外临时 `SUOWANG_DATA_DIR` 与非默认端口，不连接个人服务。Playwright 单 worker 覆盖首次启动、主线与事项、开始/暂停、持续事项、行迹撤回、卡住面板、键盘、320px/1920px、减少动态效果和整库恢复；全局清理会删除测试数据。Visual Baseline 以 SHA-256 锁定四张批准道路资产，失败时不得自动接受新基线。
+
+仓库级 `.npmrc` 禁用依赖安装生命周期脚本，避免 `better-sqlite3` 在已有锁定跨平台预编译文件时仍隐式调用 `node-gyp`。因此 CI 必须显式执行 Playwright Chromium 安装和发行工具准备；`npm ci` 后的单元与 health smoke 会验证当前平台原生 SQLite 模块确实可加载。
+
+常规 CI 在 Linux、Windows 和 macOS 上运行核心门禁，并在 Linux 执行浏览器测试和包清单审计。Windows 与 macOS 发行工作流都从明确 tag checkout，要求 tag 等于 `v${package.json.version}`；手动运行只产生 Actions artifact，只有已有 Release 的 `published` 事件才附加正式资产。本轮不创建 tag 或 Release，也不声称应用已经签名或公证。
 
 ## 取舍
 

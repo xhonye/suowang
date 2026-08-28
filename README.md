@@ -84,13 +84,15 @@
 
 ## 安装与运行
 
+当前开发线为 **0.2.0-alpha.1**。`alpha` 表示它已经通过自动化可靠性门禁，可以交给受邀用户在真实生活中试用，但仍可能存在未发现的问题；它不是比正式 Release 更新就一定更适合所有人的版本。受邀测试前请先导出一份 SQLite 备份，反馈时不要发送数据库或私人事项。
+
 ### Windows 普通用户（推荐）
 
 从 GitHub Release 下载 `SUOWANG-Setup-*.exe`：双击安装，随后从桌面「所往 SUOWANG」图标打开即可。它自带运行环境，不需要安装 Node.js、npm 或使用命令行。
 
 如果你不想安装，可下载 `SUOWANG-Portable-*.zip`，解压后双击 `SUOWANG.cmd`。请只从官方 Release 下载；首次运行新版本时，Windows 可能会要求确认。
 
-### macOS（Apple Silicon，0.1.2 起）
+### macOS（Apple Silicon）
 
 适用于 M1 及以后芯片的 Mac。从 GitHub Release 下载 `SUOWANG-*-mac-arm64.dmg`，打开后将「所往 SUOWANG」拖入 Applications（应用程序），然后双击打开。它自带运行环境，会自动打开浏览器，不需要安装 Node.js、npm 或使用终端。
 
@@ -98,13 +100,13 @@
 
 ### 开发者与源码使用
 
-源码运行、`npm install --global` 安装与现有的 `INSTALL.cmd` 需要 Node 22 或更高版本。
+源码运行、`npm install --global` 安装与现有的 `INSTALL.cmd` 需要 Node 22 或更高版本。开发线应使用仓库中已锁定的依赖，不要用漂移的全局依赖替代。
 
 ### 交给本地 Agent
 
 把下面一句发给能使用终端的本地 Agent：
 
-> 请安装已确认版本的 SUOWANG：若该版本已发布到 npm，先用 `npm view suowang@<version> version` 核对后运行 `npm install --global suowang@<version>`；若你有 GitHub 仓库权限，则运行 `npm install --global github:xhonye/suowang#v<version>`。在 Windows 运行 `suowang install-shortcut`，验证 `http://127.0.0.1:2037/health` 正常并打开 SUOWANG。不要读取、移动或覆盖已有的 `SUOWANG_DATA_DIR` 数据，也不要退回安装会漂移的最新 `main`。
+> 请安装已确认版本的 SUOWANG：若该版本已发布到 npm，先用 `npm view suowang@<version> version` 核对后运行 `npm install --ignore-scripts --global suowang@<version>`；若你有 GitHub 仓库权限，则运行 `npm install --ignore-scripts --global github:xhonye/suowang#v<version>`。在 Windows 运行 `suowang install-shortcut`，验证 `http://127.0.0.1:2037/health` 正常并打开 SUOWANG。不要读取、移动或覆盖已有的 `SUOWANG_DATA_DIR` 数据，也不要退回安装会漂移的最新 `main`。
 
 安装为全局 npm 命令后也可以直接运行：
 
@@ -154,17 +156,19 @@ suowang access tailscale
 4. 标准目录与旧目录同时存在数据库时，SUOWANG 会停止并要求用 `SUOWANG_DATA_DIR` 明确选择，不擅自合并。
 5. macOS 使用 `~/Library/Application Support/SUOWANG/`；Linux 使用 `$XDG_DATA_HOME/suowang` 或 `~/.local/share/suowang`。
 
-目录内包含 SQLite 数据库、每日备份、本地头像、访问配置和启动日志。正式库首次启动显示中性的“所往用户”，没有 demo 主线、事项或假统计。自动备份位于同一设备，不等于异地灾备。
+目录内包含 SQLite 数据库、每日备份、本地头像、访问配置和启动日志。正式库首次启动显示中性的“所往用户”，没有 demo 主线、事项或假统计。自动备份与原数据库位于同一设备，只防常见误操作和升级故障，**不等于异地灾备**；重要数据仍应定期导出 SQLite 到另一设备或可靠的同步位置。
 
 ## 验证
 
 ```powershell
 npm test
 npm run check
+npm run test:e2e
+npm run verify
 npm run release:check
 ```
 
-测试全部使用临时数据库，不读取或修改个人运行数据。
+单元测试和 Playwright 浏览器测试全部使用独立临时数据库与测试端口，不复用个人运行服务，也不读取或修改个人运行数据。`release:check` 还会审计 npm 打包清单。
 
 ## 文档
 
@@ -173,6 +177,8 @@ npm run release:check
 - [架构与数据流](docs/architecture.md)
 - [本地接口速查](docs/integration-guide.md)
 - [启动、备份与故障处理](docs/operator-runbook.md)
+- [0.2 alpha 邀请测试指南](docs/beta-test-guide.md)
+- [0.2 alpha 反馈模板](docs/beta-feedback-template.md)
 - [V0.1 实施交接](docs/handoff.md)
 - [版本记录](CHANGELOG.md)
 

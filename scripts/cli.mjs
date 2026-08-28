@@ -64,6 +64,7 @@ if (command === '--version' || command === '-v') {
       '-ExecutionPolicy', 'Bypass',
       '-File', join(projectRoot, 'scripts', 'configure-access.ps1'),
       '-Mode', mode,
+      '-NodePath', process.execPath,
     ]);
   }
 } else if (command === 'install' || command === 'install-shortcut') {

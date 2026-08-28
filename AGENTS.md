@@ -64,6 +64,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 ## 数据与技术合同
 
 - Node 22+、Vanilla JS、CSS、`better-sqlite3`；不引入前端框架、ORM、Electron 或 Tauri。
+- 仓库安装通过 `.npmrc` 禁用依赖生命周期脚本，使用锁定的 `better-sqlite3` 跨平台预编译文件；Playwright 浏览器与发行工具必须由 CI 显式安装，不依赖隐式 postinstall。
 - 浏览器 UI 只通过本地 JSON API 读写；SQLite 是业务数据唯一真源，`localStorage` 不得保存主线、事项或指针。
 - 正式库首次启动只有固定三模式和设置，不注入 demo 主线、事项或假统计。
 - migration 文件进入 Git；个人数据库、备份、头像、日志和导出必须在仓库外。
@@ -104,6 +105,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 
 - `migrations/`：顺序执行的 SQLite schema migration。
 - `src/server/`：路径配置、数据库运行时和原子业务规则。
+- `src/server/app-meta.mjs`：从 `package.json` 读取应用名和完整语义版本；运行时代码、CLI、health 和发行资产不得另写版本常量。
 - `scripts/serve.mjs`：默认 loopback HTTP API；可选 Tailscale 双监听、静态服务、导出和恢复。
 - `src/api.js`：浏览器 API 客户端。
 - `src/view-model.js`：无 DOM 的显示规则。
@@ -114,11 +116,13 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - `scripts/install-shortcut.ps1`：安装桌面快捷方式。
 - `INSTALL.cmd`：Release 解压后的 Windows 双击安装入口。
 - `scripts/cli.mjs`：npm 全局命令 `suowang` 的启动与快捷方式入口。
-- `tests/`：数据库、事务、HTTP 和视图规则测试。
+- `tests/`：数据库、迁移基线、事务、HTTP、视图规则和批准视觉资产哈希测试。
+- `tests/e2e/`、`playwright.config.mjs`：使用独立临时数据目录与测试端口的浏览器核心流程、响应式和恢复回归；不得复用真实服务或更新正式视觉基线。
 - `docs/architecture.md`、`docs/integration-guide.md`、`docs/operator-runbook.md`：架构、内部端点和本地运维真相。
 - `docs/handoff.md`：当前已实现边界与后续维护入口。
 - `docs/visual-final-preview.html`：正式页面当前 2172×724 分层视觉的静态交互基准；图片基座、透明箭头与生成溯源见 `assets/milestones/2026-08-23-arrow-pipeline/`。
-- `.github/workflows/release-macos.yml`：标签或手动构建产生可审阅的 macOS DMG artifact；Release 发布事件才上传正式附件，不能把 DMG 构建接入视觉资产或更改浏览器 UI。
+- `.github/workflows/ci.yml`：Linux、Windows、macOS 单元门禁、Linux Playwright 和 npm 包清单审计。
+- `.github/workflows/release-windows.yml`、`.github/workflows/release-macos.yml`：从明确 tag 构建同一版本的发行资产；手动运行只上传 Actions artifact，Release 发布事件才上传正式附件。
 
 在仓库根目录运行：
 
@@ -126,6 +130,8 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 npm install
 npm test
 npm run check
+npm run test:e2e
+npm run verify
 npm run release:check
 npm start
 ```
@@ -140,6 +146,9 @@ npm start
 - 涉及产品定位、核心概念、名词体系、信息模型或交互哲学的修改，必须在同一轮更新本 `AGENTS.md`，并按对外/产品细节分别同步 `README.md` 或 `docs/product-brief.md`；不得只把已确认理念留在聊天记录里。
 - 修改批准视觉资产前先运行视觉基线测试；测试失败即视为受保护内容发生变化，除非用户本轮明确批准新基线，否则不得更新哈希绕过失败。
 - 每个稳定业务规则都应有自动化测试；UI 改动必须真实验证 1920×1080、2560×1440 和 320px。
+- `package.json` 是应用语义版本唯一真源。`/health` 必须返回 `app/version/database/schemaVersion/pid/accessMode`，不得暴露数据目录或业务数据；CLI、Windows/macOS 构建和启动器必须从同一版本与配置来源派生。
+- 所有开发服务、单元测试、E2E、恢复与 smoke 必须显式使用临时 `SUOWANG_DATA_DIR` 和非默认测试端口；禁止用个人数据库验证 migration。已有数据库升级前必须先生成不可覆盖且通过完整性检查的迁移前备份。
+- 发版前至少通过 `npm run release:check`、Visual Baseline 和跨平台 CI；发行工作流必须校验 tag 与 `package.json` 版本一致。不得以更新快照、改哈希或跳过浏览器测试绕过失败。
 - 保持键盘焦点、非颜色状态表达和 `prefers-reduced-motion`。
 - 不把私人主线、事项、数据库、日志、截图、凭据或导出放进 Git。
 - 未经明确要求，不引入外部 API、云同步、遥测、账号、通知、AI 设置或未来导航入口。
