@@ -5,6 +5,7 @@ import { request as httpRequest } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import packageMetadata from '../package.json' with { type: 'json' };
 import { createAppServer } from '../scripts/serve.mjs';
 import { migrationsDir } from './helpers.mjs';
 
@@ -54,12 +55,14 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   const health = await fetch(`${baseUrl}/health`);
   assert.equal(health.status, 200);
   assert.deepEqual(await health.json(), {
-    status: 'ok', app: 'suowang', version: '0.1.2', database: 'ready',
+    status: 'ok', app: 'suowang', version: packageMetadata.version, database: 'ready',
   });
 
   const snapshot = await fetch(`${baseUrl}/api/snapshot`);
   assert.equal(snapshot.status, 200);
-  assert.deepEqual((await snapshot.json()).states.map((state) => state.id), ['restore', 'work', 'life']);
+  const snapshotBody = await snapshot.json();
+  assert.deepEqual(snapshotBody.meta, { appVersion: packageMetadata.version, schemaVersion: 6 });
+  assert.deepEqual(snapshotBody.states.map((state) => state.id), ['restore', 'work', 'life']);
 
   const home = await fetch(`${baseUrl}/`);
   assert.equal(home.status, 200);

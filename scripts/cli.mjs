@@ -3,6 +3,7 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { APP_VERSION } from '../src/server/app-meta.mjs';
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const command = process.argv[2] ?? 'start';
@@ -18,7 +19,7 @@ function run(executable, args) {
 }
 
 function printHelp() {
-  console.log(`所往 SUOWANG 0.1.2
+  console.log(`所往 SUOWANG ${APP_VERSION}
 
 Usage:
   suowang                    Start SUOWANG and open it
@@ -27,12 +28,15 @@ Usage:
   suowang access tailscale   Allow devices in your Tailnet to connect
   suowang access local       Return to local-only access
   suowang install-shortcut   Create the Windows desktop shortcut
+  suowang --version          Show the installed version
   suowang --help             Show this help
 
 SUOWANG keeps business data outside the installed package.`);
 }
 
-if (command === '--help' || command === '-h' || command === 'help') {
+if (command === '--version' || command === '-v') {
+  console.log(APP_VERSION);
+} else if (command === '--help' || command === '-h' || command === 'help') {
   printHelp();
 } else if (command === 'start' || command === 'open') {
   if (process.platform === 'win32') {

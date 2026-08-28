@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { APP_VERSION } from './app-meta.mjs';
 
 const STATE_IDS = new Set(['restore', 'work', 'life']);
 const END_STATUSES = new Set(['completed', 'abandoned']);
@@ -307,6 +308,10 @@ export class SuowangService {
 
     return {
       version: 1,
+      meta: {
+        appVersion: APP_VERSION,
+        schemaVersion: this.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version,
+      },
       settings: {
         displayName: settings.display_name,
         avatarUrl: settings.avatar_path ? '/api/avatar' : null,

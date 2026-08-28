@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.1.2 — Unreleased
+## 0.2.0-alpha.1 — Unreleased
+
+- 新增桌面工作区空间选项，只裁切道路展示窗口以在小屏和远程桌面中让出事项空间。
+- 新增「开始这一步 / 暂停」行动指针，保持无计时、无行为日志、无专注统计的克制边界。
+- 冻结邀请测试前的版本、启动、数据库迁移、浏览器回归与跨平台发行可靠性。
+
+## 0.1.2 — 2026-08-26
 
 - 新增 macOS Apple Silicon（M1 及以后）自包含发行构建：GitHub Actions 在 arm64 macOS runner 上安装原生 `better-sqlite3`，组装 `.app`、DMG、SHA-256 与发布附件。
 - macOS 双击应用后使用内置 Node 后台启动本地服务、确认健康检查并打开默认浏览器；数据保存到 `~/Library/Application Support/SUOWANG/`。

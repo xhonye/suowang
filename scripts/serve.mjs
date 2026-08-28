@@ -12,6 +12,7 @@ import { createServer } from 'node:http';
 import { extname, join, normalize, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseRuntime } from '../src/server/database.mjs';
+import { APP_NAME, APP_VERSION } from '../src/server/app-meta.mjs';
 import { AppError, SuowangService } from '../src/server/service.mjs';
 import {
   MIGRATIONS_DIR,
@@ -168,7 +169,7 @@ async function handleApi(request, response, url, { runtime, service, clock }) {
   const method = request.method ?? 'GET';
 
   if (pathname === '/health' && method === 'GET') {
-    sendJson(response, 200, { status: 'ok', app: 'suowang', version: '0.1.2', database: 'ready' });
+    sendJson(response, 200, { status: 'ok', app: APP_NAME, version: APP_VERSION, database: 'ready' });
     return true;
   }
   if (pathname === '/api/snapshot' && method === 'GET') {

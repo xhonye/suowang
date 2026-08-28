@@ -10,6 +10,8 @@ dist_root="$project_root/dist/macos"
 cache_root="$project_root/.release-cache"
 package_json="$project_root/package.json"
 version="$(node -p "require('$package_json').version")"
+mac_short_version="$(node -e "import('$project_root/src/server/app-meta.mjs').then(({ deriveMacOSVersions }) => process.stdout.write(deriveMacOSVersions('$version').shortVersion))")"
+mac_bundle_version="$(node -e "import('$project_root/src/server/app-meta.mjs').then(({ deriveMacOSVersions }) => process.stdout.write(deriveMacOSVersions('$version').bundleVersion))")"
 app_name="所往 SUOWANG.app"
 app_root="$dist_root/$app_name"
 payload_root="$app_root/Contents/Resources/app"
@@ -77,7 +79,10 @@ if [[ ! -x "$node_extract/bin/node" ]]; then
 fi
 cp -R "$node_extract" "$payload_root/runtime"
 
-sed "s/__SUOWANG_VERSION__/$version/g" "$project_root/installer/macos/Info.plist" > "$app_root/Contents/Info.plist"
+sed \
+  -e "s/__SUOWANG_SHORT_VERSION__/$mac_short_version/g" \
+  -e "s/__SUOWANG_BUNDLE_VERSION__/$mac_bundle_version/g" \
+  "$project_root/installer/macos/Info.plist" > "$app_root/Contents/Info.plist"
 cp "$project_root/scripts/macos-launcher.sh" "$app_root/Contents/MacOS/SUOWANG"
 chmod 755 "$app_root/Contents/MacOS/SUOWANG" "$payload_root/runtime/bin/node"
 
