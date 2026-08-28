@@ -37,7 +37,7 @@ npm install
 npm run install-shortcut
 ```
 
-日常双击桌面 `SUOWANG` 或仓库根目录的 `SUOWANG.cmd`。入口会先检查健康状态；服务已运行时只打开页面，未运行时隐藏启动，不制造重复实例。
+日常双击桌面 `SUOWANG` 或仓库根目录的 `SUOWANG.cmd`。入口会从统一配置读取预期版本、端口、数据目录和访问模式；同版本服务只打开页面，已确认的旧 SUOWANG 会安全切换，其他程序占用端口时会停止并报错，不会误杀进程。
 
 ## 环境变量
 
@@ -90,7 +90,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 4. macOS 启动失败时检查 `~/Library/Application Support/SUOWANG/logs/latest-stderr.log`。
 5. 在仓库根目录运行 `npm run check`，确认代码与测试未损坏。
 
-若健康检查正常但页面未更新，关闭旧的 SUOWANG Node 进程后重新双击入口。只终止命令行明确指向本仓库 `scripts/serve.mjs` 的进程，不按端口号盲目结束进程。
+若健康检查正常但页面未更新，先确认 `/health` 的 `version` 是否为当前安装版本。正常双击入口会验证 PID 与命令行后切换旧服务；若提示身份无法验证，不要按端口号盲目结束进程，应退出明确占用端口的程序或重启电脑。
 
 ## 发布前检查
 

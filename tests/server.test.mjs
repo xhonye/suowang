@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import packageMetadata from '../package.json' with { type: 'json' };
-import { createAppServer } from '../scripts/serve.mjs';
+import { createAppServer, createGracefulShutdown } from '../scripts/serve.mjs';
 import { migrationsDir } from './helpers.mjs';
 
 async function createServerHarness(context, options = {}) {
@@ -50,13 +50,41 @@ async function requestWithHeaders(url, headers) {
   });
 }
 
+test('graceful shutdown closes every listener and checkpoints the runtime only once', async () => {
+  let listenerCloses = 0;
+  let runtimeCloses = 0;
+  const listener = {
+    listening: true,
+    close(callback) {
+      listenerCloses += 1;
+      this.listening = false;
+      callback();
+    },
+  };
+  const shutdown = createGracefulShutdown({
+    listeners: [listener],
+    runtime: { close: () => { runtimeCloses += 1; } },
+  });
+  await Promise.all([shutdown(), shutdown()]);
+  assert.equal(listenerCloses, 1);
+  assert.equal(runtimeCloses, 1);
+});
+
 test('server exposes a database-backed health check, snapshot, and static shell', async (context) => {
   const baseUrl = await createServerHarness(context);
   const health = await fetch(`${baseUrl}/health`);
   assert.equal(health.status, 200);
-  assert.deepEqual(await health.json(), {
-    status: 'ok', app: 'suowang', version: packageMetadata.version, database: 'ready',
+  const healthBody = await health.json();
+  assert.deepEqual(healthBody, {
+    status: 'ok',
+    app: 'suowang',
+    version: packageMetadata.version,
+    database: 'ready',
+    schemaVersion: 7,
+    pid: process.pid,
+    accessMode: 'local',
   });
+  assert.ok(Number.isInteger(healthBody.pid) && healthBody.pid > 0);
 
   const snapshot = await fetch(`${baseUrl}/api/snapshot`);
   assert.equal(snapshot.status, 200);

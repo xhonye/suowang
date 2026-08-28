@@ -35,6 +35,7 @@ scripts/serve.mjs
 
 - `src/server/config.mjs`：项目、数据目录和端口解析；Windows 只按真实数据库文件兼容旧目录，并拒绝双库歧义。
 - `scripts/launcher-config.mjs`：供 Node 服务、Windows 与 macOS 启动壳共享的版本、数据目录、端口和访问模式配置。
+- `src/server/launcher-policy.mjs`：以纯函数决定复用、安全重启或端口冲突；启动壳不得凭端口号盲目终止进程。
 - `src/server/database.mjs`：migration、连接生命周期、每日备份、下载备份与整库恢复。
 - `src/server/service.mjs`：全部业务规则和 snapshot 组装。
 - `scripts/serve.mjs`：loopback HTTP 边界、静态文件、API、导出、恢复和头像。
@@ -58,7 +59,7 @@ scripts/serve.mjs
 
 ## 发行壳
 
-Windows 安装包与 macOS Apple Silicon `.app` 都只是本地服务的启动壳，不改变浏览器 UI、HTTP API 或 SQLite 结构。macOS `SUOWANG.app` 内置 arm64 Node.js 和在 Apple Silicon 上安装的 `better-sqlite3`，启动器先确认 `127.0.0.1` 的 `/health`，未运行时后台启动服务，再交给默认浏览器打开。`.dmg` 仅面向 Apple Silicon（M1 及以后）；首版未签名、未公证，因此首次打开可能需要用户在 Gatekeeper 中明确确认。
+Windows 安装包与 macOS Apple Silicon `.app` 都只是本地服务的启动壳，不改变浏览器 UI、HTTP API 或 SQLite 结构。两端先用统一配置查询预期版本、端口和访问模式，再读取 `/health` 与监听进程身份：完全匹配时复用，确认是旧 SUOWANG 时安全切换，无法验证时报告冲突且不终止进程。`/health` 只暴露应用、版本、数据库状态、schema 版本、PID 和访问模式，不暴露数据目录或业务数据。macOS `SUOWANG.app` 内置 arm64 Node.js 和在 Apple Silicon 上安装的 `better-sqlite3`。`.dmg` 仅面向 Apple Silicon（M1 及以后）；首版未签名、未公证，因此首次打开可能需要用户在 Gatekeeper 中明确确认。
 
 ## 取舍
 

@@ -60,6 +60,7 @@ $releaseItems = @(
     'scripts/launcher-config.mjs',
     'scripts/start.ps1',
     'scripts/serve.mjs',
+    'src/server/launcher-policy.mjs',
     'src',
     'package.json',
     'node_modules/better-sqlite3',

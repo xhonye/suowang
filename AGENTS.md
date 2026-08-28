@@ -69,6 +69,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - migration 文件进入 Git；个人数据库、备份、头像、日志和导出必须在仓库外。
 - `SUOWANG_DATA_DIR` 可用绝对路径显式指定数据目录并始终优先。Windows 新安装使用 `%LOCALAPPDATA%/SUOWANG`；只有检测到真实的 `D:/5Data/suowang/suowang.db` 时才继续兼容旧目录。两处同时存在数据库时必须报冲突并要求显式选择，不自动移动、复制或合并。macOS 使用 `~/Library/Application Support/SUOWANG/`，Linux 使用 XDG 或标准 home 数据目录。
 - 已存在数据库有待执行 migration 时，必须先 checkpoint WAL 并创建不参与日常清理的完整迁移前备份；全部待执行 migration、schema 记录、`integrity_check` 与 `foreign_key_check` 在同一事务中通过后才能提交。每天第一次启动仍自动备份 SQLite，按备份时间保留最后 30 份。手动导出不限；整库恢复前必须先备份当前库，不做 merge。
+- Windows 与 macOS 启动器必须从 `launcher-config.mjs` 读取版本、数据目录、端口和访问模式。只在 health、监听 PID 与 `scripts/serve.mjs` 进程身份均可验证时复用或切换旧服务；版本或模式不符时安全重启，非 SUOWANG 或身份不可信的占端口进程绝不能终止。
 - 不建立点击、切模式、切当前主线、拖拽或文字修改的 audit/event 流水；`todo_occurrences` 只保存用户明确确认的持续事项完成事实，不承担行为监控。
 
 ## 版本里程碑与受保护基线

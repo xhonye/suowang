@@ -164,12 +164,20 @@ function sendDownload(response, path, { contentType, fileName, removeAfter = fal
   stream.pipe(response);
 }
 
-async function handleApi(request, response, url, { runtime, service, clock }) {
+async function handleApi(request, response, url, { runtime, service, clock, accessMode }) {
   const { pathname } = url;
   const method = request.method ?? 'GET';
 
   if (pathname === '/health' && method === 'GET') {
-    sendJson(response, 200, { status: 'ok', app: APP_NAME, version: APP_VERSION, database: 'ready' });
+    sendJson(response, 200, {
+      status: 'ok',
+      app: APP_NAME,
+      version: APP_VERSION,
+      database: 'ready',
+      schemaVersion: runtime.getCurrentSchemaVersion(),
+      pid: process.pid,
+      accessMode,
+    });
     return true;
   }
   if (pathname === '/api/snapshot' && method === 'GET') {
@@ -351,6 +359,7 @@ export async function createAppServer({
   ensureBackup = true,
   allowedHosts = ['127.0.0.1', 'localhost'],
   closeRuntimeOnServerClose = true,
+  accessMode = 'local',
 } = {}) {
   const runtime = new DatabaseRuntime({ dataDir, migrationsDir });
   const service = new SuowangService(runtime, { clock });
@@ -361,7 +370,7 @@ export async function createAppServer({
     try {
       assertTrustedRequest(request, trustedHosts);
       const url = new URL(request.url ?? '/', 'http://127.0.0.1');
-      if (await handleApi(request, response, url, { runtime, service, clock })) return;
+      if (await handleApi(request, response, url, { runtime, service, clock, accessMode })) return;
 
       const target = resolveRequestPath(url.pathname);
       if (!target || !existsSync(target) || !statSync(target).isFile()) {
@@ -389,6 +398,29 @@ export async function createAppServer({
   return server;
 }
 
+export function createGracefulShutdown({ listeners, runtime, onError = console.error }) {
+  let shuttingDown = false;
+  return async () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    let failure = null;
+    const results = await Promise.allSettled(listeners.map((listener) => new Promise((resolve, reject) => {
+      if (!listener.listening) return resolve();
+      listener.close((error) => error ? reject(error) : resolve());
+    })));
+    failure = results.find((result) => result.status === 'rejected')?.reason ?? null;
+    try {
+      runtime.close();
+    } catch (error) {
+      failure ??= error;
+    }
+    if (failure) {
+      onError('SUOWANG shutdown failed:', failure);
+      process.exitCode = 1;
+    }
+  };
+}
+
 const isDirectRun = process.argv[1]
   && normalize(process.argv[1]) === normalize(fileURLToPath(import.meta.url));
 if (isDirectRun) {
@@ -396,7 +428,7 @@ if (isDirectRun) {
   const accessMode = resolveAccessMode();
   const tailscaleIp = accessMode === 'tailscale' ? resolveTailscaleIPv4() : null;
   const allowedHosts = ['127.0.0.1', 'localhost', ...(tailscaleIp ? [tailscaleIp] : [])];
-  const server = await createAppServer({ allowedHosts, closeRuntimeOnServerClose: false });
+  const server = await createAppServer({ allowedHosts, closeRuntimeOnServerClose: false, accessMode });
   const listeners = [server];
 
   await new Promise((resolve, reject) => {
@@ -422,14 +454,7 @@ if (isDirectRun) {
   }
   console.log(`Data: ${server.runtime.describe().databasePath}`);
 
-  let shuttingDown = false;
-  const shutdown = async () => {
-    if (shuttingDown) return;
-    shuttingDown = true;
-    await Promise.all(listeners.map((listener) => new Promise((resolve) => listener.close(resolve))));
-    server.runtime.close();
-    process.exit(0);
-  };
+  const shutdown = createGracefulShutdown({ listeners, runtime: server.runtime });
   process.once('SIGINT', shutdown);
   process.once('SIGTERM', shutdown);
 }

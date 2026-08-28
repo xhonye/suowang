@@ -63,6 +63,7 @@ release_items=(
   "migrations"
   "scripts/launcher-config.mjs"
   "scripts/serve.mjs"
+  "src/server/launcher-policy.mjs"
   "src"
   "package.json"
   "node_modules/better-sqlite3"

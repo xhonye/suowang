@@ -1,6 +1,8 @@
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
+$stage = '读取启动配置'
+$stderrLog = $null
 
 function Get-SuowangLauncherConfig([string]$nodePath) {
     $configJson = & $nodePath (Join-Path $projectRoot 'scripts/launcher-config.mjs')
@@ -9,6 +11,17 @@ function Get-SuowangLauncherConfig([string]$nodePath) {
     }
     return ($configJson | ConvertFrom-Json)
 }
+
+function Get-LauncherDecision([string]$nodePath, [hashtable]$input) {
+    $policyPath = Join-Path $projectRoot 'src/server/launcher-policy.mjs'
+    $inputJson = $input | ConvertTo-Json -Depth 8 -Compress
+    $decisionJson = & $nodePath $policyPath $inputJson
+    if ($LASTEXITCODE -ne 0 -or -not $decisionJson) {
+        throw '启动安全策略没有返回有效结果。请重新安装所往。'
+    }
+    return ($decisionJson | ConvertFrom-Json)
+}
+
 function Show-StartError([string]$message) {
     try {
         Add-Type -AssemblyName PresentationFramework -ErrorAction Stop
@@ -25,49 +38,85 @@ function Show-StartError([string]$message) {
 
 function Get-TailscaleIp {
     $tailscale = Join-Path $env:ProgramFiles 'Tailscale/tailscale.exe'
-    if (-not (Test-Path -LiteralPath $tailscale)) {
-        return $null
-    }
-    $addresses = @(@(& $tailscale ip -4 2>$null) | Where-Object { $_ -match '^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.' })
+    if (-not (Test-Path -LiteralPath $tailscale)) { return $null }
+    $addresses = @(@(& $tailscale ip -4 2>$null) | Where-Object {
+        $_ -match '^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.'
+    })
     if ($addresses.Count -eq 1) { return $addresses[0] }
     return $null
 }
 
-function Test-SuowangHealth([string]$url) {
-    try {
-        $response = Invoke-RestMethod -Uri $url -TimeoutSec 2
-        return $response.status -eq 'ok' -and $response.app -eq 'suowang' -and $response.database -eq 'ready'
-    } catch {
-        return $false
+function Get-SuowangHealth([string]$url) {
+    try { return Invoke-RestMethod -Uri $url -TimeoutSec 2 } catch { return $null }
+}
+
+function Get-ListenerState([int]$port, [string]$accessMode, [string]$tailscaleIp) {
+    $listeners = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
+    $local = $listeners | Where-Object { $_.LocalAddress -eq '127.0.0.1' } | Select-Object -First 1
+    $remote = if ($tailscaleIp) {
+        $listeners | Where-Object { $_.LocalAddress -eq $tailscaleIp } | Select-Object -First 1
+    } else { $null }
+    $matches = if ($accessMode -eq 'tailscale') {
+        $local -and $remote -and $local.OwningProcess -eq $remote.OwningProcess
+    } else {
+        $local -and -not $remote
+    }
+    return @{
+        Occupied = $listeners.Count -gt 0
+        AccessModeMatches = [bool]$matches
+        LocalListener = $local
     }
 }
 
-function Test-SuowangTailscaleListener([string]$tailscaleIp, [int]$port) {
-    if (-not $tailscaleIp) { return $false }
-    $localListener = Get-NetTCPConnection -LocalAddress '127.0.0.1' -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-    $remoteListener = Get-NetTCPConnection -LocalAddress $tailscaleIp -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
-        Select-Object -First 1
-    return $localListener -and $remoteListener -and $localListener.OwningProcess -eq $remoteListener.OwningProcess
+function Get-VerifiedSuowangProcess($health, $listenerState) {
+    $listener = $listenerState.LocalListener
+    if (-not $listener) { return @{ Verified = $false; Pid = $null } }
+    $candidatePid = if ($health -and $health.pid -and [int64]$health.pid -gt 0) {
+        [int]$health.pid
+    } else {
+        [int]$listener.OwningProcess
+    }
+    if ($candidatePid -ne [int]$listener.OwningProcess) {
+        return @{ Verified = $false; Pid = $candidatePid }
+    }
+    $process = Get-CimInstance Win32_Process -Filter "ProcessId=$candidatePid" -ErrorAction SilentlyContinue
+    $verified = $process `
+        -and $process.Name -ieq 'node.exe' `
+        -and $process.CommandLine -match 'scripts[/\\]serve\.mjs'
+    return @{ Verified = [bool]$verified; Pid = $candidatePid }
 }
 
-function Stop-VerifiedSuowangServer([int]$port) {
-    $listener = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
-        Where-Object { $_.LocalAddress -eq '127.0.0.1' } |
-        Select-Object -First 1
-    if (-not $listener) {
-        throw '检测到访问模式需要切换，但没有找到 SUOWANG 本地监听进程。'
+function Stop-VerifiedSuowangProcess([int]$processId, [int]$port) {
+    $process = Get-CimInstance Win32_Process -Filter "ProcessId=$processId" -ErrorAction SilentlyContinue
+    if (-not $process -or $process.Name -ine 'node.exe' -or $process.CommandLine -notmatch 'scripts[/\\]serve\.mjs') {
+        throw "$port 端口上的进程无法确认为 SUOWANG，已拒绝终止以保护其他程序。"
     }
-    $process = Get-CimInstance Win32_Process -Filter "ProcessId=$($listener.OwningProcess)"
-    if (-not $process -or $process.Name -ne 'node.exe' -or $process.CommandLine -notmatch 'scripts[/\\]serve\.mjs') {
-        throw "$port 端口上的进程无法确认为 SUOWANG，已停止自动切换以保护其他程序。"
-    }
-    Stop-Process -Id $listener.OwningProcess -Force
-    for ($attempt = 0; $attempt -lt 20; $attempt++) {
+    Stop-Process -Id $processId
+    for ($attempt = 0; $attempt -lt 40; $attempt++) {
         Start-Sleep -Milliseconds 100
-        if (-not (Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue)) { return }
+        if (-not (Get-Process -Id $processId -ErrorAction SilentlyContinue)) { break }
     }
-    throw '旧的 SUOWANG 服务未能正常停止，请重启电脑后再试。'
+    if (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
+        $stillVerified = Get-CimInstance Win32_Process -Filter "ProcessId=$processId" -ErrorAction SilentlyContinue
+        if (-not $stillVerified -or $stillVerified.Name -ine 'node.exe' -or $stillVerified.CommandLine -notmatch 'scripts[/\\]serve\.mjs') {
+            throw '旧进程未正常退出，且身份已无法再次确认。请重启电脑后再试。'
+        }
+        Stop-Process -Id $processId -Force
+    }
+    for ($attempt = 0; $attempt -lt 30; $attempt++) {
+        Start-Sleep -Milliseconds 100
+        $listener = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+        if (-not $listener) { return }
+    }
+    throw '旧的 SUOWANG 服务已停止，但端口没有及时释放。请稍后重试。'
+}
+
+function Get-ConflictReason([string]$reason, [int]$port) {
+    switch ($reason) {
+        'port_not_owned_by_suowang' { return "$port 端口已被其他程序占用，SUOWANG 不会终止它。" }
+        'suowang_process_unverified' { return '检测到旧服务或模式不匹配，但无法安全验证后台进程身份。' }
+        default { return "启动安全检查未通过：$reason" }
+    }
 }
 
 try {
@@ -78,40 +127,47 @@ try {
         (Get-Command node -ErrorAction Stop).Source
     }
     $nodeMajor = [int]((& $nodePath --version).TrimStart('v').Split('.')[0])
-    if ($nodeMajor -lt 22) {
-        throw "检测到 Node $nodeMajor。SUOWANG 需要 Node 22 或更高版本。"
-    }
-    $launcherConfig = Get-SuowangLauncherConfig $nodePath
-    $accessMode = $launcherConfig.accessMode
-    $dataDir = $launcherConfig.dataDir
-    $port = [int]$launcherConfig.port
-    $healthUrl = $launcherConfig.localHealthUrl
-    $appUrl = $launcherConfig.localAppUrl
+    if ($nodeMajor -lt 22) { throw "检测到 Node $nodeMajor。SUOWANG 需要 Node 22 或更高版本。" }
 
+    $launcherConfig = Get-SuowangLauncherConfig $nodePath
+    $expectedVersion = [string]$launcherConfig.expectedVersion
+    $accessMode = [string]$launcherConfig.accessMode
+    $dataDir = [string]$launcherConfig.dataDir
+    $port = [int]$launcherConfig.port
+    $healthUrl = [string]$launcherConfig.localHealthUrl
+    $appUrl = [string]$launcherConfig.localAppUrl
+    $logsDir = Join-Path $dataDir 'logs'
+    $stdoutLog = Join-Path $logsDir 'latest-stdout.log'
+    $stderrLog = Join-Path $logsDir 'latest-stderr.log'
+
+    $stage = '检查现有服务'
     $tailscaleIp = Get-TailscaleIp
     if ($accessMode -eq 'tailscale' -and -not $tailscaleIp) {
         throw '已启用手机访问模式，但 Tailscale 当前没有连接。请先连接 Tailscale，或运行 suowang access local。'
     }
-    $localRunning = Test-SuowangHealth $healthUrl
-    $remoteRunning = Test-SuowangTailscaleListener $tailscaleIp $port
-    $isRunning = if ($accessMode -eq 'tailscale') {
-        $localRunning -and $remoteRunning
-    } else {
-        $localRunning -and -not $remoteRunning
+    $health = Get-SuowangHealth $healthUrl
+    $listenerState = Get-ListenerState $port $accessMode $tailscaleIp
+    $identity = Get-VerifiedSuowangProcess $health $listenerState
+    $decision = Get-LauncherDecision $nodePath @{
+        expectedVersion = $expectedVersion
+        expectedAccessMode = $accessMode
+        health = $health
+        listener = @{
+            occupied = $listenerState.Occupied
+            accessModeMatches = $listenerState.AccessModeMatches
+        }
+        processVerified = $identity.Verified
     }
 
-    if (-not $isRunning -and ($localRunning -or $remoteRunning)) {
-        Stop-VerifiedSuowangServer $port
-        $localRunning = $false
-        $remoteRunning = $false
+    if ($decision.action -eq 'conflict') { throw (Get-ConflictReason $decision.reason $port) }
+    if ($decision.action -eq 'restart' -and $decision.stopExisting) {
+        $stage = '安全切换旧服务'
+        Stop-VerifiedSuowangProcess ([int]$identity.Pid) $port
     }
 
-    if (-not $isRunning) {
-        $logsDir = Join-Path $dataDir 'logs'
+    if ($decision.action -ne 'reuse') {
+        $stage = '启动本地服务'
         New-Item -ItemType Directory -Force -Path $logsDir | Out-Null
-        $stdoutLog = Join-Path $logsDir 'latest-stdout.log'
-        $stderrLog = Join-Path $logsDir 'latest-stderr.log'
-
         Start-Process `
             -FilePath $nodePath `
             -ArgumentList 'scripts/serve.mjs' `
@@ -120,38 +176,35 @@ try {
             -RedirectStandardOutput $stdoutLog `
             -RedirectStandardError $stderrLog
 
-        for ($attempt = 0; $attempt -lt 30; $attempt++) {
+        $ready = $false
+        for ($attempt = 0; $attempt -lt 40; $attempt++) {
             Start-Sleep -Milliseconds 250
-            $localRunning = Test-SuowangHealth $healthUrl
-            $remoteRunning = Test-SuowangTailscaleListener $tailscaleIp $port
-            if ($localRunning -and ($accessMode -ne 'tailscale' -or $remoteRunning)) {
-                $isRunning = $true
-                break
+            $health = Get-SuowangHealth $healthUrl
+            $listenerState = Get-ListenerState $port $accessMode $tailscaleIp
+            $postDecision = Get-LauncherDecision $nodePath @{
+                expectedVersion = $expectedVersion
+                expectedAccessMode = $accessMode
+                health = $health
+                listener = @{
+                    occupied = $listenerState.Occupied
+                    accessModeMatches = $listenerState.AccessModeMatches
+                }
+                processVerified = $false
             }
+            if ($postDecision.action -eq 'reuse') { $ready = $true; break }
+        }
+        if (-not $ready) {
+            $detail = if (Test-Path -LiteralPath $stderrLog) {
+                ((Get-Content -LiteralPath $stderrLog -Tail 12) -join [Environment]::NewLine).Trim()
+            } else { '本地服务没有在预期时间内就绪。' }
+            throw $detail
         }
     }
 
-    if (-not $isRunning) {
-        $stderrLog = Join-Path $dataDir 'logs/latest-stderr.log'
-        $stderrDetail = if (Test-Path -LiteralPath $stderrLog) {
-            ((Get-Content -LiteralPath $stderrLog -Tail 12) -join [Environment]::NewLine).Trim()
-        } else { '' }
-        $stdoutLog = Join-Path $dataDir 'logs/latest-stdout.log'
-        $stdoutDetail = if (Test-Path -LiteralPath $stdoutLog) {
-            ((Get-Content -LiteralPath $stdoutLog -Tail 12) -join [Environment]::NewLine).Trim()
-        } else { '' }
-        $detail = if ($stderrDetail) {
-            $stderrDetail
-        } elseif ($stdoutDetail) {
-            "服务输出：$stdoutDetail"
-        } else {
-            '本地服务没有在预期时间内就绪，且没有产生启动日志。'
-        }
-        throw "阶段：启动本地服务`n原因：$detail`n日志：$stderrLog`n下一步：确认 Node 22+ 已安装，或查看该日志。"
-    }
-
+    $stage = '打开所往'
     Start-Process -FilePath $appUrl
 } catch {
-    Show-StartError $_.Exception.Message
+    $logPath = if ($stderrLog) { $stderrLog } else { '尚未建立日志文件' }
+    Show-StartError "阶段：$stage`n原因：$($_.Exception.Message)`n日志：$logPath`n下一步：请先按提示处理；若仍失败，请把日志内容发给维护者。"
     exit 1
 }
