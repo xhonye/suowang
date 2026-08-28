@@ -63,13 +63,13 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 
 ## 数据与技术合同
 
-- Node 22+、Vanilla JS、CSS、`better-sqlite3`；不引入前端框架、ORM、Electron 或 Tauri。
+- 源码入口只承诺 Node 22 与 Node 24 LTS；普通用户发行包固定内置 Node 24.15.0。使用 Vanilla JS、CSS、`better-sqlite3`，不引入前端框架、ORM、Electron 或 Tauri。
 - 仓库安装通过 `.npmrc` 禁用依赖生命周期脚本，使用锁定的 `better-sqlite3` 跨平台预编译文件；Playwright 浏览器与发行工具必须由 CI 显式安装，不依赖隐式 postinstall。
 - 浏览器 UI 只通过本地 JSON API 读写；SQLite 是业务数据唯一真源，`localStorage` 不得保存主线、事项或指针。
 - 正式库首次启动只有固定三模式和设置，不注入 demo 主线、事项或假统计。
 - migration 文件进入 Git；个人数据库、备份、头像、日志和导出必须在仓库外。
 - `SUOWANG_DATA_DIR` 可用绝对路径显式指定数据目录并始终优先。Windows 新安装使用 `%LOCALAPPDATA%/SUOWANG`；只有检测到真实的 `D:/5Data/suowang/suowang.db` 时才继续兼容旧目录。两处同时存在数据库时必须报冲突并要求显式选择，不自动移动、复制或合并。macOS 使用 `~/Library/Application Support/SUOWANG/`，Linux 使用 XDG 或标准 home 数据目录。
-- 已存在数据库有待执行 migration 时，必须先 checkpoint WAL 并创建不参与日常清理的完整迁移前备份；全部待执行 migration、schema 记录、`integrity_check` 与 `foreign_key_check` 在同一事务中通过后才能提交。每日备份与手动 SQLite 导出必须先写同目录临时文件，通过 `integrity_check` 与 `foreign_key_check` 后再提升为正式文件；既有每日备份不能只凭文件存在就跳过验证。每天第一次启动自动备份 SQLite，按备份时间保留最后 30 份。手动导出不限；整库恢复前必须先备份当前库，不做 merge。
+- 已存在数据库有待执行 migration 时，必须先 checkpoint WAL 并创建不参与日常清理的完整迁移前备份；全部待执行 migration、schema 记录、`integrity_check` 与 `foreign_key_check` 在同一事务中通过后才能提交。每日备份与手动 SQLite 导出必须先写同目录临时文件，并验证 SQLite 完整性、外键、SUOWANG 必需表、固定三模式及当前完整 migration 集，再提升为正式文件；既有每日备份不能只凭文件存在就跳过验证。每天第一次启动自动备份 SQLite，按备份时间保留最后 30 份。手动导出不限；整库恢复前必须先备份当前库，不做 merge。
 - Windows 与 macOS 启动器必须从 `launcher-config.mjs` 读取版本、数据目录、端口和访问模式。只在 health、监听 PID 与 `scripts/serve.mjs` 进程身份均可验证时复用或切换旧服务；版本或模式不符时安全重启，非 SUOWANG 或身份不可信的占端口进程绝不能终止。
 - 不建立点击、切模式、切当前主线、拖拽或文字修改的 audit/event 流水；`todo_occurrences` 只保存用户明确确认的持续事项完成事实，不承担行为监控。
 
@@ -121,8 +121,9 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - `docs/architecture.md`、`docs/integration-guide.md`、`docs/operator-runbook.md`：架构、内部端点和本地运维真相。
 - `docs/handoff.md`：当前已实现边界与后续维护入口。
 - `docs/visual-final-preview.html`：正式页面当前 2172×724 分层视觉的静态交互基准；图片基座、透明箭头与生成溯源见 `assets/milestones/2026-08-23-arrow-pipeline/`。
-- `.github/workflows/ci.yml`：Linux、Windows、macOS 单元门禁、Linux Playwright 和 npm 包清单审计。
-- `.github/workflows/release-windows.yml`、`.github/workflows/release-macos.yml`：从明确 tag 构建同一版本的发行资产；手动运行只上传 Actions artifact，Release 发布事件才上传正式附件。
+- `.github/workflows/ci.yml`：Linux、Windows、macOS 的 Node 22/24 单元与临时 smoke 门禁、Linux Playwright 和 npm 包清单审计。
+- `.github/workflows/release-windows.yml`、`.github/workflows/release-macos.yml`：只接受完整 commit SHA，构建并验证不可变候选资产，不依赖最终 Tag，也不修改 GitHub Release。
+- `.github/workflows/publish-release.yml`：在人工安装升级验收后核对同 SHA 的双平台候选运行和校验和，创建不可移动 Tag，把完整资产放入 Draft Release，核齐后一次性公开；禁止覆盖既有 Tag、Release 或资产。
 
 在仓库根目录运行：
 
@@ -148,7 +149,7 @@ npm start
 - 每个稳定业务规则都应有自动化测试；UI 改动必须真实验证 1920×1080、2560×1440 和 320px。
 - `package.json` 是应用语义版本唯一真源。`/health` 必须返回 `app/version/database/schemaVersion/pid/accessMode`，不得暴露数据目录或业务数据；CLI、Windows/macOS 构建和启动器必须从同一版本与配置来源派生。
 - 所有开发服务、单元测试、E2E、恢复与 smoke 必须显式使用临时 `SUOWANG_DATA_DIR` 和非默认测试端口；禁止用个人数据库验证 migration。已有数据库升级前必须先生成不可覆盖且通过完整性检查的迁移前备份。
-- 发版前至少通过 `npm run release:check`、Visual Baseline 和跨平台 CI；发行工作流必须校验 tag 与 `package.json` 版本一致，下载内置 Node 运行时后必须对照 nodejs.org 同版本 `SHASUMS256.txt` 验证精确文件名和 SHA-256。不得以更新快照、改哈希或跳过浏览器测试绕过失败。
+- 发版前至少通过 `npm run release:check`、Visual Baseline 和 Node 22/24 跨平台 CI；`release:check` 必须包含临时数据库 smoke。候选构建必须以完整 commit SHA 为输入，下载内置 Node 后对照 nodejs.org 同版本 `SHASUMS256.txt` 验证精确文件名和 SHA-256。Windows/macOS 候选必须来自同一 SHA，完成人工安装升级验收后才能创建最终 Tag；公开 Release 必须先在 Draft 中集齐并验证全部资产，再一次性公开，禁止 `--clobber` 或替换既有同版本资产。不得以更新快照、改哈希或跳过浏览器测试绕过失败。
 - 保持键盘焦点、非颜色状态表达和 `prefers-reduced-motion`。
 - 不把私人主线、事项、数据库、日志、截图、凭据或导出放进 Git。
 - 未经明确要求，不引入外部 API、云同步、遥测、账号、通知、AI 设置或未来导航入口。

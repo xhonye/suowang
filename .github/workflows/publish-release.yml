@@ -1,0 +1,160 @@
+name: Publish verified candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Audited full 40-character commit SHA used by both candidate builds
+        required: true
+        type: string
+      windows_run_id:
+        description: Successful Build Windows candidate run ID for this SHA
+        required: true
+        type: string
+      macos_run_id:
+        description: Successful Build macOS Apple Silicon candidate run ID for this SHA
+        required: true
+        type: string
+      install_evidence:
+        description: Reference to completed Windows/macOS installation and upgrade evidence
+        required: true
+        type: string
+      confirmation:
+        description: Type INSTALL_VERIFIED to create the final tag and publish the immutable Release
+        required: true
+        type: string
+
+concurrency:
+  group: publish-suowang-release
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    name: Verify candidates, create tag, stage assets and publish once
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the audited commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.15.0'
+
+      - name: Verify approval, SHA and candidate run provenance
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ inputs.sha }}
+          WINDOWS_RUN_ID: ${{ inputs.windows_run_id }}
+          MACOS_RUN_ID: ${{ inputs.macos_run_id }}
+          INSTALL_EVIDENCE: ${{ inputs.install_evidence }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          test "$CONFIRMATION" = 'INSTALL_VERIFIED'
+          test -n "$INSTALL_EVIDENCE"
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          version="$(node -p "require('./package.json').version")"
+          tag="v$version"
+          short_sha="${CANDIDATE_SHA:0:12}"
+          echo "PACKAGE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+          echo "CANDIDATE_SHORT_SHA=$short_sha" >> "$GITHUB_ENV"
+
+          verify_run() {
+            local run_id="$1" expected_workflow="$2"
+            test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .head_sha)" = "$CANDIDATE_SHA"
+            test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .conclusion)" = success
+            test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .event)" = workflow_dispatch
+            test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .name)" = "$expected_workflow"
+          }
+          verify_run "$WINDOWS_RUN_ID" 'Build Windows candidate'
+          verify_run "$MACOS_RUN_ID" 'Build macOS Apple Silicon candidate'
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "Refusing to replace existing tag $tag" >&2
+            exit 1
+          fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Refusing to replace existing Release $tag" >&2
+            exit 1
+          fi
+
+      - name: Download exact candidate artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WINDOWS_RUN_ID: ${{ inputs.windows_run_id }}
+          MACOS_RUN_ID: ${{ inputs.macos_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p candidates/windows candidates/macos
+          gh run download "$WINDOWS_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "SUOWANG-Windows-${PACKAGE_VERSION}-${CANDIDATE_SHORT_SHA}" \
+            --dir candidates/windows
+          gh run download "$MACOS_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "SUOWANG-macos-arm64-${PACKAGE_VERSION}-${CANDIDATE_SHORT_SHA}" \
+            --dir candidates/macos
+
+      - name: Verify complete immutable asset set
+        shell: bash
+        run: |
+          set -euo pipefail
+          windows_files=(
+            "SUOWANG-Portable-${PACKAGE_VERSION}.zip"
+            "SUOWANG-Setup-${PACKAGE_VERSION}.exe"
+            "SUOWANG-${PACKAGE_VERSION}-SHA256SUMS.txt"
+          )
+          macos_files=(
+            "SUOWANG-${PACKAGE_VERSION}-mac-arm64.dmg"
+            "SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt"
+          )
+          for file in "${windows_files[@]}"; do test -f "candidates/windows/$file"; done
+          for file in "${macos_files[@]}"; do test -f "candidates/macos/$file"; done
+          test "$(find candidates -type f | wc -l | tr -d ' ')" = 5
+          (cd candidates/windows && sha256sum --check "SUOWANG-${PACKAGE_VERSION}-SHA256SUMS.txt")
+          (cd candidates/macos && sha256sum --check "SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt")
+
+      - name: Create immutable tag and draft Release with all assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag --annotate "$RELEASE_TAG" "$CANDIDATE_SHA" --message "SUOWANG $PACKAGE_VERSION"
+          git push origin "refs/tags/$RELEASE_TAG"
+          gh release create "$RELEASE_TAG" \
+            candidates/windows/* candidates/macos/* \
+            --draft --prerelease --verify-tag \
+            --title "SUOWANG $PACKAGE_VERSION" \
+            --generate-notes
+
+      - name: Verify draft completeness, then publish once
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INSTALL_EVIDENCE: ${{ inputs.install_evidence }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" --jq .draft)" = true
+          actual="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" --jq '[.assets[].name] | sort | join("\n")')"
+          expected="$(printf '%s\n' \
+            "SUOWANG-${PACKAGE_VERSION}-SHA256SUMS.txt" \
+            "SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt" \
+            "SUOWANG-${PACKAGE_VERSION}-mac-arm64.dmg" \
+            "SUOWANG-Portable-${PACKAGE_VERSION}.zip" \
+            "SUOWANG-Setup-${PACKAGE_VERSION}.exe" | sort)"
+          test "$actual" = "$expected"
+          printf 'Install evidence: %s\n' "$INSTALL_EVIDENCE" >> "$GITHUB_STEP_SUMMARY"
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease

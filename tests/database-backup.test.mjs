@@ -32,6 +32,49 @@ test('an invalid existing daily backup is verified and replaced', async (context
   assert.doesNotThrow(() => runtime.validateBackupFile(destination));
 });
 
+test('a valid empty SQLite file cannot masquerade as the daily SUOWANG backup', async (context) => {
+  const { runtime } = createServiceHarness(context);
+  const date = new Date(2026, 7, 29, 9);
+  const destination = join(runtime.backupsDir, 'suowang-2026-08-29.db');
+  new Database(destination).close();
+
+  assert.throws(() => runtime.validateBackupFile(destination), /missing required table/i);
+  const result = await runtime.ensureDailyBackup(date);
+  assert.equal(result.created, true);
+  assert.doesNotThrow(() => runtime.validateBackupFile(destination));
+});
+
+test('a valid SQLite database from another application is rejected as a backup', (context) => {
+  const { runtime, dataDir } = createServiceHarness(context);
+  const unrelated = join(dataDir, 'other-app.db');
+  const candidate = new Database(unrelated);
+  try {
+    candidate.exec('CREATE TABLE notes (id INTEGER PRIMARY KEY, body TEXT NOT NULL);');
+  } finally {
+    candidate.close();
+  }
+
+  assert.throws(() => runtime.validateBackupFile(unrelated), /missing required table/i);
+});
+
+test('a structurally valid backup with an incomplete migration set is replaced', async (context) => {
+  const { runtime } = createServiceHarness(context);
+  const date = new Date(2026, 7, 30, 9);
+  const destination = join(runtime.backupsDir, 'suowang-2026-08-30.db');
+  await runtime.backupTo(destination);
+  const stale = new Database(destination);
+  try {
+    stale.prepare('DELETE FROM schema_migrations WHERE version = (SELECT MAX(version) FROM schema_migrations)').run();
+  } finally {
+    stale.close();
+  }
+
+  assert.throws(() => runtime.validateBackupFile(destination), /schema does not match/i);
+  const result = await runtime.ensureDailyBackup(date);
+  assert.equal(result.created, true);
+  assert.doesNotThrow(() => runtime.validateBackupFile(destination));
+});
+
 test('backup validation rejects a structurally valid SQLite file with foreign key violations', (context) => {
   const { runtime, dataDir } = createServiceHarness(context);
   const invalid = join(dataDir, 'foreign-key-invalid.db');

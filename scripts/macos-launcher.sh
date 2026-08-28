@@ -176,4 +176,6 @@ if [[ "$action" != 'reuse' ]]; then
   fi
 fi
 
-open "$app_url"
+if [[ "${SUOWANG_SKIP_BROWSER:-}" != '1' ]]; then
+  open "$app_url"
+fi

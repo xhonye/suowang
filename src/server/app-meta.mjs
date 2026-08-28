@@ -10,14 +10,17 @@ export function deriveMacOSVersions(version = APP_VERSION) {
   const match = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+)(?:\.(\d+))?)?(?:\+[0-9A-Za-z.-]+)?$/.exec(version);
   if (!match) throw new Error(`Invalid application SemVer: ${version}`);
 
-  const [, major, minor, patch, prerelease = '', prereleaseNumber = '0'] = match;
+  const [, major, minor, patch, prerelease = '', prereleaseNumber] = match;
   const channel = prerelease === '' ? 9
     : prerelease === 'alpha' ? 1
       : prerelease === 'beta' ? 2
         : prerelease === 'rc' ? 3
           : null;
   if (channel === null) throw new Error(`Unsupported macOS prerelease channel: ${version}`);
-  const serial = Number(prereleaseNumber);
+  if (prerelease !== '' && prereleaseNumber === undefined) {
+    throw new Error(`macOS prerelease must include a serial from 0 to 9: ${version}`);
+  }
+  const serial = prerelease === '' ? 0 : Number(prereleaseNumber);
   if (!Number.isSafeInteger(serial) || serial < 0 || serial > 9) {
     throw new Error(`macOS prerelease serial must be an integer from 0 to 9: ${version}`);
   }

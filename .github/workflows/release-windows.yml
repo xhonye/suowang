@@ -1,57 +1,58 @@
-name: Build Windows release
+name: Build Windows candidate
 
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: Existing release tag to build, for example v0.2.0-alpha.1
+      sha:
+        description: Full 40-character commit SHA to build; a final tag is not required
         required: true
         type: string
-  release:
-    types: [published]
 
 permissions:
-  contents: write
-
-env:
-  RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+  contents: read
 
 jobs:
   build-windows:
-    name: Build Windows Setup and Portable
+    name: Build and smoke Windows Setup and Portable
     runs-on: windows-latest
     steps:
-      - name: Check out the release tag
+      - name: Check out the audited commit
         uses: actions/checkout@v7
         with:
-          ref: ${{ env.RELEASE_TAG }}
+          ref: ${{ inputs.sha }}
 
       - uses: actions/setup-node@v7
         with:
           node-version: '24.15.0'
           cache: npm
 
-      - name: Verify tag matches package version
+      - name: Verify immutable candidate identity
         shell: pwsh
+        env:
+          CANDIDATE_SHA: ${{ inputs.sha }}
         run: |
-          $version = node -p "require('./package.json').version"
-          if ($env:RELEASE_TAG -ne "v$version") {
-            throw "Release tag $env:RELEASE_TAG does not match package version $version"
+          if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$') {
+            throw 'Candidate input must be a full lowercase 40-character commit SHA.'
           }
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -ne $env:CANDIDATE_SHA) {
+            throw "Checked out $actual instead of requested $env:CANDIDATE_SHA"
+          }
+          $version = node -p "require('./package.json').version"
           "PACKAGE_VERSION=$version" >> $env:GITHUB_ENV
+          "CANDIDATE_SHORT_SHA=$($actual.Substring(0, 12))" >> $env:GITHUB_ENV
 
       - run: npm ci
       - run: npx playwright install chromium
-      - run: npm run verify
 
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup --no-progress -y
 
-      - name: Build Windows release assets
+      - name: Run release gates and build Windows candidates
         run: npm run release:windows
 
-      - name: Verify named assets and packaged health
+      - name: Verify assets, install, launch and uninstall candidate
         shell: pwsh
         run: |
           $version = $env:PACKAGE_VERSION
@@ -62,47 +63,84 @@ jobs:
           foreach ($path in @($portableRoot, $portableZip, $setup, $checksums)) {
             if (-not (Test-Path -LiteralPath $path)) { throw "Missing release asset: $path" }
           }
-          $smokeRoot = Join-Path $env:RUNNER_TEMP "suowang-portable-smoke-$PID"
-          New-Item -ItemType Directory -Force -Path $smokeRoot | Out-Null
+
+          $testRoot = Join-Path $env:RUNNER_TEMP "suowang-setup-smoke-$PID"
+          $installRoot = Join-Path $testRoot 'installed'
+          $dataRoot = Join-Path $testRoot 'data'
+          New-Item -ItemType Directory -Force -Path $testRoot | Out-Null
+          function Get-FreePort {
+            $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+            $listener.Start()
+            $port = ([System.Net.IPEndPoint]$listener.LocalEndpoint).Port
+            $listener.Stop()
+            return $port
+          }
+          function Stop-TestService($health) {
+            Stop-Process -Id ([int]$health.pid)
+            Wait-Process -Id ([int]$health.pid) -Timeout 10 -ErrorAction SilentlyContinue
+            if (Get-Process -Id ([int]$health.pid) -ErrorAction SilentlyContinue) {
+              throw 'Packaged SUOWANG service did not stop cleanly.'
+            }
+          }
+          $portableHealth = $null
+          $health = $null
           try {
-            $env:SUOWANG_DATA_DIR = Join-Path $smokeRoot 'data'
-            Push-Location $portableRoot
-            try {
-              $script = @'
-          Promise.all([import('./scripts/serve.mjs'), import('./src/server/app-meta.mjs')]).then(async ([{ createAppServer }, { APP_VERSION }]) => {
-            const server = await createAppServer({ dataDir: process.env.SUOWANG_DATA_DIR, ensureBackup: false });
-            await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-            const health = await (await fetch(`http://127.0.0.1:${server.address().port}/health`)).json();
-            if (health.app !== 'suowang' || health.version !== APP_VERSION || health.database !== 'ready') throw new Error('portable health smoke failed');
-            await new Promise((resolve) => server.close(resolve));
-            console.log(`Portable health OK: ${health.version}`);
-          });
-          '@
-              & './runtime/node.exe' -e $script
-              if ($LASTEXITCODE -ne 0) { throw 'Portable health smoke failed' }
-            } finally { Pop-Location }
+            $portablePort = Get-FreePort
+            $env:SUOWANG_DATA_DIR = Join-Path $testRoot 'portable-data'
+            $env:SUOWANG_PORT = [string]$portablePort
+            $env:SUOWANG_SKIP_BROWSER = '1'
+            & cmd.exe /c (Join-Path $portableRoot 'SUOWANG.cmd')
+            if ($LASTEXITCODE -ne 0) { throw "Portable launcher exited with $LASTEXITCODE" }
+            $portableHealth = Invoke-RestMethod -Uri "http://127.0.0.1:$portablePort/health" -TimeoutSec 5
+            if ($portableHealth.app -ne 'suowang' -or $portableHealth.version -ne $version -or $portableHealth.database -ne 'ready') {
+              throw 'Portable launcher health verification failed.'
+            }
+            Stop-TestService $portableHealth
+
+            & $setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/DIR=$installRoot"
+            if ($LASTEXITCODE -ne 0) { throw "Setup exited with $LASTEXITCODE" }
+            $launcher = Join-Path $installRoot 'scripts/start.ps1'
+            $uninstaller = Join-Path $installRoot 'unins000.exe'
+            foreach ($path in @($launcher, $uninstaller)) {
+              if (-not (Test-Path -LiteralPath $path)) { throw "Installed file missing: $path" }
+            }
+
+            $env:SUOWANG_DATA_DIR = $dataRoot
+            $installedPort = Get-FreePort
+            $env:SUOWANG_PORT = [string]$installedPort
+            $env:SUOWANG_SKIP_BROWSER = '1'
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher
+            if ($LASTEXITCODE -ne 0) { throw "Installed launcher exited with $LASTEXITCODE" }
+            $health = Invoke-RestMethod -Uri "http://127.0.0.1:$installedPort/health" -TimeoutSec 5
+            if ($health.app -ne 'suowang' -or $health.version -ne $version -or $health.database -ne 'ready') {
+              throw 'Installed launcher health verification failed.'
+            }
+            Stop-TestService $health
+
+            & $uninstaller /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+            if ($LASTEXITCODE -ne 0) { throw "Uninstaller exited with $LASTEXITCODE" }
+            if (-not (Test-Path -LiteralPath (Join-Path $dataRoot 'suowang.db'))) {
+              throw 'User data did not survive uninstall.'
+            }
           } finally {
-            Remove-Item -LiteralPath $smokeRoot -Recurse -Force
+            foreach ($candidate in @($portableHealth, $health)) {
+              if ($candidate -and $candidate.app -eq 'suowang' -and (Get-Process -Id ([int]$candidate.pid) -ErrorAction SilentlyContinue)) {
+                Stop-Process -Id ([int]$candidate.pid) -Force -ErrorAction SilentlyContinue
+              }
+            }
+            Remove-Item Env:SUOWANG_DATA_DIR -ErrorAction SilentlyContinue
+            Remove-Item Env:SUOWANG_PORT -ErrorAction SilentlyContinue
+            Remove-Item Env:SUOWANG_SKIP_BROWSER -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
           }
 
-      - name: Upload reviewable Windows artifacts
+      - name: Upload immutable Windows candidate artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: SUOWANG-Windows-${{ env.PACKAGE_VERSION }}
+          name: SUOWANG-Windows-${{ env.PACKAGE_VERSION }}-${{ env.CANDIDATE_SHORT_SHA }}
           path: |
             dist/windows/SUOWANG-Portable-${{ env.PACKAGE_VERSION }}.zip
             dist/windows/SUOWANG-Setup-${{ env.PACKAGE_VERSION }}.exe
             dist/windows/SUOWANG-${{ env.PACKAGE_VERSION }}-SHA256SUMS.txt
           if-no-files-found: error
-
-      - name: Attach assets to the published Release
-        if: github.event_name == 'release'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: pwsh
-        run: |
-          gh release upload $env:RELEASE_TAG `
-            "dist/windows/SUOWANG-Portable-$env:PACKAGE_VERSION.zip" `
-            "dist/windows/SUOWANG-Setup-$env:PACKAGE_VERSION.exe" `
-            "dist/windows/SUOWANG-$env:PACKAGE_VERSION-SHA256SUMS.txt" `
-            --clobber
+          retention-days: 14

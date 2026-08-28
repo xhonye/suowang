@@ -53,7 +53,7 @@ scripts/serve.mjs
 ## 数据生命周期
 
 1. 启动时识别全部未运行的 migration。已有数据库升级前先 checkpoint WAL，并在 `backups/` 创建带起止 schema 版本和 UTC 时间戳的不可覆盖快照；全部待执行 migration 与 schema 记录在单一事务中执行，提交前必须通过 `integrity_check` 和 `foreign_key_check`。失败时事务完整回滚，迁移前快照保留。
-2. 当天首次启动前创建一致性 SQLite 备份：先写同目录唯一临时文件，通过 `integrity_check` 与 `foreign_key_check` 后再提升为正式文件；当天文件已存在时也先验证，无效文件用已验证候选替换。自动备份滚动保留 30 份。
+2. 当天首次启动前创建一致性 SQLite 备份：先写同目录唯一临时文件，验证 `integrity_check`、`foreign_key_check`、SUOWANG 必需表、固定三模式和当前完整 migration 集后再提升为正式文件；当天文件已存在时也执行同一语义校验，合法但属于其他应用的 SQLite 或旧 schema 文件都用已验证候选替换。自动备份滚动保留 30 份。
 3. 手动 SQLite 导出复用同一原子备份路径；JSON 导出只用于人类阅读。
 4. 整库恢复先验证文件结构，再备份当前库，关闭连接并原子替换；失败时恢复安全副本。
 5. 正式数据、备份、头像、访问配置、日志和临时导出始终跟随同一个仓库外数据目录。Windows 新安装使用 `%LOCALAPPDATA%/SUOWANG`；只有旧目录已经存在 `suowang.db` 时才继续使用 `D:/5Data/suowang`。两处都有数据库时停止并要求显式选择，不自动搬迁或合并。macOS 使用 `~/Library/Application Support/SUOWANG/`。
@@ -68,7 +68,9 @@ Node 单元测试、Playwright 浏览器测试和临时 smoke 都显式使用仓
 
 仓库级 `.npmrc` 禁用依赖安装生命周期脚本，避免 `better-sqlite3` 在已有锁定跨平台预编译文件时仍隐式调用 `node-gyp`。因此 CI 必须显式执行 Playwright Chromium 安装和发行工具准备；`npm ci` 后的单元与 health smoke 会验证当前平台原生 SQLite 模块确实可加载。
 
-常规 CI 在 Linux、Windows 和 macOS 上运行核心门禁，并在 Linux 执行浏览器测试和包清单审计。Windows 与 macOS 发行工作流都从明确 tag checkout，要求 tag 等于 `v${package.json.version}`；手动运行只产生 Actions artifact，只有已有 Release 的 `published` 事件才附加正式资产。本轮不创建 tag 或 Release，也不声称应用已经签名或公证。
+常规 CI 在 Linux、Windows 和 macOS 上分别用 Node 22/24 运行单元门禁与动态端口临时 smoke，并在 Linux 执行浏览器测试和包清单审计。Windows 与 macOS 候选工作流只接受完整 commit SHA：Windows 自动执行 Setup 静默安装、真实启动壳 health 与卸载后数据保留检查；macOS 挂载最终 DMG、复制 `.app`、运行真实启动壳并检查 health。候选只保存为短期 Actions artifact，不创建 Tag 或公开 Release。
+
+人工完成 Windows/macOS 真实安装、升级与未签名打开验收后，聚合发布工作流核对两个成功候选运行都来自同一 SHA，下载精确 artifact 并复验 SHA-256。它随后创建不可移动的 annotated Tag，在 Draft Release 中一次上传完整五项资产，核对名称齐全后才公开为 prerelease。任何既有 Tag 或 Release 都使流程失败，不允许 `--clobber`；因此用户可见 Release 不再经历先公开空壳、再异步追加或覆盖资产的窗口。本轮不创建 Tag 或 Release，也不声称 Gatekeeper、Safari 或人工升级路径已由自动化替代。
 
 ## 取舍
 

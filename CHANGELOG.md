@@ -6,15 +6,16 @@
 - 新增「开始这一步 / 暂停」行动指针，保持无计时、无行为日志、无专注统计的克制边界。
 - 修复结束或删除无关主线时错误清除行动中指针；只有当前下一步不再合法时才清除。
 - 将 `package.json` 建为应用版本唯一真源，CLI、health、Windows/macOS 构建和发行文件名统一使用 `0.2.0-alpha.1`；macOS plist 使用由 SemVer 派生的合法数值版本。
-- 修复 macOS bundle 版本在 alpha、beta、rc、正式版与下一 patch 之间的碰撞，保证严格递增。
+- 修复 macOS bundle 版本在 alpha、beta、rc、正式版与下一 patch 之间的碰撞，要求预发布版本显式使用 `.0`–`.9` 序号并保证严格递增。
 - 清除首帧脚本错误、个人姓名静态默认和无事实依据的“专注天数”；新数据库使用中性身份，旧数据库保持原显示名称。
 - Windows 新安装改用 `%LOCALAPPDATA%/SUOWANG`，仅在检测到真实旧数据库时兼容 `D:/5Data/suowang`；双数据库歧义停止启动并要求显式选择。
 - schema 升级前新增独立完整备份，全部待执行 migration 与完整性检查原子提交；已发布 migration 和四张批准道路资产加入 SHA-256 防篡改基线。
-- 每日备份和 SQLite 导出改为同目录临时写入、完整性与外键验证后替换；无效的既有每日备份会安全重建。
+- 每日备份和 SQLite 导出改为同目录临时写入，并验证完整性、外键、SUOWANG 必需结构、固定模式和当前 migration 集后替换；损坏、其他应用或旧 schema 的既有每日备份会安全重建。
 - active 主线名称改为同模式唯一；不同模式及行迹可以重名，主线身份继续由 ID 保证。
 - Windows/macOS 启动器统一读取版本、端口、数据目录和访问模式；只安全复用或切换已验证的 SUOWANG 进程，不终止身份不明的端口占用者。
-- 增加使用临时数据库的 Playwright 核心流程、320px/1920px 响应式、恢复与减少动态效果回归，以及 Linux/Windows/macOS CI、npm 包清单和双平台发行闸门。
+- 增加使用临时数据库的 Playwright 核心流程、320px/1920px 响应式、恢复与减少动态效果回归，以及 Linux/Windows/macOS Node 22/24 CI、动态端口 smoke、npm 包清单和双平台发行闸门。
 - Windows/macOS 自包含构建在解压内置 Node 前核对 nodejs.org 官方 `SHASUMS256.txt`。
+- 双平台候选构建改为接受完整 commit SHA 并只产出 Actions artifact；人工安装升级验收后，由聚合流程创建最终 Tag、在 Draft 中集齐全部资产并一次性公开，禁止覆盖同版本资产。
 
 ## 0.1.2 — 2026-08-26
 

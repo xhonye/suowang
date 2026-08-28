@@ -4,7 +4,7 @@
 
 ## 首次安装
 
-源码和 npm 使用需要 Node 22 或更高版本；自包含的 Windows Setup/Portable 与 macOS `.dmg` 不需要用户安装 Node。
+源码和 npm 使用只支持 Node 22 或 Node 24 LTS；自包含的 Windows Setup/Portable 与 macOS `.dmg` 固定内置 Node 24.15.0，不需要用户安装 Node。
 
 ### GitHub Release / 双击入口
 
@@ -89,7 +89,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 
 按下面顺序检查：
 
-1. 自包含安装先检查 `http://127.0.0.1:2037/health` 是否返回正常状态；源码/npx 入口再检查 Node 版本是否满足 `node --version` ≥ 22。
+1. 自包含安装先检查 `http://127.0.0.1:2037/health` 是否返回正常状态；源码/npx 入口再确认 `node --version` 的主版本为 22 或 24。
 2. 2037 端口是否被其他程序占用。
 3. 数据目录是否可写，数据库或备份盘是否有空间。
 4. macOS 启动失败时检查 `~/Library/Application Support/SUOWANG/logs/latest-stderr.log`。
@@ -110,4 +110,4 @@ git diff --check
 git status --short
 ```
 
-`release:check` 会同时运行完整测试并审阅 npm tarball 文件清单。双平台自包含构建下载 Node 运行时后必须通过 nodejs.org 官方 `SHASUMS256.txt` 校验。`smoke:temp` 在系统临时目录和端口 24733 中完成创建、重启、导出与恢复后删除临时库。单元、浏览器和 smoke 必须显式使用临时数据目录与非默认端口。确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/事项或视觉探索归档。
+`release:check` 会运行单元、浏览器、动态端口临时 smoke 并审阅 npm tarball 文件清单。双平台候选构建下载 Node 运行时后必须通过 nodejs.org 官方 `SHASUMS256.txt` 校验；候选工作流只接受完整 commit SHA 并上传 Actions artifact。完成 Windows/macOS 人工安装升级验收后，聚合发布工作流才允许用两个候选 run ID 和 `INSTALL_VERIFIED` 创建最终 Tag，在 Draft Release 内集齐资产后一次性公开。不得对已公开版本覆盖资产。所有测试必须显式使用临时数据目录与非默认端口；确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/事项或视觉探索归档。

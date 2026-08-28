@@ -127,7 +127,7 @@ try {
         (Get-Command node -ErrorAction Stop).Source
     }
     $nodeMajor = [int]((& $nodePath --version).TrimStart('v').Split('.')[0])
-    if ($nodeMajor -lt 22) { throw "检测到 Node $nodeMajor。SUOWANG 需要 Node 22 或更高版本。" }
+    if ($nodeMajor -notin @(22, 24)) { throw "检测到 Node $nodeMajor。源码入口仅支持 Node 22 或 24 LTS；普通用户请使用自包含安装包。" }
 
     $launcherConfig = Get-SuowangLauncherConfig $nodePath
     $expectedVersion = [string]$launcherConfig.expectedVersion
@@ -202,7 +202,9 @@ try {
     }
 
     $stage = '打开所往'
-    Start-Process -FilePath $appUrl
+    if ($env:SUOWANG_SKIP_BROWSER -ne '1') {
+        Start-Process -FilePath $appUrl
+    }
 } catch {
     $logPath = if ($stderrLog) { $stderrLog } else { '尚未建立日志文件' }
     Show-StartError "阶段：$stage`n原因：$($_.Exception.Message)`n日志：$logPath`n下一步：请先按提示处理；若仍失败，请把日志内容发给维护者。"

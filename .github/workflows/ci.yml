@@ -20,7 +20,11 @@ jobs:
           - os: ubuntu-latest
             node: '24.15.0'
           - os: windows-latest
+            node: '22'
+          - os: windows-latest
             node: '24.15.0'
+          - os: macos-14
+            node: '22'
           - os: macos-14
             node: '24.15.0'
     runs-on: ${{ matrix.os }}
@@ -32,6 +36,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: npm run smoke:temp
 
   browser-test:
     name: Browser - Chromium

@@ -6,16 +6,19 @@ import { APP_VERSION } from '../src/server/app-meta.mjs';
 import { createAppServer } from './serve.mjs';
 
 const dataDir = mkdtempSync(join(tmpdir(), 'suowang-smoke-'));
-const port = 24733;
-const baseUrl = `http://127.0.0.1:${port}`;
+const requestedPort = Number(process.env.SUOWANG_SMOKE_PORT ?? 0);
+let port;
+let baseUrl;
 let server;
 
 async function openServer() {
   server = await createAppServer({ dataDir, ensureBackup: false });
   await new Promise((resolve, reject) => {
     server.once('error', reject);
-    server.listen(port, '127.0.0.1', resolve);
+    server.listen(requestedPort, '127.0.0.1', resolve);
   });
+  port = server.address().port;
+  baseUrl = `http://127.0.0.1:${port}`;
 }
 
 async function closeServer() {
@@ -36,8 +39,8 @@ async function json(path, options = {}) {
 }
 
 try {
-  assert.notEqual(port, 2037);
   await openServer();
+  assert.notEqual(port, 2037);
 
   const health = await json('/health');
   assert.equal(health.version, APP_VERSION);

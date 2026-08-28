@@ -268,8 +268,16 @@ export class DatabaseRuntime {
     const candidate = new Database(path, { readonly: true, fileMustExist: true });
     try {
       candidate.pragma('foreign_keys = ON');
-      assertSQLiteIntegrity(candidate);
-      assertForeignKeyIntegrity(candidate);
+      assertDatabaseIntegrity(candidate, { requireCurrentSchema: true });
+      const expectedVersions = this.listMigrationFiles().map((file) => file.version);
+      const appliedVersions = candidate.prepare('SELECT version FROM schema_migrations ORDER BY version')
+        .all()
+        .map((row) => row.version);
+      if (appliedVersions.join(',') !== expectedVersions.join(',')) {
+        throw new Error(
+          `Backup schema does not match this SUOWANG version: expected ${expectedVersions.join(',')}, got ${appliedVersions.join(',')}.`,
+        );
+      }
     } finally {
       candidate.close();
     }

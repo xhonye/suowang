@@ -35,7 +35,8 @@
 - 内部端点：`docs/integration-guide.md`
 - 启动、备份与故障处理：`docs/operator-runbook.md`
 - 发布记录：`CHANGELOG.md`
-- macOS 发行构建：`scripts/build-macos-release.sh`、`scripts/macos-launcher.sh`、`.github/workflows/release-macos.yml`
+- 双平台候选构建：`.github/workflows/release-windows.yml`、`.github/workflows/release-macos.yml`；均以完整 commit SHA 为输入，只产出短期 Actions artifact。
+- 聚合公开发布：`.github/workflows/publish-release.yml`；只有同 SHA 候选与人工安装升级证据齐全后，才创建最终 Tag，在 Draft 中集齐资产并一次性公开。
 
 ## 变更闸门
 

@@ -9,6 +9,8 @@ test('package metadata is the application version source', () => {
   assert.equal(APP_VERSION, packageMetadata.version);
   assert.equal(packageLock.version, packageMetadata.version);
   assert.equal(packageLock.packages[''].version, packageMetadata.version);
+  assert.equal(packageMetadata.engines.node, '^22.0.0 || ^24.0.0');
+  assert.equal(packageLock.packages[''].engines.node, packageMetadata.engines.node);
 });
 
 test('macOS bundle versions are legal numeric values derived from SemVer', () => {
@@ -33,5 +35,8 @@ test('macOS bundle versions are unique and strictly ordered across release chann
   for (let index = 1; index < serials.length; index += 1) {
     assert.ok(serials[index] > serials[index - 1], `${orderedVersions[index]} must sort after ${orderedVersions[index - 1]}`);
   }
+  assert.throws(() => deriveMacOSVersions('0.2.0-alpha'), /must include a serial/);
+  assert.throws(() => deriveMacOSVersions('0.2.0-beta'), /must include a serial/);
+  assert.throws(() => deriveMacOSVersions('0.2.0-rc'), /must include a serial/);
   assert.throws(() => deriveMacOSVersions('0.2.0-preview.1'), /Unsupported macOS prerelease channel/);
 });

@@ -6,7 +6,11 @@ where node.exe >nul 2>nul
 if errorlevel 1 goto :missing_node
 
 for /f %%V in ('node -p "process.versions.node.split('.')[0]"') do set "NODE_MAJOR=%%V"
-if %NODE_MAJOR% LSS 22 goto :old_node
+if "%NODE_MAJOR%"=="22" goto :node_supported
+if "%NODE_MAJOR%"=="24" goto :node_supported
+goto :old_node
+
+:node_supported
 
 where npm.cmd >nul 2>nul
 if errorlevel 1 goto :missing_npm
@@ -24,17 +28,17 @@ start "" "%~dp0SUOWANG.cmd"
 exit /b 0
 
 :missing_node
-echo SUOWANG needs Node.js 22 or newer.
-echo Install the LTS version from https://nodejs.org/ and double-click INSTALL.cmd again.
+echo SUOWANG source installation supports Node.js 22 or 24 LTS.
+echo Install a supported LTS version from https://nodejs.org/ and double-click INSTALL.cmd again.
 goto :failed
 
 :old_node
-echo SUOWANG needs Node.js 22 or newer. Current major version: %NODE_MAJOR%
-echo Update Node.js from https://nodejs.org/ and double-click INSTALL.cmd again.
+echo SUOWANG source installation supports Node.js 22 or 24 LTS. Current major version: %NODE_MAJOR%
+echo Install a supported LTS version from https://nodejs.org/ and double-click INSTALL.cmd again.
 goto :failed
 
 :missing_npm
-echo npm was not found. Reinstall Node.js 22 or newer with npm included.
+echo npm was not found. Reinstall Node.js 22 or 24 LTS with npm included.
 goto :failed
 
 :install_failed

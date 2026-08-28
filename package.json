@@ -49,12 +49,12 @@
     "check": "npm run check:syntax && npm run test:unit",
     "verify": "npm run check && npm run test:e2e",
     "package:check": "node scripts/verify-package.mjs",
-    "release:check": "npm run verify && npm run package:check",
+    "release:check": "npm run verify && npm run smoke:temp && npm run package:check",
     "release:windows": "npm run release:check && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1",
     "release:macos": "npm run release:check && bash scripts/build-macos-release.sh"
   },
   "engines": {
-    "node": ">=22"
+    "node": "^22.0.0 || ^24.0.0"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3"
