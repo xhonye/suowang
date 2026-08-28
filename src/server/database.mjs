@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import { randomUUID } from 'node:crypto';
 import {
   copyFileSync,
   existsSync,
@@ -66,7 +67,13 @@ function assertDatabaseIntegrity(db, { requireCurrentSchema = true } = {}) {
 }
 
 export class DatabaseRuntime {
-  constructor({ dataDir, migrationsDir, databaseName = 'suowang.db', clock = () => new Date() }) {
+  constructor({
+    dataDir,
+    migrationsDir,
+    databaseName = 'suowang.db',
+    clock = () => new Date(),
+    backupDatabase = (db, destination) => db.backup(destination),
+  }) {
     this.dataDir = dataDir;
     this.migrationsDir = migrationsDir;
     this.databasePath = join(dataDir, databaseName);
@@ -74,6 +81,7 @@ export class DatabaseRuntime {
     this.tempDir = join(dataDir, 'tmp');
     this.profileDir = join(dataDir, 'profile');
     this.clock = clock;
+    this.backupDatabase = backupDatabase;
     this.initializeFreshDatabase = !existsSync(this.databasePath);
     ensureDirectory(this.dataDir);
     ensureDirectory(this.backupsDir);
@@ -146,7 +154,9 @@ export class DatabaseRuntime {
     this.db.exec(`VACUUM INTO '${escapedDestination}'`);
     const candidate = new Database(destination, { readonly: true, fileMustExist: true });
     try {
+      candidate.pragma('foreign_keys = ON');
       assertSQLiteIntegrity(candidate);
+      assertForeignKeyIntegrity(candidate);
     } finally {
       candidate.close();
     }
@@ -182,14 +192,49 @@ export class DatabaseRuntime {
 
   async backupTo(destination) {
     ensureDirectory(dirname(destination));
-    removeIfPresent(destination);
-    await this.db.backup(destination);
-    return destination;
+    const temporary = join(dirname(destination), `.${basename(destination)}.${randomUUID()}.tmp`);
+    const previous = join(dirname(destination), `.${basename(destination)}.${randomUUID()}.previous`);
+    try {
+      await this.backupDatabase(this.db, temporary);
+      this.validateBackupFile(temporary);
+
+      if (!existsSync(destination)) {
+        renameSync(temporary, destination);
+        return destination;
+      }
+
+      try {
+        renameSync(temporary, destination);
+        return destination;
+      } catch (error) {
+        if (!existsSync(destination) || !existsSync(temporary)) throw error;
+      }
+
+      renameSync(destination, previous);
+      try {
+        renameSync(temporary, destination);
+      } catch (error) {
+        renameSync(previous, destination);
+        throw error;
+      }
+      removeIfPresent(previous);
+      return destination;
+    } finally {
+      removeIfPresent(temporary);
+      if (existsSync(previous) && existsSync(destination)) removeIfPresent(previous);
+    }
   }
 
   async ensureDailyBackup(date = new Date()) {
     const destination = join(this.backupsDir, `suowang-${localDateKey(date)}.db`);
-    if (existsSync(destination)) return { created: false, path: destination };
+    if (existsSync(destination)) {
+      try {
+        this.validateBackupFile(destination);
+        return { created: false, path: destination };
+      } catch {
+        // Replace an incomplete or invalid same-day backup only after a new candidate is verified.
+      }
+    }
     await this.backupTo(destination);
     this.pruneAutomaticBackups(30);
     return { created: true, path: destination };
@@ -214,6 +259,17 @@ export class DatabaseRuntime {
     try {
       candidate.pragma('foreign_keys = ON');
       assertDatabaseIntegrity(candidate, { requireCurrentSchema: false });
+    } finally {
+      candidate.close();
+    }
+  }
+
+  validateBackupFile(path) {
+    const candidate = new Database(path, { readonly: true, fileMustExist: true });
+    try {
+      candidate.pragma('foreign_keys = ON');
+      assertSQLiteIntegrity(candidate);
+      assertForeignKeyIntegrity(candidate);
     } finally {
       candidate.close();
     }

@@ -15,6 +15,8 @@ $cacheRoot = Join-Path $projectRoot '.release-cache'
 $nodeArchive = "node-v$NodeVersion-win-$Architecture.zip"
 $nodeUrl = "https://nodejs.org/dist/v$NodeVersion/$nodeArchive"
 $nodeZip = Join-Path $cacheRoot $nodeArchive
+$nodeShasums = Join-Path $cacheRoot "node-v$NodeVersion-SHASUMS256.txt"
+$nodeShasumsUrl = "https://nodejs.org/dist/v$NodeVersion/SHASUMS256.txt"
 
 function Assert-ChildPath([string]$parent, [string]$child) {
     $resolvedParent = [System.IO.Path]::GetFullPath($parent).TrimEnd('\') + '\'
@@ -72,15 +74,21 @@ if (-not (Test-Path -LiteralPath $nodeZip)) {
     Write-Host "Downloading Node.js v$NodeVersion runtime..."
     Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeZip
 }
+Write-Host "Verifying Node.js v$NodeVersion runtime checksum..."
+Invoke-WebRequest -Uri $nodeShasumsUrl -OutFile $nodeShasums
+$systemNode = Get-Command node -ErrorAction Stop
+& $systemNode.Source (Join-Path $projectRoot 'scripts/verify-node-download.mjs') $nodeShasums $nodeZip $nodeArchive
+if ($LASTEXITCODE -ne 0) {
+    Remove-Item -LiteralPath $nodeZip -Force -ErrorAction SilentlyContinue
+    throw 'Node.js runtime checksum verification failed. The cached archive was removed.'
+}
 
 $nodeExtractRoot = Join-Path $cacheRoot "node-v$NodeVersion-win-$Architecture"
-if (-not (Test-Path -LiteralPath (Join-Path $nodeExtractRoot 'node.exe'))) {
-    Assert-ChildPath $cacheRoot $nodeExtractRoot
-    if (Test-Path -LiteralPath $nodeExtractRoot) {
-        Remove-Item -LiteralPath $nodeExtractRoot -Recurse -Force
-    }
-    Expand-Archive -LiteralPath $nodeZip -DestinationPath $cacheRoot -Force
+Assert-ChildPath $cacheRoot $nodeExtractRoot
+if (Test-Path -LiteralPath $nodeExtractRoot) {
+    Remove-Item -LiteralPath $nodeExtractRoot -Recurse -Force
 }
+Expand-Archive -LiteralPath $nodeZip -DestinationPath $cacheRoot -Force
 Copy-Item -LiteralPath $nodeExtractRoot -Destination (Join-Path $portableRoot 'runtime') -Recurse -Force
 
 & (Join-Path $portableRoot 'runtime/node.exe') --version

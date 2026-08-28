@@ -29,7 +29,7 @@ scripts/serve.mjs
 | `todo_occurrences` | 持续事项的实际完成事实 | 每条记录属于一个事项；`todo_id + completed_on` 唯一，保证每个本地自然日最多一次；删除事项时级联删除 |
 | `app_settings` | 显示名称、头像、上次模式 | 单行设置；上次模式必须引用固定模式 |
 
-`current_mainline_id` 和 `priority_todo_id` 分别是当前主线与下一步指针。业务层在同一事务内完成指针更新、自动补位、槽位交换、事项重排和结束处理；当天已记录的持续事项不再参与当日下一步补位。数据库触发器和唯一约束防止跨模式引用、系统模式变形与持续事项同日重复记录。`mainlines.normalized_name` 是内部唯一键：active 使用 `active:{state_id}:{canonical_name}`，行迹使用 `history:{mainline_id}`；展示名称保持原样且不作为身份。内部表与 API 保留 `states/todos/priority` 命名以兼容旧库，用户界面统一使用模式、事项和下一步。
+`current_mainline_id`、`priority_todo_id` 和 `started_todo_id` 分别是当前主线、下一步与行动中事项指针。业务层在同一事务内完成指针更新、自动补位、槽位交换、事项重排和结束处理；无关主线结束或删除后，仍合法的三个指针必须保留，只有行动中事项不再是当前下一步时才清除。当天已记录的持续事项不再参与当日下一步补位。数据库触发器和唯一约束防止跨模式引用、系统模式变形与持续事项同日重复记录。`mainlines.normalized_name` 是内部唯一键：active 使用 `active:{state_id}:{canonical_name}`，行迹使用 `history:{mainline_id}`；展示名称保持原样且不作为身份。内部表与 API 保留 `states/todos/priority` 命名以兼容旧库，用户界面统一使用模式、事项和下一步。
 
 ## 目录与模块
 
@@ -53,14 +53,14 @@ scripts/serve.mjs
 ## 数据生命周期
 
 1. 启动时识别全部未运行的 migration。已有数据库升级前先 checkpoint WAL，并在 `backups/` 创建带起止 schema 版本和 UTC 时间戳的不可覆盖快照；全部待执行 migration 与 schema 记录在单一事务中执行，提交前必须通过 `integrity_check` 和 `foreign_key_check`。失败时事务完整回滚，迁移前快照保留。
-2. 当天首次启动前创建一致性 SQLite 备份，自动备份滚动保留 30 份。
-3. 手动 SQLite 导出使用数据库备份 API 创建一致性快照；JSON 导出只用于人类阅读。
+2. 当天首次启动前创建一致性 SQLite 备份：先写同目录唯一临时文件，通过 `integrity_check` 与 `foreign_key_check` 后再提升为正式文件；当天文件已存在时也先验证，无效文件用已验证候选替换。自动备份滚动保留 30 份。
+3. 手动 SQLite 导出复用同一原子备份路径；JSON 导出只用于人类阅读。
 4. 整库恢复先验证文件结构，再备份当前库，关闭连接并原子替换；失败时恢复安全副本。
 5. 正式数据、备份、头像、访问配置、日志和临时导出始终跟随同一个仓库外数据目录。Windows 新安装使用 `%LOCALAPPDATA%/SUOWANG`；只有旧目录已经存在 `suowang.db` 时才继续使用 `D:/5Data/suowang`。两处都有数据库时停止并要求显式选择，不自动搬迁或合并。macOS 使用 `~/Library/Application Support/SUOWANG/`。
 
 ## 发行壳
 
-Windows 安装包与 macOS Apple Silicon `.app` 都只是本地服务的启动壳，不改变浏览器 UI、HTTP API 或 SQLite 结构。两端先用统一配置查询预期版本、端口和访问模式，再读取 `/health` 与监听进程身份：完全匹配时复用，确认是旧 SUOWANG 时安全切换，无法验证时报告冲突且不终止进程。`/health` 只暴露应用、版本、数据库状态、schema 版本、PID 和访问模式，不暴露数据目录或业务数据。macOS `SUOWANG.app` 内置 arm64 Node.js 和在 Apple Silicon 上安装的 `better-sqlite3`。`.dmg` 仅面向 Apple Silicon（M1 及以后）；首版未签名、未公证，因此首次打开可能需要用户在 Gatekeeper 中明确确认。
+Windows 安装包与 macOS Apple Silicon `.app` 都只是本地服务的启动壳，不改变浏览器 UI、HTTP API 或 SQLite 结构。两端先用统一配置查询预期版本、端口和访问模式，再读取 `/health` 与监听进程身份：完全匹配时复用，确认是旧 SUOWANG 时安全切换，无法验证时报告冲突且不终止进程。`/health` 只暴露应用、版本、数据库状态、schema 版本、PID 和访问模式，不暴露数据目录或业务数据。构建脚本从 nodejs.org 下载内置运行时后，必须用同版本官方 `SHASUMS256.txt` 对精确归档文件名和 SHA-256 做校验，再解压进入发行载荷。macOS `SUOWANG.app` 内置 arm64 Node.js 和在 Apple Silicon 上安装的 `better-sqlite3`。`.dmg` 仅面向 Apple Silicon（M1 及以后）；首版未签名、未公证，因此首次打开可能需要用户在 Gatekeeper 中明确确认。
 
 ## 验证与发行边界
 

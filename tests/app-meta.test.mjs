@@ -13,9 +13,25 @@ test('package metadata is the application version source', () => {
 
 test('macOS bundle versions are legal numeric values derived from SemVer', () => {
   const versions = deriveMacOSVersions('0.2.0-alpha.1');
-  assert.deepEqual(versions, { shortVersion: '0.2.0', bundleVersion: '0.2.2' });
+  assert.deepEqual(versions, { shortVersion: '0.2.0', bundleVersion: '0.2.11' });
   assert.match(versions.shortVersion, /^\d+\.\d+\.\d+$/);
   assert.match(versions.bundleVersion, /^\d+(?:\.\d+){0,2}$/);
   assert.equal(versions.shortVersion.includes('alpha'), false);
   assert.equal(versions.bundleVersion.includes('alpha'), false);
+});
+
+test('macOS bundle versions are unique and strictly ordered across release channels and patches', () => {
+  const orderedVersions = [
+    ...Array.from({ length: 10 }, (_, serial) => `0.2.0-alpha.${serial}`),
+    '0.2.0-beta.0',
+    '0.2.0-rc.0',
+    '0.2.0',
+    '0.2.1-alpha.0',
+  ];
+  const serials = orderedVersions.map((version) => Number(deriveMacOSVersions(version).bundleVersion.split('.').at(-1)));
+  assert.equal(new Set(serials).size, serials.length);
+  for (let index = 1; index < serials.length; index += 1) {
+    assert.ok(serials[index] > serials[index - 1], `${orderedVersions[index]} must sort after ${orderedVersions[index - 1]}`);
+  }
+  assert.throws(() => deriveMacOSVersions('0.2.0-preview.1'), /Unsupported macOS prerelease channel/);
 });

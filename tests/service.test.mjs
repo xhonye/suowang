@@ -290,6 +290,45 @@ test('ending a current mainline resolves active todos without inventing completi
   assert.ok(snapshot.history.some((item) => item.type === 'mainline' && item.id === a.id && item.status === 'completed'));
 });
 
+test('ending or deleting an unrelated mainline preserves the started next step', (context) => {
+  const { service } = createServiceHarness(context);
+  let snapshot = service.createMainline({ stateId: 'work', slotIndex: 1, name: '当前方向' });
+  snapshot = service.createMainline({ stateId: 'work', slotIndex: 2, name: '无关方向' });
+  const current = findMainline(snapshot, 'work', '当前方向');
+  const unrelated = findMainline(snapshot, 'work', '无关方向');
+  snapshot = service.createTodo({ stateId: 'work', mainlineId: current.id, title: '正在推进' });
+  const todoId = findMainline(snapshot, 'work', '当前方向').todos[0].id;
+  snapshot = service.startPriorityTodo(todoId);
+  assert.equal(snapshot.states.find((state) => state.id === 'work').startedTodoId, todoId);
+
+  snapshot = service.endMainline(unrelated.id, { status: 'completed', resolutions: {} });
+  let work = snapshot.states.find((state) => state.id === 'work');
+  assert.equal(work.currentMainlineId, current.id);
+  assert.equal(work.priorityTodoId, todoId);
+  assert.equal(work.startedTodoId, todoId);
+
+  snapshot = service.deleteMainline(unrelated.id);
+  work = snapshot.states.find((state) => state.id === 'work');
+  assert.equal(work.currentMainlineId, current.id);
+  assert.equal(work.priorityTodoId, todoId);
+  assert.equal(work.startedTodoId, todoId);
+});
+
+test('ending the current mainline clears a started next step that is no longer eligible', (context) => {
+  const { service } = createServiceHarness(context);
+  let snapshot = service.createMainline({ stateId: 'life', slotIndex: 1, name: '即将结束' });
+  const current = findMainline(snapshot, 'life', '即将结束');
+  snapshot = service.createTodo({ stateId: 'life', mainlineId: current.id, title: '随主线结束' });
+  const todoId = findMainline(snapshot, 'life', '即将结束').todos[0].id;
+  snapshot = service.startPriorityTodo(todoId);
+  assert.equal(snapshot.states.find((state) => state.id === 'life').startedTodoId, todoId);
+
+  snapshot = service.endMainline(current.id, { status: 'completed', resolutions: {} });
+  const life = snapshot.states.find((state) => state.id === 'life');
+  assert.equal(life.startedTodoId, null);
+  assert.equal(life.priorityTodoId, null);
+});
+
 test('hard delete moves bound todos to the state by default and can delete them explicitly', (context) => {
   const { service } = createServiceHarness(context);
   let snapshot = service.createMainline({ stateId: 'restore', slotIndex: 1, name: '恢复试验' });

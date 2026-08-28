@@ -37,7 +37,7 @@ SUOWANG 回答四个问题：我现在处于什么模式？我当前主要往哪
 
 事项只有 `active / completed / abandoned` 三种状态，并分为 `single` / 一次事项与 `ongoing` / 持续事项。内部仍使用稳定的 `todos` 表、Todo API 名与 `state_id`，但用户界面和对外产品语言不得暴露 Todo/状态 Todo/主线 Todo。`state_id` 不可变，`mainline_id` 可空；事项可以在同模式的其他事项区和任意主线之间移动并保留 ID，不能跨模式。事项名称必填；可选 `minimal_step` / 最小一步回答“现在怎样最低成本迈出去”，严格区别于主线的本阶段完成标准。一次事项点击完成后进入行迹；持续事项点击“今天完成”只增加一条当日本地自然日记录，事项继续 active，同一天数据库最多接受一次。持续事项显示累计次数，不计算连续天数、缺卡、完成率、积分或奖惩，也不提供提醒；它只能通过右键“完成事项”或“放弃事项”进入行迹。行迹中的事项提供纠错用的撤回：恢复为 `active` 并保留原 ID；原归属主线仍 active 时回到该主线，否则回到同模式其他事项。
 
-`current_mainline_id` 对外统一称“当前主线”，`priority_todo_id` 对外统一称“下一步”。它们是指针，不是业务状态。每个模式还可有一个 `started_todo_id` 指针，表示用户明确点击“开始这一步”的当前下一步；它不是事项的新状态、不追踪时长、不形成行为日志，且只能引用该模式当前的下一步。切当前主线不结束旧主线、不产生行迹、不记录事件。下一步只能引用当前主线事项或其他事项；当天已经记录完成的持续事项在当日不再参与补位，系统按「当前主线第一条可做 active 事项 → 其他事项第一条可做 active 事项 → null」接棒，次日不会自动抢回下一步。下一步变更、完成、放弃、删除或改归属时必须清除行动中指针。
+`current_mainline_id` 对外统一称“当前主线”，`priority_todo_id` 对外统一称“下一步”。它们是指针，不是业务状态。每个模式还可有一个 `started_todo_id` 指针，表示用户明确点击“开始这一步”的当前下一步；它不是事项的新状态、不追踪时长、不形成行为日志，且只能引用该模式当前的下一步。切当前主线不结束旧主线、不产生行迹、不记录事件。下一步只能引用当前主线事项或其他事项；当天已经记录完成的持续事项在当日不再参与补位，系统按「当前主线第一条可做 active 事项 → 其他事项第一条可做 active 事项 → null」接棒，次日不会自动抢回下一步。下一步变更、完成、放弃、删除或改归属时必须清除行动中指针；结束或删除无关主线时，只要当前主线、下一步与行动中事项仍合法，就必须原样保留三个指针。
 
 主线完成与放弃是不可恢复的行迹事实；事项完成或放弃允许从行迹撤回，以纠正误操作。Hard delete 只用于纠错，必须确认，不能用数据库级 cascade 静默删除用户事项。
 
@@ -69,7 +69,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - 正式库首次启动只有固定三模式和设置，不注入 demo 主线、事项或假统计。
 - migration 文件进入 Git；个人数据库、备份、头像、日志和导出必须在仓库外。
 - `SUOWANG_DATA_DIR` 可用绝对路径显式指定数据目录并始终优先。Windows 新安装使用 `%LOCALAPPDATA%/SUOWANG`；只有检测到真实的 `D:/5Data/suowang/suowang.db` 时才继续兼容旧目录。两处同时存在数据库时必须报冲突并要求显式选择，不自动移动、复制或合并。macOS 使用 `~/Library/Application Support/SUOWANG/`，Linux 使用 XDG 或标准 home 数据目录。
-- 已存在数据库有待执行 migration 时，必须先 checkpoint WAL 并创建不参与日常清理的完整迁移前备份；全部待执行 migration、schema 记录、`integrity_check` 与 `foreign_key_check` 在同一事务中通过后才能提交。每天第一次启动仍自动备份 SQLite，按备份时间保留最后 30 份。手动导出不限；整库恢复前必须先备份当前库，不做 merge。
+- 已存在数据库有待执行 migration 时，必须先 checkpoint WAL 并创建不参与日常清理的完整迁移前备份；全部待执行 migration、schema 记录、`integrity_check` 与 `foreign_key_check` 在同一事务中通过后才能提交。每日备份与手动 SQLite 导出必须先写同目录临时文件，通过 `integrity_check` 与 `foreign_key_check` 后再提升为正式文件；既有每日备份不能只凭文件存在就跳过验证。每天第一次启动自动备份 SQLite，按备份时间保留最后 30 份。手动导出不限；整库恢复前必须先备份当前库，不做 merge。
 - Windows 与 macOS 启动器必须从 `launcher-config.mjs` 读取版本、数据目录、端口和访问模式。只在 health、监听 PID 与 `scripts/serve.mjs` 进程身份均可验证时复用或切换旧服务；版本或模式不符时安全重启，非 SUOWANG 或身份不可信的占端口进程绝不能终止。
 - 不建立点击、切模式、切当前主线、拖拽或文字修改的 audit/event 流水；`todo_occurrences` 只保存用户明确确认的持续事项完成事实，不承担行为监控。
 
@@ -148,7 +148,7 @@ npm start
 - 每个稳定业务规则都应有自动化测试；UI 改动必须真实验证 1920×1080、2560×1440 和 320px。
 - `package.json` 是应用语义版本唯一真源。`/health` 必须返回 `app/version/database/schemaVersion/pid/accessMode`，不得暴露数据目录或业务数据；CLI、Windows/macOS 构建和启动器必须从同一版本与配置来源派生。
 - 所有开发服务、单元测试、E2E、恢复与 smoke 必须显式使用临时 `SUOWANG_DATA_DIR` 和非默认测试端口；禁止用个人数据库验证 migration。已有数据库升级前必须先生成不可覆盖且通过完整性检查的迁移前备份。
-- 发版前至少通过 `npm run release:check`、Visual Baseline 和跨平台 CI；发行工作流必须校验 tag 与 `package.json` 版本一致。不得以更新快照、改哈希或跳过浏览器测试绕过失败。
+- 发版前至少通过 `npm run release:check`、Visual Baseline 和跨平台 CI；发行工作流必须校验 tag 与 `package.json` 版本一致，下载内置 Node 运行时后必须对照 nodejs.org 同版本 `SHASUMS256.txt` 验证精确文件名和 SHA-256。不得以更新快照、改哈希或跳过浏览器测试绕过失败。
 - 保持键盘焦点、非颜色状态表达和 `prefers-reduced-motion`。
 - 不把私人主线、事项、数据库、日志、截图、凭据或导出放进 Git。
 - 未经明确要求，不引入外部 API、云同步、遥测、账号、通知、AI 设置或未来导航入口。

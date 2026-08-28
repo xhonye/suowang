@@ -215,7 +215,7 @@ export class SuowangService {
     `).get(stateId, completedOn)?.id ?? null;
   }
 
-  reconcilePointers(stateId, currentMainlineId, preferredPriorityId = null) {
+  reconcilePointers(stateId, currentMainlineId, preferredPriorityId = null, preferredStartedId = undefined) {
     let currentId = currentMainlineId;
     if (currentId) {
       const validCurrent = this.db.prepare(`
@@ -239,13 +239,17 @@ export class SuowangService {
     }
     if (!priorityId) priorityId = this.firstEligibleTodo(stateId, currentId);
 
+    const existingStartedId = preferredStartedId === undefined
+      ? this.assertState(stateId).started_todo_id
+      : preferredStartedId;
+    const startedId = existingStartedId === priorityId ? priorityId : null;
     this.db.prepare(`
       UPDATE states
       SET current_mainline_id = ?,
           priority_todo_id = ?,
-          started_todo_id = CASE WHEN started_todo_id = ? THEN started_todo_id ELSE NULL END
+          started_todo_id = ?
       WHERE id = ?
-    `).run(currentId, priorityId, priorityId, stateId);
+    `).run(currentId, priorityId, startedId, stateId);
     return { currentId, priorityId };
   }
 
@@ -478,6 +482,7 @@ export class SuowangService {
       }
       const state = this.assertState(mainline.state_id);
       const preferredPriorityId = state.priority_todo_id;
+      const preferredStartedId = state.started_todo_id;
       this.db.prepare(`
         UPDATE states SET current_mainline_id = NULL, priority_todo_id = NULL, started_todo_id = NULL WHERE id = ?
       `).run(mainline.state_id);
@@ -519,7 +524,7 @@ export class SuowangService {
       const currentId = state.current_mainline_id === id
         ? this.firstActiveMainline(mainline.state_id, id)
         : state.current_mainline_id;
-      this.reconcilePointers(mainline.state_id, currentId, preferredPriorityId);
+      this.reconcilePointers(mainline.state_id, currentId, preferredPriorityId, preferredStartedId);
       return this.snapshot();
     });
   }
@@ -532,6 +537,7 @@ export class SuowangService {
       }
       const state = this.assertState(mainline.state_id);
       const preferredPriorityId = state.priority_todo_id;
+      const preferredStartedId = state.started_todo_id;
       this.db.prepare(`
         UPDATE states SET current_mainline_id = NULL, priority_todo_id = NULL, started_todo_id = NULL WHERE id = ?
       `).run(mainline.state_id);
@@ -556,7 +562,7 @@ export class SuowangService {
       const currentId = state.current_mainline_id === id
         ? this.firstActiveMainline(mainline.state_id, id)
         : state.current_mainline_id;
-      this.reconcilePointers(mainline.state_id, currentId, preferredPriorityId);
+      this.reconcilePointers(mainline.state_id, currentId, preferredPriorityId, preferredStartedId);
       return this.snapshot();
     });
   }

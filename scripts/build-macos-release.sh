@@ -20,6 +20,8 @@ checksums_path="$dist_root/SUOWANG-${version}-mac-arm64-SHA256SUMS.txt"
 node_archive="node-v${node_version}-darwin-${architecture}.tar.gz"
 node_url="https://nodejs.org/dist/v${node_version}/${node_archive}"
 node_cache="$cache_root/$node_archive"
+node_shasums="$cache_root/node-v${node_version}-SHASUMS256.txt"
+node_shasums_url="https://nodejs.org/dist/v${node_version}/SHASUMS256.txt"
 node_extract="$cache_root/node-v${node_version}-darwin-${architecture}"
 dmg_stage="$cache_root/dmg-stage-${version}-mac-arm64"
 
@@ -75,10 +77,11 @@ if [[ ! -f "$node_cache" ]]; then
   echo "Downloading Node.js v${node_version} macOS arm64 runtime..."
   curl --fail --location --silent --show-error "$node_url" --output "$node_cache"
 fi
-if [[ ! -x "$node_extract/bin/node" ]]; then
-  rm -rf "$node_extract"
-  tar -xzf "$node_cache" -C "$cache_root"
-fi
+echo "Verifying Node.js v${node_version} runtime checksum..."
+curl --fail --location --silent --show-error "$node_shasums_url" --output "$node_shasums"
+node "$project_root/scripts/verify-node-download.mjs" "$node_shasums" "$node_cache" "$node_archive"
+rm -rf "$node_extract"
+tar -xzf "$node_cache" -C "$cache_root"
 cp -R "$node_extract" "$payload_root/runtime"
 
 sed \

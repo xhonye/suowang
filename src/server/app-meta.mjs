@@ -15,7 +15,8 @@ export function deriveMacOSVersions(version = APP_VERSION) {
     : prerelease === 'alpha' ? 1
       : prerelease === 'beta' ? 2
         : prerelease === 'rc' ? 3
-          : 0;
+          : null;
+  if (channel === null) throw new Error(`Unsupported macOS prerelease channel: ${version}`);
   const serial = Number(prereleaseNumber);
   if (!Number.isSafeInteger(serial) || serial < 0 || serial > 9) {
     throw new Error(`macOS prerelease serial must be an integer from 0 to 9: ${version}`);
@@ -23,6 +24,6 @@ export function deriveMacOSVersions(version = APP_VERSION) {
 
   return {
     shortVersion: `${major}.${minor}.${patch}`,
-    bundleVersion: `${major}.${minor}.${Number(patch) * 10 + channel + serial}`,
+    bundleVersion: `${major}.${minor}.${Number(patch) * 100 + channel * 10 + serial}`,
   };
 }
