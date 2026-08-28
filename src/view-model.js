@@ -53,14 +53,6 @@ export function formatLocalDate(date = new Date()) {
   }).format(date);
 }
 
-export function focusDays(initializedOn, now = new Date()) {
-  const [year, month, day] = String(initializedOn).split('-').map(Number);
-  const initialized = new Date(year, month - 1, day);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const elapsed = Math.floor((today - initialized) / 86_400_000);
-  return Math.max(1, elapsed + 1);
-}
-
 export function stateName(snapshot, stateId) {
   return stateById(snapshot, stateId)?.name ?? stateId;
 }

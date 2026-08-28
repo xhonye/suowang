@@ -89,6 +89,10 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.match(shell, /id="mainline-todo-heading">主线事项/);
   assert.match(shell, /<h2>其他事项<\/h2>/);
   assert.match(shell, /id="daylight-icon"/);
+  assert.match(shell, /id="profile-avatar"[^>]*>所</);
+  assert.match(shell, /id="profile-name">所往用户</);
+  assert.doesNotMatch(shell, /Honye|focus-days|专注中/);
+  assert.doesNotMatch(shell, /document\.getElementById\('daylight-icon'\)/);
   assert.doesNotMatch(shell, /沿当前方向|暂不归入主线|当前主线 Todo|状态 Todo|现在最值得做/);
   assert.doesNotMatch(shell, /mainline-scene-neutral|road-mist/);
   assert.doesNotMatch(shell, /时间线|开始专注|累计专注|notification-button|data-path-id/);
@@ -96,6 +100,9 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   const app = await fetch(`${baseUrl}/src/app.js`);
   assert.equal(app.status, 200);
   const appSource = await app.text();
+  assert.match(appSource, /byId\('daylight-icon'\)\.textContent = daylightEmojiForHour/);
+  assert.match(appSource, /byId\('greeting'\)\.textContent =/);
+  assert.match(appSource, /byId\('local-date'\)\.textContent = formatLocalDate/);
   assert.match(appSource, /卡住了？/);
   assert.match(appSource, /data-stuck-action="minimal-step"/);
   assert.match(appSource, /data-stuck-action="restore"/);

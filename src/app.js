@@ -2,7 +2,6 @@ import { api } from './api.js';
 import {
   currentMainline,
   daylightEmojiForHour,
-  focusDays,
   formatLocalDate,
   greetingForHour,
   priorityTodo,
@@ -118,7 +117,6 @@ function renderChrome(now = new Date()) {
   byId('greeting').textContent = `${greetingForHour(now.getHours())}，${settings.displayName}`;
   byId('local-date').textContent = formatLocalDate(now);
   byId('profile-name').textContent = settings.displayName;
-  byId('focus-days').textContent = `专注中 · ${focusDays(settings.initializedOn, now)}天`;
   const avatar = byId('profile-avatar');
   if (settings.avatarUrl) {
     avatar.innerHTML = `<img src="${settings.avatarUrl}?v=${Date.now()}" alt="" />`;

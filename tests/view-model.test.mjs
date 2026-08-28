@@ -3,7 +3,6 @@ import test from 'node:test';
 import {
   currentMainline,
   daylightEmojiForHour,
-  focusDays,
   greetingForHour,
   priorityTodo,
   stateIdFromNavigationKey,
@@ -37,11 +36,6 @@ test('greeting boundaries follow the fixed local-time contract', () => {
     [5, 6, 16, 17, 21, 22].map(daylightEmojiForHour),
     ['🌙', '☀️', '☀️', '🌙', '🌙', '🌙'],
   );
-});
-
-test('focus days count natural local dates and never show zero', () => {
-  assert.equal(focusDays('2026-08-21', new Date(2026, 7, 21, 23, 59)), 1);
-  assert.equal(focusDays('2026-08-21', new Date(2026, 7, 23, 0, 1)), 3);
 });
 
 test('route tabs navigate in fixed state order and wrap at both ends', () => {

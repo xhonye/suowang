@@ -36,34 +36,15 @@
         </nav>
 
         <div class="rail-profile">
-          <span class="profile-avatar" id="profile-avatar" aria-hidden="true">H</span>
+          <span class="profile-avatar" id="profile-avatar" aria-hidden="true">所</span>
           <span class="profile-copy">
-            <strong id="profile-name">Honye</strong>
-            <small id="focus-days">专注中 · 1天</small>
+            <strong id="profile-name">所往用户</strong>
           </span>
         </div>
         <p class="brand-slogan">行有所往。</p>
       </aside>
 
       <div class="workspace-shell">
-        <script>
-          (() => {
-            const now = new Date();
-            const hour = now.getHours();
-            const greeting = hour >= 6 && hour < 9 ? '早上好'
-              : hour >= 9 && hour < 11 ? '上午好'
-              : hour >= 11 && hour < 13 ? '中午好'
-              : hour >= 13 && hour < 17 ? '下午好'
-              : hour >= 17 && hour < 22 ? '晚上好'
-              : '夜深了';
-            document.getElementById('daylight-icon').textContent = hour >= 6 && hour < 17 ? '☀️' : '🌙';
-            document.getElementById('greeting').textContent = greeting;
-            document.getElementById('local-date').textContent = new Intl.DateTimeFormat('zh-CN', {
-              month: 'long', day: 'numeric', weekday: 'short',
-            }).format(now);
-          })();
-        </script>
-
         <div class="error-banner" id="error-banner" role="alert" hidden>
           <div><strong id="error-title">操作没有完成</strong><p id="error-message"></p></div>
           <button type="button" id="dismiss-error">知道了</button>
@@ -80,11 +61,11 @@
               </div>
               <div class="road-chrome" aria-label="今日信息">
                 <div class="greeting-block">
-                  <span class="daylight-icon" id="daylight-icon" aria-hidden="true">☀️</span>
-                  <strong id="greeting">正在打开 SUOWANG</strong>
+                  <span class="daylight-icon" id="daylight-icon" aria-hidden="true">○</span>
+                  <strong id="greeting">正在打开所往</strong>
                 </div>
                 <div class="road-context">
-                  <time id="local-date"></time>
+                  <time id="local-date">正在读取日期</time>
                   <span aria-hidden="true">·</span>
                   <span>充分参与这一次人生</span>
                 </div>
