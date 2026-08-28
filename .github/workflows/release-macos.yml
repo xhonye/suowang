@@ -2,52 +2,80 @@ name: Build macOS Apple Silicon release
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
+    inputs:
+      tag:
+        description: Existing release tag to build, for example v0.2.0-alpha.1
+        required: true
+        type: string
   release:
     types: [published]
 
 permissions:
   contents: write
 
+env:
+  RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+
 jobs:
   build-macos-arm64:
     name: Build macOS arm64 DMG
     runs-on: macos-14
     steps:
-      - name: Check out the selected source
+      - name: Check out the release tag
         uses: actions/checkout@v7
-
-      - name: Set up the bundled Node version
-        uses: actions/setup-node@v7
         with:
-          node-version: 24.15.0
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.15.0'
           cache: npm
 
-      - name: Confirm Apple Silicon runner
+      - name: Verify tag, package version and Apple Silicon runner
+        shell: bash
         run: |
+          version="$(node -p "require('./package.json').version")"
+          test "$RELEASE_TAG" = "v$version"
           test "$(uname -s)" = Darwin
           test "$(uname -m)" = arm64
+          echo "PACKAGE_VERSION=$version" >> "$GITHUB_ENV"
 
-      - name: Install production dependency tree for Apple Silicon
-        run: npm ci --omit=dev
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: npm run verify
 
-      - name: Verify source and build DMG
+      - name: Build unsigned Apple Silicon DMG
         run: npm run release:macos
 
-      - name: Keep a reviewable DMG artifact
+      - name: Verify app, plist and versioned assets
+        shell: bash
+        run: |
+          app_root="dist/macos/所往 SUOWANG.app"
+          dmg="dist/macos/SUOWANG-${PACKAGE_VERSION}-mac-arm64.dmg"
+          checksums="dist/macos/SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt"
+          test -x "$app_root/Contents/Resources/app/runtime/bin/node"
+          test -f "$app_root/Contents/Resources/app/node_modules/better-sqlite3/package.json"
+          test -f "$dmg"
+          test -f "$checksums"
+          plutil -lint "$app_root/Contents/Info.plist"
+          "$app_root/Contents/Resources/app/runtime/bin/node" -e "import('$PWD/$app_root/Contents/Resources/app/node_modules/better-sqlite3/lib/index.js').then(() => console.log('packaged better-sqlite3 OK'))"
+
+      - name: Upload reviewable macOS artifacts
         uses: actions/upload-artifact@v6
         with:
-          name: SUOWANG-macos-arm64-${{ github.sha }}
+          name: SUOWANG-macos-arm64-${{ env.PACKAGE_VERSION }}
           path: |
-            dist/macos/*.dmg
-            dist/macos/*SHA256SUMS.txt
+            dist/macos/SUOWANG-${{ env.PACKAGE_VERSION }}-mac-arm64.dmg
+            dist/macos/SUOWANG-${{ env.PACKAGE_VERSION }}-mac-arm64-SHA256SUMS.txt
           if-no-files-found: error
 
-      - name: Attach DMG to the published Release
+      - name: Attach assets to the published Release
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$RELEASE_TAG" dist/macos/*.dmg dist/macos/*SHA256SUMS.txt --clobber
+        shell: bash
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            "dist/macos/SUOWANG-${PACKAGE_VERSION}-mac-arm64.dmg" \
+            "dist/macos/SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt" \
+            --clobber

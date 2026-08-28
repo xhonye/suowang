@@ -92,7 +92,7 @@ pushd "$payload_root" >/dev/null
 ./runtime/bin/node --version
 ./runtime/bin/node -e "import('better-sqlite3').then(() => console.log('better-sqlite3 runtime OK'))"
 smoke_data_dir="$(mktemp -d)/SUOWANG"
-SUOWANG_DATA_DIR="$smoke_data_dir" ./runtime/bin/node -e "import('./scripts/serve.mjs').then(async ({ createAppServer }) => { const server = await createAppServer({ ensureBackup: false }); await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve)); const response = await fetch('http://127.0.0.1:' + server.address().port + '/health'); const health = await response.json(); if (health.status !== 'ok' || health.app !== 'suowang') throw new Error('health smoke failed'); await new Promise((resolve) => server.close(resolve)); console.log('packaged health smoke OK'); })"
+SUOWANG_DATA_DIR="$smoke_data_dir" ./runtime/bin/node -e "Promise.all([import('./scripts/serve.mjs'), import('./src/server/app-meta.mjs')]).then(async ([{ createAppServer }, { APP_VERSION }]) => { const server = await createAppServer({ ensureBackup: false }); await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve)); const response = await fetch('http://127.0.0.1:' + server.address().port + '/health'); const health = await response.json(); if (health.status !== 'ok' || health.app !== 'suowang' || health.version !== APP_VERSION || health.database !== 'ready') throw new Error('health smoke failed'); await new Promise((resolve) => server.close(resolve)); console.log('packaged health smoke OK: ' + health.version); })"
 rm -rf "$(dirname "$smoke_data_dir")"
 popd >/dev/null
 

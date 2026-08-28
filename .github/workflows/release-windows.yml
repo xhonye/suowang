@@ -1,0 +1,108 @@
+name: Build Windows release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build, for example v0.2.0-alpha.1
+        required: true
+        type: string
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
+
+jobs:
+  build-windows:
+    name: Build Windows Setup and Portable
+    runs-on: windows-latest
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.15.0'
+          cache: npm
+
+      - name: Verify tag matches package version
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          if ($env:RELEASE_TAG -ne "v$version") {
+            throw "Release tag $env:RELEASE_TAG does not match package version $version"
+          }
+          "PACKAGE_VERSION=$version" >> $env:GITHUB_ENV
+
+      - run: npm ci
+      - run: npx playwright install chromium
+      - run: npm run verify
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Build Windows release assets
+        run: npm run release:windows
+
+      - name: Verify named assets and packaged health
+        shell: pwsh
+        run: |
+          $version = $env:PACKAGE_VERSION
+          $portableRoot = Join-Path $PWD "dist/windows/SUOWANG-Portable-$version"
+          $portableZip = Join-Path $PWD "dist/windows/SUOWANG-Portable-$version.zip"
+          $setup = Join-Path $PWD "dist/windows/SUOWANG-Setup-$version.exe"
+          $checksums = Join-Path $PWD "dist/windows/SUOWANG-$version-SHA256SUMS.txt"
+          foreach ($path in @($portableRoot, $portableZip, $setup, $checksums)) {
+            if (-not (Test-Path -LiteralPath $path)) { throw "Missing release asset: $path" }
+          }
+          $smokeRoot = Join-Path $env:RUNNER_TEMP "suowang-portable-smoke-$PID"
+          New-Item -ItemType Directory -Force -Path $smokeRoot | Out-Null
+          try {
+            $env:SUOWANG_DATA_DIR = Join-Path $smokeRoot 'data'
+            Push-Location $portableRoot
+            try {
+              $script = @'
+          Promise.all([import('./scripts/serve.mjs'), import('./src/server/app-meta.mjs')]).then(async ([{ createAppServer }, { APP_VERSION }]) => {
+            const server = await createAppServer({ dataDir: process.env.SUOWANG_DATA_DIR, ensureBackup: false });
+            await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+            const health = await (await fetch(`http://127.0.0.1:${server.address().port}/health`)).json();
+            if (health.app !== 'suowang' || health.version !== APP_VERSION || health.database !== 'ready') throw new Error('portable health smoke failed');
+            await new Promise((resolve) => server.close(resolve));
+            console.log(`Portable health OK: ${health.version}`);
+          });
+          '@
+              & './runtime/node.exe' -e $script
+              if ($LASTEXITCODE -ne 0) { throw 'Portable health smoke failed' }
+            } finally { Pop-Location }
+          } finally {
+            Remove-Item -LiteralPath $smokeRoot -Recurse -Force
+          }
+
+      - name: Upload reviewable Windows artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: SUOWANG-Windows-${{ env.PACKAGE_VERSION }}
+          path: |
+            dist/windows/SUOWANG-Portable-${{ env.PACKAGE_VERSION }}.zip
+            dist/windows/SUOWANG-Setup-${{ env.PACKAGE_VERSION }}.exe
+            dist/windows/SUOWANG-${{ env.PACKAGE_VERSION }}-SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Attach assets to the published Release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release upload $env:RELEASE_TAG `
+            "dist/windows/SUOWANG-Portable-$env:PACKAGE_VERSION.zip" `
+            "dist/windows/SUOWANG-Setup-$env:PACKAGE_VERSION.exe" `
+            "dist/windows/SUOWANG-$env:PACKAGE_VERSION-SHA256SUMS.txt" `
+            --clobber
