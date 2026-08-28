@@ -5,16 +5,6 @@ set -euo pipefail
 launcher_dir="$(cd "$(dirname "$0")" && pwd)"
 app_root="$(cd "$launcher_dir/../Resources/app" && pwd)"
 node_path="$app_root/runtime/bin/node"
-port="${SUOWANG_PORT:-2037}"
-health_url="http://127.0.0.1:${port}/health"
-app_url="http://127.0.0.1:${port}/"
-
-if [[ -n "${SUOWANG_DATA_DIR:-}" ]]; then
-  data_dir="$SUOWANG_DATA_DIR"
-else
-  data_dir="$HOME/Library/Application Support/SUOWANG"
-fi
-logs_dir="$data_dir/logs"
 
 show_error() {
   local message="$1"
@@ -34,6 +24,16 @@ if [[ ! -x "$node_path" ]]; then
   show_error "内置运行环境缺失。请重新下载并安装所往。"
   exit 1
 fi
+
+config_json="$(cd "$app_root" && "$node_path" scripts/launcher-config.mjs)"
+read_config() {
+  "$node_path" -e "const config = JSON.parse(process.argv[1]); process.stdout.write(String(config[process.argv[2]]));" "$config_json" "$1"
+}
+data_dir="$(read_config dataDir)"
+port="$(read_config port)"
+health_url="$(read_config localHealthUrl)"
+app_url="$(read_config localAppUrl)"
+logs_dir="$data_dir/logs"
 
 mkdir -p "$logs_dir"
 

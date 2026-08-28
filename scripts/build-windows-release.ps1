@@ -57,6 +57,7 @@ $releaseItems = @(
     'WINDOWS-README.txt',
     'SUOWANG.cmd',
     'migrations',
+    'scripts/launcher-config.mjs',
     'scripts/start.ps1',
     'scripts/serve.mjs',
     'src',

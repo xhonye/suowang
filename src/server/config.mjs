@@ -1,32 +1,46 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir, networkInterfaces } from 'node:os';
-import { isAbsolute, join, normalize, resolve } from 'node:path';
+import { join, normalize, posix, win32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const PROJECT_ROOT = normalize(join(fileURLToPath(new URL('.', import.meta.url)), '..', '..'));
 export const MIGRATIONS_DIR = join(PROJECT_ROOT, 'migrations');
 
-export function resolveDataDir({ env = process.env, platform = process.platform } = {}) {
+export function resolveDataDir({
+  env = process.env,
+  platform = process.platform,
+  home = homedir(),
+  fileExists = existsSync,
+} = {}) {
+  const pathApi = platform === 'win32' ? win32 : posix;
   if (env.SUOWANG_DATA_DIR) {
-    if (!isAbsolute(env.SUOWANG_DATA_DIR)) {
+    if (!pathApi.isAbsolute(env.SUOWANG_DATA_DIR)) {
       throw new Error('SUOWANG_DATA_DIR must be an absolute path.');
     }
-    return normalize(resolve(env.SUOWANG_DATA_DIR));
-  }
-
-  if (platform === 'win32' && existsSync('D:/5Data')) {
-    return normalize('D:/5Data/suowang');
+    return pathApi.normalize(env.SUOWANG_DATA_DIR);
   }
 
   if (platform === 'win32') {
-    return normalize(join(env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'), 'SUOWANG'));
+    const standardDir = win32.normalize(win32.join(env.LOCALAPPDATA || win32.join(home, 'AppData', 'Local'), 'SUOWANG'));
+    const legacyDir = win32.normalize('D:/5Data/suowang');
+    const standardDatabase = win32.join(standardDir, 'suowang.db');
+    const legacyDatabase = win32.join(legacyDir, 'suowang.db');
+    const standardExists = fileExists(standardDatabase);
+    const legacyExists = fileExists(legacyDatabase);
+    if (standardExists && legacyExists) {
+      throw new Error(
+        `Found two SUOWANG databases:\n- ${standardDatabase}\n- ${legacyDatabase}\n`
+        + 'Set SUOWANG_DATA_DIR to the directory you intend to use. No database was moved or merged.',
+      );
+    }
+    return legacyExists ? legacyDir : standardDir;
   }
 
   if (platform === 'darwin') {
-    return normalize(join(homedir(), 'Library', 'Application Support', 'SUOWANG'));
+    return posix.normalize(posix.join(home, 'Library', 'Application Support', 'SUOWANG'));
   }
 
-  return normalize(join(env.XDG_DATA_HOME || join(homedir(), '.local', 'share'), 'suowang'));
+  return posix.normalize(posix.join(env.XDG_DATA_HOME || posix.join(home, '.local', 'share'), 'suowang'));
 }
 
 export function resolvePort(env = process.env) {
@@ -40,12 +54,14 @@ export function resolvePort(env = process.env) {
 export function resolveAccessMode({
   env = process.env,
   accessConfigPath = join(resolveDataDir({ env }), 'access.json'),
+  fileExists = existsSync,
+  readFile = readFileSync,
 } = {}) {
   let configuredMode = 'local';
-  if (existsSync(accessConfigPath)) {
+  if (fileExists(accessConfigPath)) {
     let config;
     try {
-      config = JSON.parse(readFileSync(accessConfigPath, 'utf8').replace(/^\uFEFF/, ''));
+      config = JSON.parse(readFile(accessConfigPath, 'utf8').replace(/^\uFEFF/, ''));
     } catch (error) {
       throw new Error(`Invalid SUOWANG access config: ${error.message}`);
     }

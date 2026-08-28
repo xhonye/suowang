@@ -12,6 +12,7 @@ test('a new database contains only the immutable states and honest settings', (c
   assert.deepEqual(snapshot.states.map((state) => state.mainlines), [[], [], []]);
   assert.deepEqual(snapshot.states.map((state) => state.stateTodos), [[], [], []]);
   assert.equal(snapshot.settings.lastViewedStateId, 'work');
+  assert.equal(snapshot.settings.displayName, '所往用户');
   assert.equal(snapshot.settings.workspaceDensity, 'small');
   assert.equal(snapshot.states.find((state) => state.id === 'work').startedTodoId, null);
   assert.throws(

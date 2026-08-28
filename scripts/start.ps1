@@ -1,33 +1,13 @@
 $ErrorActionPreference = 'Stop'
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$healthUrl = 'http://127.0.0.1:2037/health'
-$appUrl = 'http://127.0.0.1:2037/'
 
-function Get-SuowangDataDir {
-    if ($env:SUOWANG_DATA_DIR) {
-        return [System.IO.Path]::GetFullPath($env:SUOWANG_DATA_DIR)
+function Get-SuowangLauncherConfig([string]$nodePath) {
+    $configJson = & $nodePath (Join-Path $projectRoot 'scripts/launcher-config.mjs')
+    if ($LASTEXITCODE -ne 0 -or -not $configJson) {
+        throw '无法读取统一启动配置。请检查数据目录环境变量和安装文件。'
     }
-    if (Test-Path -LiteralPath 'D:/5Data') {
-        return 'D:/5Data/suowang'
-    }
-    return (Join-Path $env:LOCALAPPDATA 'SUOWANG')
-}
-
-function Get-SuowangAccessMode {
-    if ($env:SUOWANG_ACCESS) {
-        return $env:SUOWANG_ACCESS
-    }
-    $accessConfigPath = Join-Path (Get-SuowangDataDir) 'access.json'
-    if (Test-Path -LiteralPath $accessConfigPath) {
-        try {
-            $mode = (Get-Content -LiteralPath $accessConfigPath -Raw | ConvertFrom-Json).accessMode
-            if ($mode -in @('local', 'tailscale')) { return $mode }
-        } catch {
-            throw "手机访问配置无效：$accessConfigPath"
-        }
-    }
-    return 'local'
+    return ($configJson | ConvertFrom-Json)
 }
 function Show-StartError([string]$message) {
     try {
@@ -62,17 +42,17 @@ function Test-SuowangHealth([string]$url) {
     }
 }
 
-function Test-SuowangTailscaleListener([string]$tailscaleIp) {
+function Test-SuowangTailscaleListener([string]$tailscaleIp, [int]$port) {
     if (-not $tailscaleIp) { return $false }
-    $localListener = Get-NetTCPConnection -LocalAddress '127.0.0.1' -LocalPort 2037 -State Listen -ErrorAction SilentlyContinue |
+    $localListener = Get-NetTCPConnection -LocalAddress '127.0.0.1' -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
         Select-Object -First 1
-    $remoteListener = Get-NetTCPConnection -LocalAddress $tailscaleIp -LocalPort 2037 -State Listen -ErrorAction SilentlyContinue |
+    $remoteListener = Get-NetTCPConnection -LocalAddress $tailscaleIp -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
         Select-Object -First 1
     return $localListener -and $remoteListener -and $localListener.OwningProcess -eq $remoteListener.OwningProcess
 }
 
-function Stop-VerifiedSuowangServer {
-    $listener = Get-NetTCPConnection -LocalPort 2037 -State Listen -ErrorAction SilentlyContinue |
+function Stop-VerifiedSuowangServer([int]$port) {
+    $listener = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
         Where-Object { $_.LocalAddress -eq '127.0.0.1' } |
         Select-Object -First 1
     if (-not $listener) {
@@ -80,7 +60,7 @@ function Stop-VerifiedSuowangServer {
     }
     $process = Get-CimInstance Win32_Process -Filter "ProcessId=$($listener.OwningProcess)"
     if (-not $process -or $process.Name -ne 'node.exe' -or $process.CommandLine -notmatch 'scripts[/\\]serve\.mjs') {
-        throw '2037 端口上的进程无法确认为 SUOWANG，已停止自动切换以保护其他程序。'
+        throw "$port 端口上的进程无法确认为 SUOWANG，已停止自动切换以保护其他程序。"
     }
     Stop-Process -Id $listener.OwningProcess -Force
     for ($attempt = 0; $attempt -lt 20; $attempt++) {
@@ -91,7 +71,6 @@ function Stop-VerifiedSuowangServer {
 }
 
 try {
-    $accessMode = Get-SuowangAccessMode
     $bundledNode = Join-Path $projectRoot 'runtime/node.exe'
     $nodePath = if (Test-Path -LiteralPath $bundledNode -PathType Leaf) {
         $bundledNode
@@ -102,13 +81,19 @@ try {
     if ($nodeMajor -lt 22) {
         throw "检测到 Node $nodeMajor。SUOWANG 需要 Node 22 或更高版本。"
     }
+    $launcherConfig = Get-SuowangLauncherConfig $nodePath
+    $accessMode = $launcherConfig.accessMode
+    $dataDir = $launcherConfig.dataDir
+    $port = [int]$launcherConfig.port
+    $healthUrl = $launcherConfig.localHealthUrl
+    $appUrl = $launcherConfig.localAppUrl
 
     $tailscaleIp = Get-TailscaleIp
     if ($accessMode -eq 'tailscale' -and -not $tailscaleIp) {
         throw '已启用手机访问模式，但 Tailscale 当前没有连接。请先连接 Tailscale，或运行 suowang access local。'
     }
     $localRunning = Test-SuowangHealth $healthUrl
-    $remoteRunning = Test-SuowangTailscaleListener $tailscaleIp
+    $remoteRunning = Test-SuowangTailscaleListener $tailscaleIp $port
     $isRunning = if ($accessMode -eq 'tailscale') {
         $localRunning -and $remoteRunning
     } else {
@@ -116,13 +101,12 @@ try {
     }
 
     if (-not $isRunning -and ($localRunning -or $remoteRunning)) {
-        Stop-VerifiedSuowangServer
+        Stop-VerifiedSuowangServer $port
         $localRunning = $false
         $remoteRunning = $false
     }
 
     if (-not $isRunning) {
-        $dataDir = Get-SuowangDataDir
         $logsDir = Join-Path $dataDir 'logs'
         New-Item -ItemType Directory -Force -Path $logsDir | Out-Null
         $stdoutLog = Join-Path $logsDir 'latest-stdout.log'
@@ -139,7 +123,7 @@ try {
         for ($attempt = 0; $attempt -lt 30; $attempt++) {
             Start-Sleep -Milliseconds 250
             $localRunning = Test-SuowangHealth $healthUrl
-            $remoteRunning = Test-SuowangTailscaleListener $tailscaleIp
+            $remoteRunning = Test-SuowangTailscaleListener $tailscaleIp $port
             if ($localRunning -and ($accessMode -ne 'tailscale' -or $remoteRunning)) {
                 $isRunning = $true
                 break
@@ -148,7 +132,6 @@ try {
     }
 
     if (-not $isRunning) {
-        $dataDir = Get-SuowangDataDir
         $stderrLog = Join-Path $dataDir 'logs/latest-stderr.log'
         $stderrDetail = if (Test-Path -LiteralPath $stderrLog) {
             ((Get-Content -LiteralPath $stderrLog -Tail 12) -join [Environment]::NewLine).Trim()

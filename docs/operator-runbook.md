@@ -43,12 +43,14 @@ npm run install-shortcut
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `SUOWANG_DATA_DIR` | Windows 优先 `D:/5Data/suowang`；macOS 为 `~/Library/Application Support/SUOWANG/`；其他系统为系统应用数据目录 | 必须是绝对路径；保存数据库、备份、头像和日志 |
+| `SUOWANG_DATA_DIR` | Windows 新安装为 `%LOCALAPPDATA%/SUOWANG`；macOS 为 `~/Library/Application Support/SUOWANG/`；Linux 为 XDG 或标准 home 数据目录 | 必须是绝对路径并始终优先；保存数据库、备份、头像、访问配置和日志 |
 | `SUOWANG_PORT` | `2037` | 本地开发服务端口，范围 1–65535 |
 | `SUOWANG_ACCESS` | `local` | `tailscale` 时保留本机监听，并额外绑定自动发现的 Tailscale IPv4 |
 | `SUOWANG_TAILSCALE_IP` | 自动发现 | 仅在机器存在多个 Tailscale IPv4 时显式指定；必须属于本机 `100.64.0.0/10` |
 
-桌面启动器按固定日常地址 `http://127.0.0.1:2037/` 工作。若临时改端口，应从命令行启动和访问，不要把它当成已更新的桌面入口。
+Windows 旧版若已经存在 `D:/5Data/suowang/suowang.db`，会继续使用旧目录且不自动搬迁。若旧目录与 `%LOCALAPPDATA%/SUOWANG` 同时存在数据库，启动会停止并列出两个路径；设置 `SUOWANG_DATA_DIR` 明确选择后再启动，禁止手工合并运行中的数据库。
+
+桌面启动器从统一配置读取端口和地址；默认仍为 `http://127.0.0.1:2037/`。
 
 手机访问使用 `suowang access tailscale` 启用，使用 `suowang access local` 关闭。设置保存在数据目录的 `access.json`，不进入仓库；环境变量可用于临时覆盖。再次双击桌面入口时，启动器会确认现有进程确实是 SUOWANG 后自动切换监听模式。远程模式不绑定 `0.0.0.0`，手机必须登录同一 Tailnet，并受 Tailscale ACL 与 Windows 防火墙共同约束。
 
@@ -64,7 +66,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 {"status":"ok","app":"suowang","version":"0.1.2","database":"ready"}
 ```
 
-默认正式数据库为 `D:/5Data/suowang/suowang.db`。不要手工编辑、复制运行中的数据库或把它放进仓库；使用设置页的 SQLite 导出取得一致性副本。
+新安装的 Windows 数据库默认为 `%LOCALAPPDATA%/SUOWANG/suowang.db`；既有旧数据库继续留在 `D:/5Data/suowang/suowang.db`。不要手工编辑、复制运行中的数据库或把它放进仓库；使用设置页的 SQLite 导出取得一致性副本。
 
 升级现有安装后首次启动会自动运行未应用的 migration。持续事项完成记录保存在同一个 SQLite 数据库中，随每日备份、SQLite 导出和整库恢复一起保存；无需创建额外数据文件。
 

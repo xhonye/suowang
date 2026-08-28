@@ -61,6 +61,7 @@ release_items=(
   "THIRD_PARTY_NOTICES.md"
   "MACOS-README.txt"
   "migrations"
+  "scripts/launcher-config.mjs"
   "scripts/serve.mjs"
   "src"
   "package.json"

@@ -149,11 +149,12 @@ suowang access tailscale
 业务数据不会写进仓库。
 
 1. 设置 `SUOWANG_DATA_DIR` 时使用该绝对路径。
-2. 当前 Windows 机器存在 `D:/5Data` 时使用 `D:/5Data/suowang`。
-3. 其他 Windows 机器使用 `%LOCALAPPDATA%/SUOWANG`。
-4. macOS 使用 `~/Library/Application Support/SUOWANG/`。
+2. Windows 新安装使用 `%LOCALAPPDATA%/SUOWANG`。
+3. Windows 旧版本若已经存在 `D:/5Data/suowang/suowang.db`，继续使用该旧目录，不自动搬迁。
+4. 标准目录与旧目录同时存在数据库时，SUOWANG 会停止并要求用 `SUOWANG_DATA_DIR` 明确选择，不擅自合并。
+5. macOS 使用 `~/Library/Application Support/SUOWANG/`；Linux 使用 `$XDG_DATA_HOME/suowang` 或 `~/.local/share/suowang`。
 
-目录内包含 SQLite 数据库、每日备份、本地头像和启动日志。正式库首次启动没有 demo 主线、事项或假统计。
+目录内包含 SQLite 数据库、每日备份、本地头像、访问配置和启动日志。正式库首次启动显示中性的“所往用户”，没有 demo 主线、事项或假统计。自动备份位于同一设备，不等于异地灾备。
 
 ## 验证
 

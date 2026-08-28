@@ -61,6 +61,7 @@ export class DatabaseRuntime {
     this.backupsDir = join(dataDir, 'backups');
     this.tempDir = join(dataDir, 'tmp');
     this.profileDir = join(dataDir, 'profile');
+    this.initializeFreshDatabase = !existsSync(this.databasePath);
     ensureDirectory(this.dataDir);
     ensureDirectory(this.backupsDir);
     ensureDirectory(this.tempDir);
@@ -74,6 +75,11 @@ export class DatabaseRuntime {
     this.db.pragma('busy_timeout = 5000');
     this.db.pragma('journal_mode = WAL');
     this.runMigrations();
+    if (this.initializeFreshDatabase) {
+      // Migration 001 retains its published seed; only brand-new databases receive the neutral default.
+      this.db.prepare('UPDATE app_settings SET display_name = ? WHERE singleton = 1').run('所往用户');
+      this.initializeFreshDatabase = false;
+    }
     const schemaVersion = this.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version;
     assertDatabaseIntegrity(this.db, { requireCurrentSchema: schemaVersion >= 4 });
   }

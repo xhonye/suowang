@@ -19,6 +19,7 @@ test('an existing v1 database gains minimal steps, ongoing-item support, and wor
   });
 
   const oldRuntime = new DatabaseRuntime({ dataDir, migrationsDir: v1Migrations });
+  oldRuntime.db.prepare('UPDATE app_settings SET display_name = ? WHERE singleton = 1').run('Honye');
   oldRuntime.db.prepare(`
     INSERT INTO todos(id, state_id, mainline_id, title, status, position, created_at, ended_at)
     VALUES ('td_legacy', 'work', NULL, '旧事项', 'active', 1, '2026-08-21T00:00:00.000Z', NULL)
@@ -34,5 +35,6 @@ test('an existing v1 database gains minimal steps, ongoing-item support, and wor
   assert.equal(upgradedRuntime.db.prepare('SELECT cue FROM states WHERE id = ?').get('restore').cue, '休息好，才能重新出发。');
   assert.equal(upgradedRuntime.db.prepare('SELECT workspace_density FROM app_settings WHERE singleton = 1').get().workspace_density, 'small');
   assert.equal(upgradedRuntime.db.prepare('SELECT started_todo_id FROM states WHERE id = ?').get('work').started_todo_id, null);
+  assert.equal(upgradedRuntime.db.prepare('SELECT display_name FROM app_settings WHERE singleton = 1').get().display_name, 'Honye');
   assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 6);
 });

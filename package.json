@@ -31,6 +31,7 @@
     "scripts/macos-launcher.sh",
     "scripts/configure-access.ps1",
     "scripts/install-shortcut.ps1",
+    "scripts/launcher-config.mjs",
     "scripts/serve.mjs",
     "scripts/start.ps1",
     "src/",

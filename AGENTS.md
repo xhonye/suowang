@@ -67,7 +67,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - 浏览器 UI 只通过本地 JSON API 读写；SQLite 是业务数据唯一真源，`localStorage` 不得保存主线、事项或指针。
 - 正式库首次启动只有固定三模式和设置，不注入 demo 主线、事项或假统计。
 - migration 文件进入 Git；个人数据库、备份、头像、日志和导出必须在仓库外。
-- `SUOWANG_DATA_DIR` 可显式指定数据目录；当前 Windows 机器默认使用 `D:/5Data/suowang`，macOS 使用 `~/Library/Application Support/SUOWANG/`，其他机器回退到系统应用数据目录。
+- `SUOWANG_DATA_DIR` 可用绝对路径显式指定数据目录并始终优先。Windows 新安装使用 `%LOCALAPPDATA%/SUOWANG`；只有检测到真实的 `D:/5Data/suowang/suowang.db` 时才继续兼容旧目录。两处同时存在数据库时必须报冲突并要求显式选择，不自动移动、复制或合并。macOS 使用 `~/Library/Application Support/SUOWANG/`，Linux 使用 XDG 或标准 home 数据目录。
 - 每天第一次启动自动备份 SQLite，按备份时间保留最后 30 份。手动导出不限；整库恢复前必须先备份当前库，不做 merge。
 - 不建立点击、切模式、切当前主线、拖拽或文字修改的 audit/event 流水；`todo_occurrences` 只保存用户明确确认的持续事项完成事实，不承担行为监控。
 

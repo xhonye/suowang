@@ -33,7 +33,8 @@ scripts/serve.mjs
 
 ## 目录与模块
 
-- `src/server/config.mjs`：项目、数据目录和端口解析。
+- `src/server/config.mjs`：项目、数据目录和端口解析；Windows 只按真实数据库文件兼容旧目录，并拒绝双库歧义。
+- `scripts/launcher-config.mjs`：供 Node 服务、Windows 与 macOS 启动壳共享的版本、数据目录、端口和访问模式配置。
 - `src/server/database.mjs`：migration、连接生命周期、每日备份、下载备份与整库恢复。
 - `src/server/service.mjs`：全部业务规则和 snapshot 组装。
 - `scripts/serve.mjs`：loopback HTTP 边界、静态文件、API、导出、恢复和头像。
@@ -53,7 +54,7 @@ scripts/serve.mjs
 2. 当天首次启动前创建一致性 SQLite 备份，自动备份滚动保留 30 份。
 3. 手动 SQLite 导出使用数据库备份 API 创建一致性快照；JSON 导出只用于人类阅读。
 4. 整库恢复先验证文件结构，再备份当前库，关闭连接并原子替换；失败时恢复安全副本。
-5. 正式数据、备份、头像、日志和临时导出始终位于仓库外。Windows 优先使用 `D:/5Data/suowang`，macOS 使用 `~/Library/Application Support/SUOWANG/`。
+5. 正式数据、备份、头像、访问配置、日志和临时导出始终跟随同一个仓库外数据目录。Windows 新安装使用 `%LOCALAPPDATA%/SUOWANG`；只有旧目录已经存在 `suowang.db` 时才继续使用 `D:/5Data/suowang`。两处都有数据库时停止并要求显式选择，不自动搬迁或合并。macOS 使用 `~/Library/Application Support/SUOWANG/`。
 
 ## 发行壳
 
