@@ -1,6 +1,7 @@
 # Dependencies and build output
 node_modules/
 dist/
+out/
 coverage/
 playwright-report/
 test-results/
@@ -10,6 +11,7 @@ tmp/
 task_plan.md
 findings.md
 progress.md
+desktop/build-meta.json
 
 # Local configuration and secrets
 .env
