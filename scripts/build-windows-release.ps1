@@ -15,7 +15,7 @@ $version = $package.version
 $distRoot = Join-Path $projectRoot 'dist/windows'
 $portableName = "SUOWANG-Portable-$version"
 $portableRoot = Join-Path $distRoot $portableName
-$forgeRoot = Join-Path $projectRoot "out/所往 SUOWANG-win32-$Architecture"
+$forgeOutRoot = Join-Path $projectRoot 'out'
 $signingRequested = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_FILE)
 $env:SUOWANG_SIGNING_STATUS = if ($signingRequested) { 'SIGNED' } else { 'UNSIGNED' }
 $env:SUOWANG_FORCE_NATIVE_REBUILD = if ($UseBundledNapiPrebuild) { '0' } else { '1' }
@@ -42,10 +42,18 @@ function Get-Sha256Hex([string]$Path) {
 }
 
 New-Item -ItemType Directory -Force -Path $distRoot | Out-Null
-Assert-ChildPath $projectRoot $forgeRoot
 Assert-ChildPath $distRoot $portableRoot
-foreach ($target in @($forgeRoot, $portableRoot)) {
-    if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
+if (Test-Path -LiteralPath $forgeOutRoot -PathType Container) {
+    $staleForgeRoots = @(Get-ChildItem -LiteralPath $forgeOutRoot -Directory | Where-Object {
+        $_.Name.EndsWith("-win32-$Architecture", [System.StringComparison]::OrdinalIgnoreCase)
+    })
+    foreach ($target in $staleForgeRoots) {
+        Assert-ChildPath $forgeOutRoot $target.FullName
+        Remove-Item -LiteralPath $target.FullName -Recurse -Force
+    }
+}
+if (Test-Path -LiteralPath $portableRoot) {
+    Remove-Item -LiteralPath $portableRoot -Recurse -Force
 }
 
 npm run desktop:prepare
@@ -55,9 +63,15 @@ if ($LASTEXITCODE -ne 0) { throw 'Electron Forge package failed.' }
 node scripts/verify-desktop-package.mjs
 if ($LASTEXITCODE -ne 0) { throw 'Packaged desktop verification failed.' }
 
-if (-not (Test-Path -LiteralPath (Join-Path $forgeRoot 'SUOWANG.exe'))) {
-    throw "Forge did not create SUOWANG.exe at $forgeRoot"
+$forgeRoots = @(Get-ChildItem -LiteralPath $forgeOutRoot -Directory | Where-Object {
+    $_.Name.EndsWith("-win32-$Architecture", [System.StringComparison]::OrdinalIgnoreCase) -and
+        (Test-Path -LiteralPath (Join-Path $_.FullName 'SUOWANG.exe') -PathType Leaf)
+})
+if ($forgeRoots.Count -ne 1) {
+    throw "Expected exactly one Forge package ending in -win32-$Architecture with SUOWANG.exe; found $($forgeRoots.Count)."
 }
+$forgeRoot = $forgeRoots[0].FullName
+Assert-ChildPath $forgeOutRoot $forgeRoot
 Copy-Item -LiteralPath $forgeRoot -Destination $portableRoot -Recurse -Force
 
 $portableZip = Join-Path $distRoot "$portableName.zip"

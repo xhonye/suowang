@@ -58,6 +58,14 @@ test('Windows release hashing does not depend on optional PowerShell modules', (
   assert.doesNotMatch(script, /Get-FileHash/);
 });
 
+test('Windows release discovers the Forge output without a non-ASCII PowerShell literal', () => {
+  const script = read('scripts/build-windows-release.ps1');
+  assert.doesNotMatch(script, /所往 SUOWANG-win32/);
+  assert.match(script, /\.EndsWith\("-win32-\$Architecture"/);
+  assert.match(script, /Join-Path \$_\.FullName 'SUOWANG\.exe'/);
+  assert.match(script, /Expected exactly one Forge package/);
+});
+
 test('Windows browser cleanup tolerates transient filesystem locks', () => {
   const teardown = read('tests/e2e/global-teardown.mjs');
   assert.match(teardown, /maxRetries: 10/);
