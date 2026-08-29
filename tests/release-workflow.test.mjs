@@ -43,6 +43,7 @@ test('macOS release explicitly builds the DMG maker native dependency', () => {
   assert.match(script, /npm rebuild fs-xattr --ignore-scripts=false --foreground-scripts/);
   assert.match(script, /macos-alias\/build\/Release\/volume\.node/);
   assert.match(script, /fs-xattr\/build\/Release\/xattr\.node/);
+  assert.match(read('forge.config.mjs'), /title: 'SUOWANG'/);
 });
 
 test('candidate packaging verifies the locked better-sqlite3 N-API prebuild by default', () => {

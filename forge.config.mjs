@@ -104,6 +104,7 @@ export default {
     new MakerZIP({}, ['win32']),
     new MakerDMG({
       name: `SUOWANG-${APP_VERSION}-mac-arm64`,
+      title: 'SUOWANG',
       icon: resolve(icons, 'suowang-app-icon.icns'),
       overwrite: false,
       format: 'ULFO',
