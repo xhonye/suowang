@@ -2,20 +2,25 @@
 
 ## 系统边界
 
-SUOWANG 是默认只监听 loopback、可显式启用受限 Tailscale 访问的本地优先 Web 应用。浏览器负责显示和收集操作，Node 服务负责静态页面、JSON API、业务事务、文件导出与恢复，SQLite 是唯一正式业务真源。
+SUOWANG 是本地优先应用。Electron 只为普通用户提供独立桌面窗口与系统集成；Vanilla JS renderer 仍通过 same-origin HTTP 使用现有 Node 服务，SQLite 仍是唯一正式业务真源。源码/npm 浏览器兼容模式默认只监听 loopback，并可由用户显式增加受限 Tailscale 访问。
 
 ```text
-Browser UI
-   │ same-origin HTTP
-   ▼
-scripts/serve.mjs
-   │
-   ├─ SuowangService：模式、主线、事项、当前主线、下一步规则
+Electron main                         Browser / CLI compatibility
+   │ start shared server                   │ scripts/serve.mjs
+   │ dynamic loopback                      │ fixed loopback + optional Tailscale
+   ▼                                       ▼
+src/server/app-server.mjs ─────────────────┘
+   │ static UI + same-origin JSON API
+   ├─ SuowangService：模式、主线、事项、指针规则
    ├─ DatabaseRuntime：migration、备份、恢复
-   └─ SQLite：仓库外 suowang.db
+   └─ SQLite：仓库外 suowang.db + data-dir instance lock
+
+Sandbox renderer
+   ├─ no Node / fs / shell / database
+   └─ narrow preload bridge for dialogs and fixed GitHub targets
 ```
 
-应用不连接云服务，不发送遥测，不在浏览器中保存主线、事项或指针。每次写操作返回最新 snapshot，前端不自行猜测事务结果。
+应用不连接云服务，不发送遥测，不加载远程代码，也不在 renderer 中保存主线、事项或指针。每次写操作返回最新 snapshot，前端不自行猜测事务结果。
 
 ## 数据模型
 
@@ -35,11 +40,16 @@ scripts/serve.mjs
 
 - `src/server/config.mjs`：项目、数据目录和端口解析；Windows 只按真实数据库文件兼容旧目录，并拒绝双库歧义。
 - `src/server/app-meta.mjs`：直接从 `package.json` 读取应用名称、完整 SemVer，并派生 macOS 合法数值版本。
-- `scripts/launcher-config.mjs`：供 Node 服务、Windows 与 macOS 启动壳共享的版本、数据目录、端口和访问模式配置。
-- `src/server/launcher-policy.mjs`：以纯函数决定复用、安全重启或端口冲突；启动壳不得凭端口号盲目终止进程。
+- `src/server/app-server.mjs`：桌面与浏览器入口共用的服务 bootstrap，显式接收 resource root，返回 server、origin、actualPort、runtime、实例锁和 `close()`。
+- `src/server/instance-lock.mjs`：跨 Electron/CLI 的数据目录所有权；原子创建并只清理可验证 stale lock，不终止未知进程。
+- `scripts/launcher-config.mjs`、`src/server/launcher-policy.mjs`：浏览器兼容入口的版本、端口、访问模式与旧服务识别策略。
 - `src/server/database.mjs`：migration、连接生命周期、每日备份、下载备份与整库恢复。
 - `src/server/service.mjs`：全部业务规则和 snapshot 组装。
-- `scripts/serve.mjs`：loopback HTTP 边界、静态文件、API、导出、恢复和头像。
+- `scripts/serve.mjs`：精简浏览器/CLI 入口，调用共享 app server。
+- `desktop/main.js`：Electron 生命周期、单实例、动态 loopback 服务、窗口、原生对话框、退出与故障处理。
+- `desktop/preload.cjs`：sandbox 中的固定 bridge；不暴露 Electron IPC、路径或任意 URL。
+- `desktop/desktop-policy.mjs`：loopback origin、导航、GitHub 目标与 IPC 参数白名单。
+- `desktop/window-state.mjs`：数据目录内独立 JSON 的窗口 bounds/maximized 状态，损坏或屏幕变化时安全回退。
 - `src/api.js`：同源浏览器客户端。
 - `src/view-model.js`：无 DOM 的显示规则。
 - `src/app.js`：页面渲染与交互编排。
@@ -58,9 +68,13 @@ scripts/serve.mjs
 4. 整库恢复先验证文件结构，再备份当前库，关闭连接并原子替换；失败时恢复安全副本。
 5. 正式数据、备份、头像、访问配置、日志和临时导出始终跟随同一个仓库外数据目录。Windows 新安装使用 `%LOCALAPPDATA%/SUOWANG`；只有旧目录已经存在 `suowang.db` 时才继续使用 `D:/5Data/suowang`。两处都有数据库时停止并要求显式选择，不自动搬迁或合并。macOS 使用 `~/Library/Application Support/SUOWANG/`。
 
-## 发行壳
+## Electron 信任边界
 
-Windows 安装包与 macOS Apple Silicon `.app` 都只是本地服务的启动壳，不改变浏览器 UI、HTTP API 或 SQLite 结构。两端先用统一配置查询预期版本、端口和访问模式，再读取 `/health` 与监听进程身份：完全匹配时复用，确认是旧 SUOWANG 时安全切换，无法验证时报告冲突且不终止进程。`/health` 只暴露应用、版本、数据库状态、schema 版本、PID 和访问模式，不暴露数据目录或业务数据。构建脚本从 nodejs.org 下载内置运行时后，必须用同版本官方 `SHASUMS256.txt` 对精确归档文件名和 SHA-256 做校验，再解压进入发行载荷。macOS `SUOWANG.app` 内置 arm64 Node.js 和在 Apple Silicon 上安装的 `better-sqlite3`。`.dmg` 仅面向 Apple Silicon（M1 及以后）；首版未签名、未公证，因此首次打开可能需要用户在 Gatekeeper 中明确确认。
+桌面壳不改变页面、HTTP API 或 SQLite 结构。main process 在随机可用 loopback 端口启动共享服务，BrowserWindow 只加载本次得到的精确 origin；`will-navigate`、`window.open` 与权限请求默认拒绝。只有 repo、Issues、Releases 三个枚举目标能通过 main process 调用系统浏览器。preload 只提供版本信息、打开数据目录、固定 GitHub 目标和受 main 所有的文件选择/保存流程；renderer 永远得不到任意路径访问、shell、数据库或原始 IPC。
+
+生产窗口开启 sandbox、context isolation、web security 与严格 CSP，关闭 nodeIntegration、insecure content 和 DevTools 用户入口。Forge 开启 ASAR、native auto-unpack、fuses 与 ASAR integrity；Electronegativity 的高风险结果阻断打包验证。桌面模式不检查更新、不发遥测、不在启动期间请求外网；离线可完整工作。
+
+Windows Setup 与 Portable ZIP 复制同一 Forge packaged app，快捷方式直接指向 `SUOWANG.exe`。macOS `.dmg` 包含真正的 Electron arm64 `.app` 与 Applications 拖放入口。两端在目标 OS 重建或验证 `better-sqlite3`，并用真正 packaged executable 执行隐藏窗口、renderer、health、数据库写入和正常退出 smoke。未配置正式凭据时只标记 `UNSIGNED`；macOS 只有实际完成 notarization 才标记 `SIGNED+NOTARIZED`。
 
 ## 验证与发行边界
 
@@ -68,13 +82,13 @@ Node 单元测试、Playwright 浏览器测试和临时 smoke 都显式使用仓
 
 仓库级 `.npmrc` 禁用依赖安装生命周期脚本，避免 `better-sqlite3` 在已有锁定跨平台预编译文件时仍隐式调用 `node-gyp`。因此 CI 必须显式执行 Playwright Chromium 安装和发行工具准备；`npm ci` 后的单元与 health smoke 会验证当前平台原生 SQLite 模块确实可加载。
 
-常规 CI 在 Linux、Windows 和 macOS 上分别用 Node 22/24 运行单元门禁与动态端口临时 smoke，并在 Linux 执行浏览器测试和包清单审计。Windows 与 macOS 候选工作流只接受完整 commit SHA：Windows 自动执行 Setup 静默安装、真实启动壳 health 与卸载后数据保留检查；macOS 挂载最终 DMG、复制 `.app`、运行真实启动壳并检查 health。候选只保存为短期 Actions artifact，不创建 Tag 或公开 Release。
+常规 CI 在 Linux、Windows 和 macOS 上分别用 Node 22/24 运行单元门禁与动态端口临时 smoke，在 Linux 执行浏览器测试，并在 Windows/macOS 执行 Electron 单元与开发态 E2E。Windows 与 macOS 候选工作流只接受完整 commit SHA：Windows 验证 Portable、静默安装、直接 EXE 启动、无命令壳、单实例、受控旧 schema 升级、卸载和数据保留；macOS 挂载最终 DMG、复制 `.app`、执行 packaged smoke、受控升级并检查无残留进程。候选只保存为短期 Actions artifact，不创建 Tag 或公开 Release。
 
-人工完成 Windows/macOS 真实安装、升级与未签名打开验收后，聚合发布工作流核对两个成功候选运行都来自同一 SHA，下载精确 artifact 并复验 SHA-256。它再生成一份绑定版本、源 commit 和五个候选文件 SHA-256 的镜像清单，随后创建不可移动的 annotated Tag，在 Draft Release 中一次上传五项候选资产和镜像清单，核对名称齐全后才公开为 prerelease。任何既有 Tag 或 Release 都使流程失败，不允许 `--clobber`；因此用户可见 Release 不再经历先公开空壳、再异步追加或覆盖资产的窗口。本轮不创建 Tag 或 Release，也不声称 Gatekeeper、Safari 或人工升级路径已由自动化替代。
+人工完成 Windows/macOS 真实安装、升级与未签名打开验收后，聚合发布工作流核对两个成功候选运行都来自同一 SHA，下载精确 artifact 并复验 SHA-256。它读取候选的真实签名状态，生成绑定版本、完整源 commit、Electron 版本、双平台签名状态和五个候选文件 SHA-256 的镜像清单，随后创建不可移动的 annotated Tag，在 Draft Release 中只上传五项公开候选资产和镜像清单，核对名称齐全后才公开为 prerelease。任何既有 Tag 或 Release 都使流程失败，不允许 `--clobber`。
 
 ## 取舍
 
-- 使用原生 Node HTTP 和 Vanilla JS，保持本地应用依赖面小。
+- Electron 只作为普通用户承载层，继续使用原生 Node HTTP 和 Vanilla JS，避免复制业务或形成桌面专用数据层。
 - 使用同步 SQLite 驱动，把单用户短事务写成清楚的原子操作。
 - 不建立操作监控或 audit/event 流水；`todo_occurrences` 仅保存用户明确提交的持续事项完成事实。主线结束后保持行迹事实，事项可从行迹撤回为 active 以纠正误操作。
 - 不做 JSON 恢复或数据 merge，避免产生两套真源和模糊冲突规则。

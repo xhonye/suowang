@@ -4,15 +4,15 @@
 
 ## 首次安装
 
-源码和 npm 使用只支持 Node 22 或 Node 24 LTS；自包含的 Windows Setup/Portable 与 macOS `.dmg` 固定内置 Node 24.15.0，不需要用户安装 Node。
+源码和 npm 的浏览器兼容入口只支持 Node 22 或 Node 24 LTS；Windows Setup/Portable 与 macOS `.dmg` 是自包含 Electron 桌面应用，不需要用户安装 Node。
 
 ### GitHub Release / 双击入口
 
-Windows 从 Release 下载 `SUOWANG-Setup-*.exe` 后双击安装，再从桌面图标打开。Portable ZIP 解压后双击 `SUOWANG.cmd`。两种方式均自带运行环境，不读取或覆盖已有数据目录。
+Windows 从 Release 下载 `SUOWANG-Setup-*.exe` 后双击安装，再从桌面图标打开独立应用窗口。Portable ZIP 解压后双击 `SUOWANG.exe`。两种方式共用同一个 Forge packaged app，不打开浏览器，不读取或覆盖已有数据目录。
 
 ### macOS Apple Silicon / 双击入口
 
-下载 `SUOWANG-*-mac-arm64.dmg`，将「所往 SUOWANG」拖入 Applications（应用程序）后双击打开。仅支持 M1 及以后芯片的 Mac；应用内置 arm64 Node 与 SQLite 依赖，自动打开浏览器。未签名测试版第一次使用时，按住 Control 点击应用并选择“打开”，再确认一次。
+下载 `SUOWANG-*-mac-arm64.dmg`，将「所往 SUOWANG」拖入 Applications（应用程序）后双击打开独立应用窗口。仅支持 M1 及以后芯片的 Mac；应用内置 Electron 与 SQLite 依赖，不打开浏览器。未签名测试版第一次使用时，按住 Control 点击应用并选择“打开”，再确认一次。
 
 ### npm / Agent 入口
 
@@ -39,7 +39,7 @@ npm install
 npm run install-shortcut
 ```
 
-日常双击桌面 `SUOWANG` 或仓库根目录的 `SUOWANG.cmd`。入口会从统一配置读取预期版本、端口、数据目录和访问模式；同版本服务只打开页面，已确认的旧 SUOWANG 会安全切换，其他程序占用端口时会停止并报错，不会误杀进程。
+日常双击桌面 `SUOWANG` 或仓库根目录的 `SUOWANG.cmd`。这是浏览器兼容入口，不等同于 Release 的桌面应用。它会从统一配置读取预期版本、端口、数据目录和访问模式；其他入口已经持有该数据目录实例锁时停止并报错，不会误杀进程。
 
 ## 环境变量
 
@@ -52,7 +52,7 @@ npm run install-shortcut
 
 Windows 旧版若已经存在 `D:/5Data/suowang/suowang.db`，会继续使用旧目录且不自动搬迁。若旧目录与 `%LOCALAPPDATA%/SUOWANG` 同时存在数据库，启动会停止并列出两个路径；设置 `SUOWANG_DATA_DIR` 明确选择后再启动，禁止手工合并运行中的数据库。
 
-桌面启动器从统一配置读取端口和地址；默认仍为 `http://127.0.0.1:2037/`。
+Electron 桌面模式使用动态 loopback 端口且不向用户显示地址；源码/npm 浏览器兼容入口默认仍为 `http://127.0.0.1:2037/`。
 
 手机访问使用 `suowang access tailscale` 启用，使用 `suowang access local` 关闭。设置保存在数据目录的 `access.json`，不进入仓库；环境变量可用于临时覆盖。再次双击桌面入口时，启动器会确认现有进程确实是 SUOWANG 后自动切换监听模式。远程模式不绑定 `0.0.0.0`，手机必须登录同一 Tailnet，并受 Tailscale ACL 与 Windows 防火墙共同约束。
 
@@ -89,13 +89,13 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 
 按下面顺序检查：
 
-1. 自包含安装先检查 `http://127.0.0.1:2037/health` 是否返回正常状态；源码/npx 入口再确认 `node --version` 的主版本为 22 或 24。
-2. 2037 端口是否被其他程序占用。
+1. 桌面应用先查看原生错误提示与数据目录 `logs/`；源码/npx 入口再确认 `node --version` 的主版本为 22 或 24，并检查 `/health`。
+2. 源码浏览器模式的 2037 端口是否被其他程序占用；桌面动态端口不依赖 2037。
 3. 数据目录是否可写，数据库或备份盘是否有空间。
 4. macOS 启动失败时检查 `~/Library/Application Support/SUOWANG/logs/latest-stderr.log`。
 5. 在仓库根目录运行 `npm run check`，确认代码与测试未损坏。
 
-若健康检查正常但页面未更新，先确认 `/health` 的 `version` 是否为当前安装版本。正常双击入口会验证 PID 与命令行后切换旧服务；若提示身份无法验证，不要按端口号盲目结束进程，应退出明确占用端口的程序或重启电脑。
+若源码浏览器模式健康检查正常但页面未更新，先确认 `/health` 的 `version` 是否为当前版本。桌面应用若提示数据目录已被占用，应正常退出另一个 SUOWANG 入口；不要按端口号盲目结束进程。
 
 ## 发布前检查
 
@@ -105,9 +105,11 @@ npm run check
 npm run test:e2e
 npm run verify
 npm run smoke:temp
+npm run test:desktop
+npm run verify:desktop
 npm run release:check
 git diff --check
 git status --short
 ```
 
-`release:check` 会运行单元、浏览器、动态端口临时 smoke、npm tarball 文件清单和公开表面审计。双平台候选构建下载 Node 运行时后必须通过 nodejs.org 官方 `SHASUMS256.txt` 校验；候选工作流只接受完整 commit SHA 并上传 Actions artifact。完成 Windows/macOS 人工安装升级验收后，聚合发布工作流才允许用两个候选 run ID 和 `INSTALL_VERIFIED` 创建最终 Tag，生成绑定源 commit 与全部候选文件 SHA-256 的镜像清单，并在 Draft Release 内集齐资产后一次性公开。不得对已公开版本覆盖资产。所有测试必须显式使用临时数据目录与非默认端口；确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/事项或视觉探索归档。
+`release:check` 会运行单元、浏览器、动态端口临时 smoke、npm tarball 文件清单和公开表面审计；`verify:desktop` 另行运行 Electron E2E、Forge package、安全扫描和真实 packaged smoke。候选工作流只接受完整 commit SHA，在目标系统重建原生依赖并上传不可变 Actions artifact。完成 Windows/macOS 人工安装升级验收后，聚合发布工作流才允许用两个候选 run ID 和 `INSTALL_VERIFIED` 创建最终 Tag，生成绑定源 commit、Electron 版本、签名状态与全部候选文件 SHA-256 的镜像清单，并在 Draft Release 内集齐资产后一次性公开。不得对已公开版本覆盖资产。所有测试必须显式使用临时数据目录与非默认端口；确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/事项或视觉探索归档。

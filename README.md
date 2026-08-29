@@ -18,11 +18,11 @@
 2. 双击安装。
 3. 从桌面的「所往 SUOWANG」图标打开。
 
-安装包自带运行环境，**不需要 Node.js、npm 或命令行**。Windows 首次运行未签名测试版时，可能会要求你确认来源。
+安装包自带完整桌面运行环境，**不需要 Node.js、npm、命令行或浏览器窗口**。双击后直接打开独立的「所往 SUOWANG」应用。Windows 首次运行未签名测试版时，可能会要求你确认来源。
 
 ### 备用：免安装版
 
-下载 `SUOWANG-Portable-0.2.0-beta.1.zip`，解压后双击 `SUOWANG.cmd`。不要直接在压缩包内运行。
+下载 `SUOWANG-Portable-0.2.0-beta.1.zip`，解压后双击 `SUOWANG.exe`。不要直接在压缩包内运行。
 
 ## 数据只在本机
 
@@ -69,7 +69,7 @@ Windows 旧版若已经存在 `D:/5Data/suowang/suowang.db`，会继续使用这
 
 ## macOS（实验支持）
 
-仅支持 Apple Silicon（M1 及以后）。下载 `SUOWANG-0.2.0-beta.1-mac-arm64.dmg`，打开后把「所往 SUOWANG」拖入 Applications，再双击打开。
+仅支持 Apple Silicon（M1 及以后）。下载 `SUOWANG-0.2.0-beta.1-mac-arm64.dmg`，打开后把「所往 SUOWANG」拖入 Applications，再双击打开独立应用窗口。
 
 首个公开 Beta 未签名、未公证。首次打开可能需要按住 Control 点击应用，选择“打开”并再次确认。暂不支持 Intel Mac、App Store 安装或自动更新。
 
@@ -94,7 +94,9 @@ npm install
 npm start
 ```
 
-浏览器打开 `http://127.0.0.1:2037/`。普通用户应优先使用自带固定 Node 24.15.0 的安装包。
+浏览器打开 `http://127.0.0.1:2037/`。普通用户应优先使用自带 Electron 运行环境的桌面安装包。
+
+开发桌面壳可运行 `npm run desktop:start`；完整桌面门禁为 `npm run test:desktop` 与 `npm run verify:desktop`。浏览器模式和桌面模式共享同一服务、migration、数据库路径与页面。
 
 ### npm / 本地 Agent
 
@@ -161,9 +163,11 @@ npm run release:check
 - [本地接口速查](docs/integration-guide.md)
 - [V0.1 实施交接](docs/handoff.md)
 - [版本记录](CHANGELOG.md)
+- [桌面壳验收状态](DESKTOP_SHELL_READINESS.md)
+- [公开发行准备状态](PUBLIC_RELEASE_READINESS.md)
 - [第三方依赖声明](THIRD_PARTY_NOTICES.md)
 - [安全问题报告](SECURITY.md)
 
-技术栈为 Vanilla JS + CSS + Node + `better-sqlite3`。无 React、Vue、Tailwind、ORM、Electron 或 Tauri。
+核心技术栈为 Vanilla JS + CSS + Node HTTP + `better-sqlite3`；Electron 仅承担桌面窗口与系统集成。无 React、Vue、Tailwind、ORM、Tauri、云服务、账号、遥测或运行时 AI。
 
 本项目使用 [Apache License 2.0](LICENSE)。

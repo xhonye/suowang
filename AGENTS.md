@@ -63,14 +63,14 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 
 ## 数据与技术合同
 
-- 源码入口只承诺 Node 22 与 Node 24 LTS；普通用户发行包固定内置 Node 24.15.0。使用 Vanilla JS、CSS、`better-sqlite3`，不引入前端框架、ORM、Electron 或 Tauri。
+- 源码入口只承诺 Node 22 与 Node 24 LTS；普通用户桌面包固定使用 Electron `44.0.0` 内含的 Node `24.18.1`。核心产品继续使用 Vanilla JS、CSS、Node HTTP 与 `better-sqlite3`，不引入前端框架、ORM 或 Tauri。Electron 只承担独立窗口、单实例、原生文件对话框和系统链接等桌面集成；不得复制业务服务、改写 SQLite 真源或把 HTTP API 全部改成 IPC。
 - 仓库安装通过 `.npmrc` 禁用依赖生命周期脚本，使用锁定的 `better-sqlite3` 跨平台预编译文件；Playwright 浏览器与发行工具必须由 CI 显式安装，不依赖隐式 postinstall。
 - 浏览器 UI 只通过本地 JSON API 读写；SQLite 是业务数据唯一真源，`localStorage` 不得保存主线、事项或指针。
 - 正式库首次启动只有固定三模式和设置，不注入 demo 主线、事项或假统计。
 - migration 文件进入 Git；个人数据库、备份、头像、日志和导出必须在仓库外。
 - `SUOWANG_DATA_DIR` 可用绝对路径显式指定数据目录并始终优先。Windows 新安装使用 `%LOCALAPPDATA%/SUOWANG`；只有检测到真实的 `D:/5Data/suowang/suowang.db` 时才继续兼容旧目录。两处同时存在数据库时必须报冲突并要求显式选择，不自动移动、复制或合并。macOS 使用 `~/Library/Application Support/SUOWANG/`，Linux 使用 XDG 或标准 home 数据目录。
 - 已存在数据库有待执行 migration 时，必须先 checkpoint WAL 并创建不参与日常清理的完整迁移前备份；全部待执行 migration、schema 记录、`integrity_check` 与 `foreign_key_check` 在同一事务中通过后才能提交。每日备份与手动 SQLite 导出必须先写同目录临时文件，并验证 SQLite 完整性、外键、SUOWANG 必需表、固定三模式及当前完整 migration 集，再提升为正式文件；既有每日备份不能只凭文件存在就跳过验证。每天第一次启动自动备份 SQLite，按备份时间保留最后 30 份。手动导出不限；整库恢复前必须先备份当前库，不做 merge。
-- Windows 与 macOS 启动器必须从 `launcher-config.mjs` 读取版本、数据目录、端口和访问模式。只在 health、监听 PID 与 `scripts/serve.mjs` 进程身份均可验证时复用或切换旧服务；版本或模式不符时安全重启，非 SUOWANG 或身份不可信的占端口进程绝不能终止。
+- Electron 桌面壳必须复用 `src/server/app-server.mjs`，使用动态 loopback 端口和同一 `resolveDataDir`；CLI/browser 兼容入口继续从 `launcher-config.mjs` 读取固定端口与访问模式。任何入口打开同一数据目录前都必须取得实例锁；只清理可验证的 stale lock，不得强杀未知进程。
 - 不建立点击、切模式、切当前主线、拖拽或文字修改的 audit/event 流水；`todo_occurrences` 只保存用户明确确认的持续事项完成事实，不承担行为监控。
 
 ## 版本里程碑与受保护基线
@@ -98,6 +98,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - 不得给能力或可靠性未充分验证的模型“整体优化”“自由重构”“改善视觉”等开放授权。
 - 允许交付文档纠错、测试、CI、无障碍标签和范围明确且可自动验证的小 Bug；一次任务只处理一个边界。
 - 涉及 `index.html`、`src/styles.css`、正式视觉资产、migration、备份恢复或核心业务规则时，先提出方案或制作隔离预览，不得直接接入正式版本。
+- `desktop/`、`forge.config.mjs`、`installer/` 和发行工作流是桌面安全与升级边界；弱模型不得以“简化打包”为由关闭 sandbox、context isolation、ASAR integrity、single-instance、实例锁、导航白名单或 packaged smoke。
 - 弱模型使用独立分支或 worktree，不得直接提交、push、打标签或发布 `main`；最终 diff、测试和视觉结果由用户或可信 Agent 审查。
 - 不得删除视觉里程碑或本地探索归档；清理只能先列出引用和候选文件，等待用户明确批准。
 
@@ -106,13 +107,15 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - `migrations/`：顺序执行的 SQLite schema migration。
 - `src/server/`：路径配置、数据库运行时和原子业务规则。
 - `src/server/app-meta.mjs`：从 `package.json` 读取应用名和完整语义版本；运行时代码、CLI、health 和发行资产不得另写版本常量。
-- `scripts/serve.mjs`：默认 loopback HTTP API；可选 Tailscale 双监听、静态服务、导出和恢复。
+- `src/server/app-server.mjs`：可复用的 HTTP 服务生命周期，返回实际 origin、端口、runtime、实例锁和 `close()`；桌面与浏览器入口共享。
+- `scripts/serve.mjs`：浏览器/CLI 兼容入口，只负责解析启动参数并调用共享服务。
+- `desktop/`：Electron main、sandbox preload、固定 IPC/外链策略、窗口状态、日志与单实例编排；renderer 无 Node、文件系统、shell 或原始 IPC 权限。
 - `src/api.js`：浏览器 API 客户端。
 - `src/view-model.js`：无 DOM 的显示规则。
 - `src/app.js`：页面渲染与交互编排。
 - `src/styles.css`：桌面第一屏与窄屏视觉系统。
-- `scripts/start.ps1`、`SUOWANG.cmd`：Windows 一键启动。
-- `scripts/macos-launcher.sh`、`scripts/build-macos-release.sh`：macOS Apple Silicon 应用启动与 DMG 组装；只在 arm64 macOS 上构建。
+- `scripts/start.ps1`、`SUOWANG.cmd`：仅供源码/npm 的浏览器兼容入口，不得作为普通用户安装包快捷方式目标。
+- `forge.config.mjs`、`scripts/build-windows-release.ps1`、`scripts/build-macos-release.sh`：从同一 Forge packaged app 构建 Windows Portable/Setup 与 macOS arm64 DMG，并执行安全与 packaged smoke 门禁。
 - `scripts/install-shortcut.ps1`：安装桌面快捷方式。
 - `INSTALL.cmd`：Release 解压后的 Windows 双击安装入口。
 - `scripts/cli.mjs`：npm 全局命令 `suowang` 的启动与快捷方式入口。
@@ -133,6 +136,9 @@ npm test
 npm run check
 npm run test:e2e
 npm run verify
+npm run desktop:start
+npm run test:desktop
+npm run verify:desktop
 npm run release:check
 npm start
 ```
@@ -146,10 +152,11 @@ npm start
 - 修改前检查当前分支、工作树和无关改动；低风险 SUOWANG 变更直接在 `main` 收口。
 - 涉及产品定位、核心概念、名词体系、信息模型或交互哲学的修改，必须在同一轮更新本 `AGENTS.md`，并按对外/产品细节分别同步 `README.md` 或 `docs/product-brief.md`；不得只把已确认理念留在聊天记录里。
 - 修改批准视觉资产前先运行视觉基线测试；测试失败即视为受保护内容发生变化，除非用户本轮明确批准新基线，否则不得更新哈希绕过失败。
+- 修改 Electron 承载层不得重新设计页面或替换批准道路资产；生产窗口必须保持 `nodeIntegration: false`、`contextIsolation: true`、`sandbox: true`、固定外链白名单、无远程代码和无启动外网请求。
 - 每个稳定业务规则都应有自动化测试；UI 改动必须真实验证 1920×1080、2560×1440 和 320px。
 - `package.json` 是应用语义版本唯一真源。`/health` 必须返回 `app/version/database/schemaVersion/pid/accessMode`，不得暴露数据目录或业务数据；CLI、Windows/macOS 构建和启动器必须从同一版本与配置来源派生。
 - 所有开发服务、单元测试、E2E、恢复与 smoke 必须显式使用临时 `SUOWANG_DATA_DIR` 和非默认测试端口；禁止用个人数据库验证 migration。已有数据库升级前必须先生成不可覆盖且通过完整性检查的迁移前备份。
-- 发版前至少通过 `npm run release:check`、Visual Baseline 和 Node 22/24 跨平台 CI；`release:check` 必须包含临时数据库 smoke。候选构建必须以完整 commit SHA 为输入，下载内置 Node 后对照 nodejs.org 同版本 `SHASUMS256.txt` 验证精确文件名和 SHA-256。Windows/macOS 候选必须来自同一 SHA，完成人工安装升级验收后才能创建最终 Tag；公开 Release 必须先在 Draft 中集齐并验证全部资产，再一次性公开，禁止 `--clobber` 或替换既有同版本资产。不得以更新快照、改哈希或跳过浏览器测试绕过失败。
+- 发版前至少通过 `npm run release:check`、`npm run verify:desktop`、Visual Baseline 和 Node 22/24 跨平台 CI；`release:check` 必须包含临时数据库 smoke。候选构建必须以完整 commit SHA 为输入，并在目标系统由 Forge 重建或验证原生 SQLite 模块。Windows/macOS 候选必须来自同一 SHA，完成真实 packaged smoke 与人工安装升级验收后才能创建最终 Tag；公开 Release 必须先在 Draft 中集齐并验证全部资产，再一次性公开，禁止 `--clobber` 或替换既有同版本资产。不得以更新快照、改哈希、关闭 Electron 安全开关或跳过浏览器测试绕过失败。
 - 面向公众的 GitHub 内容只服务于理解产品、下载安装、保护数据、安全报告和真实使用反馈。除非用户再次明确要求，不加入求 Star、开源资助申请、赞助、开发者招募或贡献者运营文案。
 - 保持键盘焦点、非颜色状态表达和 `prefers-reduced-motion`。
 - 不把私人主线、事项、数据库、日志、截图、凭据或导出放进 Git。

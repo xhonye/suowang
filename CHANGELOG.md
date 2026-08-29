@@ -2,6 +2,11 @@
 
 ## 0.2.0-beta.1 — Unreleased
 
+- 将普通用户承载层升级为安全 Electron 薄壳：Windows 与 macOS 直接打开独立应用窗口，不再通过 PowerShell 启动或暴露浏览器地址栏；源码、npm 与 Tailscale 浏览器模式继续保留。
+- 抽取可复用服务生命周期，桌面模式使用动态 loopback 端口并复用同一 SQLite、migration、备份、恢复、API 和页面；跨入口实例锁阻止同时打开同一数据库。
+- 增加 sandbox preload、固定 IPC/外链白名单、单实例激活、窗口状态、原生导入导出对话框、严格 CSP、ASAR/fuses 与 Electronegativity 发行阻断。
+- Windows Setup/Portable 共用同一个 Forge packaged app，快捷方式直指 `SUOWANG.exe`；macOS 使用原生 Electron `.app` 与 Forge DMG。两端提供可选正式签名接口，不伪造签名状态。
+- 增加 Electron 开发态 E2E、真实 packaged smoke、受控旧 schema 升级 fixture、Windows 安装/卸载数据保留和 macOS DMG 挂载门禁。
 - 新增桌面工作区空间选项，只裁切道路展示窗口以在小屏和远程桌面中让出事项空间。
 - 新增「开始这一步 / 暂停」行动指针，保持无计时、无行为日志、无专注统计的克制边界。
 - 修复结束或删除无关主线时错误清除行动中指针；只有当前下一步不再合法时才清除。

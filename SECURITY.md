@@ -2,6 +2,14 @@
 
 SUOWANG 是本地优先应用，但启动器、本地 HTTP 服务、数据库恢复和发行包仍可能出现安全问题。
 
+## 桌面信任边界
+
+- Electron main process 只启动仓库内的本地服务、管理固定原生对话框和系统链接；renderer 启用 sandbox 与 context isolation，不拥有 Node、文件系统、shell、数据库或原始 IPC 权限。
+- BrowserWindow 只加载本次启动得到的精确 loopback origin。新窗口、任意导航和权限请求默认拒绝；只有仓库、Issues 与 Releases 三个固定 GitHub 目标可以由 main process 打开。
+- 本地 HTTP 服务不加载远程代码，桌面模式使用动态 loopback 端口；浏览器兼容模式默认固定 loopback，只有用户显式启用时才增加 Tailscale listener。
+- SQLite、备份、头像和日志保存在仓库外数据目录。所有入口使用同一数据目录实例锁，避免并发打开同一数据库。
+- 应用离线可完整启动；启动期间没有遥测、更新检查或其他非用户主动发起的外网请求。
+
 ## 支持范围
 
 安全修复只面向 GitHub Releases 中最新的公开版本。开发分支和已停止维护的旧版本不承诺单独修复。

@@ -9,7 +9,7 @@
 - 主线结束时逐条处理 active 事项，行迹主线复制为新主线。
 - SQLite migration、每日备份、JSON/SQLite 导出、整库安全恢复和本地头像。
 - Windows 双击入口、重复启动保护和桌面快捷方式。
-- macOS Apple Silicon `.app` / `.dmg` 启动壳与 GitHub Actions 构建入口；内置 arm64 Node 和 SQLite 依赖，仍使用浏览器 UI。
+- Windows 与 macOS Apple Silicon 的 Electron `.exe` / `.app` / `.dmg` 桌面承载层；复用现有页面与服务，但在独立窗口中显示，不打开浏览器。
 - npm CLI（`suowang`）与双击安装入口（`INSTALL.cmd`）。
 - 1920×1080、2560×1440 与 320px 响应式驾驶舱。
 
