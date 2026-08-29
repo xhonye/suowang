@@ -1,59 +1,43 @@
-# SUOWANG 0.2.0-beta.1 · Public Release Readiness
+# SUOWANG Public Release Readiness Contract
 
-审计日期：2026-08-29
+本文件是长期发行闸门，不是某个本地分支的实时状态看板。当前公开版本、资产和发布时间只以 [GitHub Releases](https://github.com/xhonye/suowang/releases) 为准；`package.json`、本地 `dist/`、Actions artifact 或测试通过都不能单独证明版本已经发布。
 
-## 总裁决：BLOCK
+## 证据等级
 
-代码、浏览器兼容入口、安全 Electron 薄壳、Windows 本地 package/Setup/Portable 与受控旧库升级已形成可验证候选，但本轮明确不 push、Tag 或发布。最终候选 SHA 尚未产生远端 CI、Windows/macOS 同 SHA artifact、Apple Silicon DMG smoke 和人工安装证据，因此不能创建 `v0.2.0-beta.1`。
+| 等级 | 含义 |
+|---|---|
+| `CI-VERIFIED` | 精确 commit SHA 的单元、浏览器、桌面、安全与临时数据库门禁在远端通过 |
+| `PACKAGE-BUILT` | Windows 与 macOS 候选资产由同一 SHA 在目标平台构建，并附可复验 SHA-256 |
+| `INSTALL-VERIFIED` | 在真实 Windows / Apple Silicon Mac 完成安装、启动、升级、退出、卸载与数据保留验收 |
+| `RELEASE-VERIFIED` | 不可移动 Tag 指向候选 SHA，Draft 已集齐并复验全部资产，随后一次性公开 |
 
-本文件不写入包含自身的最终 commit SHA。提交后以 `git rev-parse HEAD` 取得完整 40 位 SHA，并把同一 SHA 交给两个候选工作流。
+低等级不得冒充高等级。本地构建成功只能算本地 `PACKAGE-BUILT`；packaged smoke 不能替代真实安装验收；公开 Release 页面出现前不得把候选文件称为正式发布资产。
 
-## 当前证据
+## 公开前硬门槛
 
-| 检查 | 状态 | 结果 |
-|---|---|---|
-| 公开表面与运行时依赖 | PASS | `npm run audit:public` 与 `npm audit --omit=dev` 通过；未跟踪个人数据库、备份、日志或发行资产 |
-| 核心 Node / Browser | PASS | 81 项 Node 测试与 10 项 Chromium E2E 使用临时数据目录；批准道路资产哈希不变 |
-| Electron 开发态 | PASS | 12 项桌面单元测试与 1 项完整 Electron E2E 通过；renderer 无 Node，外链/导航/窗口受白名单限制 |
-| Windows packaged app | PASS（本地） | Electron 44.0.0 / Chromium 152.0.7977.54 / Node 24.18.1；ASAR、fuses、native unpack、数据库写入和正常退出 smoke 通过 |
-| Electron 安全扫描 | PASS（有保留） | 自定义发行审计与 Electronegativity 高风险阻断为 0；Electronegativity 的 Electron release 数据库尚不认识 44.0.x，不能替代人工安全审查 |
-| Windows Setup / Portable | PASS（本地） | Setup、Portable 与 SHA-256 已生成；Setup 静默安装、受控旧 schema 升级、packaged smoke、卸载及数据保留通过；测试使用 `/NOICONS`，真实桌面快捷方式留给候选 CI/人工验收 |
-| macOS app / DMG | BLOCK | Forge、DMG、签名/公证接口和 GitHub Actions 已实现，但当前 Windows 主机不能提供真实 arm64 `.app`、DMG 挂载与 Gatekeeper 证据 |
-| 同 SHA 双平台候选 | BLOCK | 当前分支尚未 push，候选 Actions 尚未运行 |
-| 代码签名 | ACCEPTED BETA RISK | 当前本地 Windows 资产为 `UNSIGNED`；macOS 未构建。公开 Beta 可明确标注 unsigned，但不得声称 signed/notarized |
-| 真实陌生用户安装 | BLOCK | 尚无最终 SHA 的 Windows 桌面快捷方式、macOS Applications 拖放和普通用户 field acceptance |
+1. 版本来自 `package.json`，候选工作区干净，构建输入是完整 40 位 commit SHA。
+2. 核心 CI、Chromium E2E、临时数据库 smoke、npm 清单、公开表面审计和运行时依赖审计全部通过。
+3. Windows 与 macOS 候选工作流使用同一 SHA；安装包、Portable/DMG、校验文件和签名状态均来自各自目标平台。
+4. Windows 验收 Setup、桌面快捷方式、Portable、单实例、旧库升级、卸载与数据保留；macOS 验收 DMG 挂载、Applications 拖放、首次打开、升级、退出和无残留进程。
+5. 候选未签名时如实标记 `UNSIGNED`，不得使用自签名证书冒充可信发布者；只有实际完成 Apple notarization 才能写 `SIGNED+NOTARIZED`。
+6. 人工验收后，聚合流程下载精确候选 artifact、复验 SHA-256、创建不可移动 annotated Tag，并在 Draft 中集齐资产后一次性公开。
+7. 已存在的 Tag、Release 或同名资产必须使流程失败；禁止 `--clobber` 已公开资产。
 
-## 本地 Windows 证据
+## 公开资产合同
 
-- `SUOWANG-Setup-0.2.0-beta.1.exe`：113,583,236 bytes，SHA-256 `5e036d7d456344fcc87ac4eac43acda335180af42a80628376920e09ef337da9`
-- `SUOWANG-Portable-0.2.0-beta.1.zip`：161,337,684 bytes，SHA-256 `99fccef351eaf492b22d00c150cf5a63e6b3e0fce69dca8c781de1da20dc13e8`
+同一版本的公开 Release 应包含：
 
-这些文件由尚未提交的工作树构建，只是本地工程证据，**不是可发布候选**。最终提交后必须从完整 SHA 重新构建，不能复用或上传本地文件。
+1. `SUOWANG-Setup-<version>.exe`
+2. `SUOWANG-Portable-<version>.zip`
+3. `SUOWANG-<version>-SHA256SUMS.txt`
+4. `SUOWANG-<version>-mac-arm64.dmg`
+5. `SUOWANG-<version>-mac-arm64-SHA256SUMS.txt`
+6. `SUOWANG-<version>-MIRROR-MANIFEST.txt`
 
-## 预期公开资产
+`SIGNING-STATUS.txt` 供聚合流程读取，不作为公开资产。第三方网盘只能镜像 GitHub Release 中同名且 SHA-256 完全一致的文件。
 
-同一个最终 SHA 应生成六项公开资产：
+## 停止条件
 
-1. `SUOWANG-Setup-0.2.0-beta.1.exe`
-2. `SUOWANG-Portable-0.2.0-beta.1.zip`
-3. `SUOWANG-0.2.0-beta.1-SHA256SUMS.txt`
-4. `SUOWANG-0.2.0-beta.1-mac-arm64.dmg`
-5. `SUOWANG-0.2.0-beta.1-mac-arm64-SHA256SUMS.txt`
-6. `SUOWANG-0.2.0-beta.1-MIRROR-MANIFEST.txt`
+以下任一情况都必须停止发布：工作区含未审查改动、候选 SHA 不一致、任一平台构建或安装验收失败、校验和不匹配、数据库升级/恢复证据缺失、签名状态不明、Tag 或 Release 已存在。
 
-Windows/macOS artifact 另带 `SIGNING-STATUS.txt` 供发布流程读取，但它不是公开 Release 资产。最终 mirror manifest 必须记录版本、完整源 SHA、Electron 版本、双平台签名状态与五个二进制/校验文件的 SHA-256。百度网盘只能原样镜像 GitHub Release 的相同文件。
-
-## Tag / Release 前必须完成
-
-1. 审查并提交当前分支，取得最终 40 位 SHA；本轮不要 push。
-2. 后续由用户授权后 push，等待该 SHA 的 Node 22/24、Browser、Desktop、package/public/runtime audit 全绿。
-3. 使用同一 SHA 分别运行 Windows 与 macOS candidate workflow。
-4. 保存 Windows Setup/快捷方式/Portable/升级/卸载数据保留证据，以及 Apple Silicon DMG/Applications/启动/升级/退出证据。
-5. 核对候选签名状态、SHA-256 与 run provenance；启用 GitHub Private vulnerability reporting。
-6. 只有全部完成，才输入 `INSTALL_VERIFIED` 运行聚合工作流；已有 Tag、Release 或资产时必须失败，禁止覆盖。
-
-## 结论
-
-- 是否可继续形成本地提交：**PASS**。
-- 是否可生成同 SHA 双平台候选：**PASS（流程已准备，远端尚未执行）**。
-- 是否可创建 `v0.2.0-beta.1` 或 Public Release：**BLOCK**。
+发行脚本和现场步骤见 `docs/operator-runbook.md`；桌面壳验收边界见 `DESKTOP_SHELL_READINESS.md`。

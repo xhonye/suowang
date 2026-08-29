@@ -1,6 +1,6 @@
 # SUOWANG 本地运维手册
 
-当前开发线为 `0.2.0-beta.2`。它是修复桌面视觉资产漏包问题的公开 Beta 候选，不代表对应 Tag 或 Release 已经存在；安装前先从现有版本导出 SQLite，测试数据中不要放无法承受丢失的唯一副本。
+公开安装包只以 [GitHub Releases](https://github.com/xhonye/suowang/releases) 为准；本地 `package.json` 版本、分支构建或 `dist/` 文件都只是开发候选，不能冒充已发布资产。安装或升级前先从现有版本导出 SQLite，测试数据中不要放无法承受丢失的唯一副本。
 
 ## 首次安装
 

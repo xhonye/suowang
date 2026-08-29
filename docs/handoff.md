@@ -1,4 +1,4 @@
-# SUOWANG V0.1 实施交接
+# SUOWANG 当前实施交接
 
 ## 当前已有
 
@@ -11,9 +11,9 @@
 - Windows 双击入口、重复启动保护和桌面快捷方式。
 - Windows 与 macOS Apple Silicon 的 Electron `.exe` / `.app` / `.dmg` 桌面承载层；复用现有页面与服务，但在独立窗口中显示，不打开浏览器。
 - npm CLI（`suowang`）与双击安装入口（`INSTALL.cmd`）。
-- 1920×1080、2560×1440 与 320px 响应式驾驶舱。
+- 1920×1080、2560×1440 与 320px 响应式驾驶舱；大窗口只延展事项列表，下一步保持稳定紧凑高度。
 
-以上能力构成 `0.1.0` 发布基线。后续改变必须通过新 commit 和新版本推进，不改写 `v0.1.0` 标签。
+核心产品与数据模型从 `0.1.0` 起形成不可改写的发布基线；Electron 桌面壳、持续事项、行动中指针与后续视觉适配在 `0.2` Beta 继续演进。任何已发布 Tag 都不可移动或重打，后续改变必须通过新 commit 和新版本推进。
 
 ## 真实运行边界
 
@@ -30,6 +30,7 @@
 - 产品模型：`docs/product-brief.md`
 - 视觉约束：`docs/visual-contract.md`
 - 当前分层视觉预览：`docs/visual-final-preview.html`
+- 左侧品牌标识：`assets/brand/suowang-scenic-mark-v1.png`
 - 图片与箭头里程碑：`assets/milestones/2026-08-23-arrow-pipeline/MILESTONE.md`
 - 架构与数据流：`docs/architecture.md`
 - 内部端点：`docs/integration-guide.md`
@@ -42,4 +43,4 @@
 
 修改稳定业务规则时，先在 `src/server/service.mjs` 形成原子事务并补自动化测试。涉及 UI 时同时检查 1920×1080、2560×1440 和 320px。涉及数据格式、端点、环境变量或启动方式时，同步架构、接口和运维文档。
 
-不把旧 Timeline、Theme/Run/Round、假统计、专注 session、隐藏 backlog、localStorage 业务真源或运行时 AI 带回 V0.1。
+不把旧 Timeline、Theme/Run/Round、假统计、专注 session、隐藏 backlog、localStorage 业务真源或运行时 AI 带回当前产品。

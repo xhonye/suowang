@@ -10,7 +10,7 @@
 
 ## Windows 30 秒开始
 
-`0.2.0-beta.2` 当前是公开 Beta 候选。只有 [GitHub Releases](https://github.com/xhonye/suowang/releases) 出现对应版本后，下面的文件才算正式发布资产。`0.2.0-beta.1` 的桌面包缺少道路视觉资产，请勿继续下载或镜像。
+`0.2.0-beta.2` 是当前公开 Beta，可从 [GitHub Release](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.2) 下载。`0.2.0-beta.1` 的桌面包缺少道路视觉资产，请勿继续下载或镜像。
 
 ### 推荐：安装版
 
@@ -161,10 +161,10 @@ npm run release:check
 - [视觉合同](docs/visual-contract.md)
 - [架构与数据流](docs/architecture.md)
 - [本地接口速查](docs/integration-guide.md)
-- [V0.1 实施交接](docs/handoff.md)
+- [当前实施交接](docs/handoff.md)
 - [版本记录](CHANGELOG.md)
-- [桌面壳验收状态](DESKTOP_SHELL_READINESS.md)
-- [公开发行准备状态](PUBLIC_RELEASE_READINESS.md)
+- [桌面壳验收合同](DESKTOP_SHELL_READINESS.md)
+- [公开发行合同](PUBLIC_RELEASE_READINESS.md)
 - [第三方依赖声明](THIRD_PARTY_NOTICES.md)
 - [安全问题报告](SECURITY.md)
 
