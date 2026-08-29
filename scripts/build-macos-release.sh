@@ -18,15 +18,20 @@ checksums_path="$dist_root/SUOWANG-${version}-mac-arm64-SHA256SUMS.txt"
 signing_status="UNSIGNED"
 if [[ -n "${APPLE_CODESIGN_IDENTITY:-}" ]]; then signing_status="SIGNED"; fi
 export SUOWANG_SIGNING_STATUS="$signing_status"
-export SUOWANG_FORCE_NATIVE_REBUILD=1
+export SUOWANG_FORCE_NATIVE_REBUILD=0
 
 mkdir -p "$dist_root"
 rm -rf "$forge_app" "$dmg_path" "$checksums_path"
 
 npm run desktop:prepare
 npm rebuild macos-alias --ignore-scripts=false --foreground-scripts
+npm rebuild fs-xattr --ignore-scripts=false --foreground-scripts
 if [[ ! -f "$project_root/node_modules/macos-alias/build/Release/volume.node" ]]; then
   echo "The macOS DMG maker native dependency was not built." >&2
+  exit 1
+fi
+if [[ ! -f "$project_root/node_modules/fs-xattr/build/Release/xattr.node" ]]; then
+  echo "The macOS DMG xattr native dependency was not built." >&2
   exit 1
 fi
 npx electron-forge make --platform=darwin --arch=arm64

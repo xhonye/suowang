@@ -28,6 +28,19 @@ function Assert-ChildPath([string]$parent, [string]$child) {
     }
 }
 
+function Get-Sha256Hex([string]$Path) {
+    $stream = [System.IO.File]::OpenRead($Path)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = $sha256.ComputeHash($stream)
+        return -join ($bytes | ForEach-Object { $_.ToString('x2') })
+    }
+    finally {
+        $sha256.Dispose()
+        $stream.Dispose()
+    }
+}
+
 New-Item -ItemType Directory -Force -Path $distRoot | Out-Null
 Assert-ChildPath $projectRoot $forgeRoot
 Assert-ChildPath $distRoot $portableRoot
@@ -84,8 +97,7 @@ if ($signingRequested) {
 $releaseFiles = @($portableZip, $setupPath)
 $checksumsPath = Join-Path $distRoot "SUOWANG-$version-SHA256SUMS.txt"
 $checksums = $releaseFiles | ForEach-Object {
-    $hash = Get-FileHash -LiteralPath $_ -Algorithm SHA256
-    "{0} *{1}" -f $hash.Hash.ToLowerInvariant(), [System.IO.Path]::GetFileName($_)
+    "{0} *{1}" -f (Get-Sha256Hex $_), [System.IO.Path]::GetFileName($_)
 }
 Set-Content -LiteralPath $checksumsPath -Value $checksums -Encoding ascii
 Set-Content -LiteralPath (Join-Path $distRoot 'SIGNING-STATUS.txt') -Value $signingStatus -Encoding ascii

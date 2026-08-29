@@ -40,7 +40,21 @@ test('candidate builds require a full commit SHA and cannot mutate a published R
 test('macOS release explicitly builds the DMG maker native dependency', () => {
   const script = read('scripts/build-macos-release.sh');
   assert.match(script, /npm rebuild macos-alias --ignore-scripts=false --foreground-scripts/);
+  assert.match(script, /npm rebuild fs-xattr --ignore-scripts=false --foreground-scripts/);
   assert.match(script, /macos-alias\/build\/Release\/volume\.node/);
+  assert.match(script, /fs-xattr\/build\/Release\/xattr\.node/);
+});
+
+test('candidate packaging verifies the locked better-sqlite3 N-API prebuild by default', () => {
+  assert.match(packageMetadata.scripts['release:windows'], /-UseBundledNapiPrebuild/);
+  assert.match(read('scripts/build-macos-release.sh'), /export SUOWANG_FORCE_NATIVE_REBUILD=0/);
+  assert.match(read('scripts/verify-desktop-package.mjs'), /better-sqlite3.*prebuilds/);
+});
+
+test('Windows release hashing does not depend on optional PowerShell modules', () => {
+  const script = read('scripts/build-windows-release.ps1');
+  assert.match(script, /System\.Security\.Cryptography\.SHA256/);
+  assert.doesNotMatch(script, /Get-FileHash/);
 });
 
 test('Windows browser cleanup tolerates transient filesystem locks', () => {

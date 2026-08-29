@@ -95,8 +95,8 @@ if (macIdentity) {
 
 export default {
   packagerConfig,
-  // better-sqlite3 13 ships N-API platform binaries. Normal developer packaging verifies that binary;
-  // release builders set SUOWANG_FORCE_NATIVE_REBUILD=1 to make Forge rebuild it on the target OS.
+  // better-sqlite3 13 ships locked N-API platform binaries. Release builders verify the selected
+  // target binary through the packaged executable; an explicit engineering run may still rebuild it.
   rebuildConfig: {
     onlyModules: process.env.SUOWANG_FORCE_NATIVE_REBUILD === '1' ? ['better-sqlite3'] : [],
   },

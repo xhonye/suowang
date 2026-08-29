@@ -78,7 +78,7 @@
     "package:check": "node scripts/verify-package.mjs",
     "audit:public": "node scripts/audit-public-surface.mjs",
     "release:check": "npm run verify && npm run smoke:temp && npm run test:desktop:unit && npm run package:check && npm run audit:public && npm audit --omit=dev",
-    "release:windows": "npm run release:check && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1",
+    "release:windows": "npm run release:check && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1 -UseBundledNapiPrebuild",
     "release:macos": "npm run release:check && bash scripts/build-macos-release.sh"
   },
   "engines": {
