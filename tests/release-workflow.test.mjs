@@ -68,8 +68,9 @@ test('Windows release discovers the Forge output without a non-ASCII PowerShell 
 
 test('Windows browser cleanup tolerates transient filesystem locks', () => {
   const teardown = read('tests/e2e/global-teardown.mjs');
-  assert.match(teardown, /maxRetries: 10/);
-  assert.match(teardown, /retryDelay: 200/);
+  assert.match(teardown, /retryableCodes = new Set\(\['EBUSY', 'ENOTEMPTY', 'EPERM'\]\)/);
+  assert.match(teardown, /attempt < 60/);
+  assert.match(teardown, /await wait\(250\)/);
 });
 
 test('source launchers enforce the documented Node 22 or 24 LTS contract', () => {

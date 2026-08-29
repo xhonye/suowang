@@ -4,6 +4,19 @@ import { basename, resolve, sep } from 'node:path';
 
 const wait = (milliseconds) => new Promise((resolveWait) => setTimeout(resolveWait, milliseconds));
 
+async function removeDirectoryWithRetry(path) {
+  const retryableCodes = new Set(['EBUSY', 'ENOTEMPTY', 'EPERM']);
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    try {
+      rmSync(path, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      if (!retryableCodes.has(error.code) || attempt === 59) throw error;
+      await wait(250);
+    }
+  }
+}
+
 export default async function globalTeardown() {
   const markerPath = resolve('test-results/e2e-data-dir.txt');
   const tempRoot = `${resolve(tmpdir())}${sep}`;
@@ -42,12 +55,7 @@ export default async function globalTeardown() {
     if (!dataDir.startsWith(tempRoot) || !basename(dataDir).startsWith('suowang-playwright-')) {
       throw new Error(`Refusing to remove unexpected E2E data path: ${dataDir}`);
     }
-    rmSync(dataDir, {
-      recursive: true,
-      force: true,
-      maxRetries: 10,
-      retryDelay: 200,
-    });
+    await removeDirectoryWithRetry(dataDir);
   }
   rmSync(markerPath, { force: true });
 }
