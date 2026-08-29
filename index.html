@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f2f6f5" />
     <meta name="description" content="所往 SUOWANG · 人生主线驾驶舱" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'self'" />
     <title>所往 SUOWANG · 人生主线驾驶舱</title>
+    <link rel="icon" type="image/png" href="/assets/brand/favicon.png" />
     <link rel="stylesheet" href="/src/styles.css?v=22" />
   </head>
   <body>
@@ -192,6 +194,28 @@
                   <button class="danger-action" type="submit">选择文件并恢复</button>
                   <small>恢复前会自动备份当前数据库；恢复是覆盖，不合并。</small>
                 </form>
+              </section>
+
+              <section class="settings-card about-settings" aria-labelledby="about-suowang-title">
+                <header><p>ABOUT</p><h2 id="about-suowang-title">关于所往</h2></header>
+                <div class="about-summary">
+                  <div>
+                    <strong>所往 SUOWANG</strong>
+                    <span>人生主线驾驶舱</span>
+                  </div>
+                  <dl class="about-version">
+                    <div><dt>版本</dt><dd id="about-version">0.2.0-beta.1</dd></div>
+                    <div><dt>构建</dt><dd id="about-commit">浏览器模式</dd></div>
+                  </dl>
+                </div>
+                <p class="about-boundary">本地优先 · 无账号 · 无云同步 · 无遥测</p>
+                <nav class="about-actions" aria-label="所往项目链接">
+                  <a href="https://github.com/xhonye/suowang" target="_blank" rel="noopener noreferrer" data-github-target="repo">GitHub 开源主页</a>
+                  <a href="https://github.com/xhonye/suowang" target="_blank" rel="noopener noreferrer" data-github-target="repo">⭐ 支持所往</a>
+                  <a href="https://github.com/xhonye/suowang/issues" target="_blank" rel="noopener noreferrer" data-github-target="issues">提交问题</a>
+                  <a href="https://github.com/xhonye/suowang/releases" target="_blank" rel="noopener noreferrer" data-github-target="releases">查看最新版本</a>
+                  <button id="open-data-directory" type="button" hidden>打开数据目录</button>
+                </nav>
               </section>
             </div>
           </section>

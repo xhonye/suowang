@@ -26,6 +26,7 @@ const ui = {
   departureTodoId: null,
   expandedHistory: new Set(),
 };
+const desktop = globalThis.suowangDesktop ?? null;
 
 const byId = (id) => document.getElementById(id);
 const html = (value) => String(value ?? '')
@@ -1059,6 +1060,21 @@ function setupSettings() {
   });
   byId('avatar-form').addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (desktop) {
+      setBusy(true);
+      try {
+        const result = await desktop.chooseAvatar();
+        if (result.status === 'saved') {
+          applySnapshot(result.snapshot);
+          showToast('本地头像已更新');
+        }
+      } catch (error) {
+        showError('头像没有更新', error);
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     const file = byId('avatar-input').files[0];
     if (!file) {
       showError('没有选择头像', new Error('请选择 PNG、JPEG 或 WebP 图片。'));
@@ -1085,6 +1101,18 @@ function setupSettings() {
   });
   byId('restore-form').addEventListener('submit', (event) => {
     event.preventDefault();
+    if (desktop) {
+      setBusy(true);
+      desktop.restoreDatabase().then((result) => {
+        if (result.status === 'restored') {
+          ui.activeStateId = result.snapshot.settings.lastViewedStateId;
+          applySnapshot(result.snapshot);
+          navigate('dashboard');
+          showToast('数据库已恢复');
+        }
+      }).catch((error) => showError('数据库没有恢复', error)).finally(() => setBusy(false));
+      return;
+    }
     const file = byId('restore-input').files[0];
     if (!file) {
       showError('没有选择数据库', new Error('请选择 SUOWANG 的 SQLite 备份文件。'));
@@ -1106,6 +1134,46 @@ function setupSettings() {
       },
     });
   });
+
+  document.querySelectorAll('[data-github-target]').forEach((link) => {
+    link.addEventListener('click', (event) => {
+      if (!desktop) return;
+      event.preventDefault();
+      desktop.openGitHubTarget(link.dataset.githubTarget)
+        .catch((error) => showError('链接没有打开', error));
+    });
+  });
+  document.querySelectorAll('.export-actions a').forEach((link) => {
+    link.addEventListener('click', (event) => {
+      if (!desktop) return;
+      event.preventDefault();
+      const kind = link.href.endsWith('/json') ? 'json' : 'sqlite';
+      setBusy(true);
+      desktop.saveExport(kind).then((result) => {
+        if (result.status === 'saved') showToast(`${result.fileName} 已保存`);
+      }).catch((error) => showError('导出没有完成', error)).finally(() => setBusy(false));
+    });
+  });
+  byId('open-data-directory').addEventListener('click', () => {
+    desktop?.openDataDirectory().catch((error) => showError('数据目录没有打开', error));
+  });
+}
+
+async function setupDesktopMetadata() {
+  if (!desktop) return;
+  document.documentElement.dataset.desktop = 'true';
+  byId('open-data-directory').hidden = false;
+  const avatarButton = byId('avatar-form').querySelector('button[type="submit"]');
+  if (avatarButton) avatarButton.textContent = '选择并更新';
+  const restoreButton = byId('restore-form').querySelector('button[type="submit"]');
+  if (restoreButton) restoreButton.textContent = '选择备份并恢复';
+  try {
+    const version = await desktop.getVersionInfo();
+    byId('about-version').textContent = version.version;
+    byId('about-commit').textContent = version.buildCommit;
+  } catch (error) {
+    showError('桌面版本信息不可用', error);
+  }
 }
 
 function setup() {
@@ -1124,6 +1192,7 @@ function setup() {
 
 async function initialize() {
   setup();
+  await setupDesktopMetadata();
   try {
     const snapshot = await api.snapshot();
     ui.activeStateId = snapshot.settings.lastViewedStateId;

@@ -229,6 +229,21 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 .cue-settings form > button { min-height: 40px; margin-top: 4px; }
 .data-settings { grid-column: 1 / -1; }
 .export-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.about-settings { grid-column: 1 / -1; padding-top: 16px; padding-bottom: 16px; }
+.about-settings > header { margin-bottom: 12px; }
+.about-summary { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.about-summary > div:first-child { display: grid; gap: 3px; }
+.about-summary strong { color: var(--ink); font-size: 14px; }
+.about-summary span, .about-boundary { color: var(--quiet); font-size: 10px; }
+.about-version { display: flex; gap: 20px; margin: 0; }
+.about-version div { display: grid; gap: 2px; }
+.about-version dt { color: var(--quiet); font-size: 9px; }
+.about-version dd { margin: 0; color: #425b64; font: 10px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.about-boundary { margin: 10px 0 0; }
+.about-actions { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line); }
+.about-actions a, .about-actions button { padding: 0; border: 0; background: none; color: var(--signal); font: inherit; font-size: 10px; text-decoration: none; cursor: pointer; }
+.about-actions a:hover, .about-actions button:hover { text-decoration: underline; }
+html[data-desktop="true"] #avatar-input, html[data-desktop="true"] #restore-input { display: none; }
 .secondary-action, .danger-action { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; padding: 0 14px; text-decoration: none; border-radius: 9px; cursor: pointer; font-size: 11px; }
 .secondary-action { color: var(--signal-strong); background: var(--signal-soft); border: 1px solid rgba(78, 131, 156, 0.18); }
 .danger-action { justify-self: start; color: white; background: var(--danger); border: 0; }
@@ -338,6 +353,8 @@ body.busy button, body.busy input, body.busy select { pointer-events: none; }
   .history-details { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
   .data-settings { grid-column: auto; }
+  .about-settings { grid-column: auto; }
+  .about-summary { align-items: flex-start; flex-direction: column; gap: 10px; }
   .end-panel { right: 8px; bottom: 68px; width: calc(100% - 16px); max-height: 72vh; }
   .resolution-row { grid-template-columns: 1fr; gap: 7px; }
   .toast { right: 10px; bottom: 72px; max-width: calc(100% - 20px); }

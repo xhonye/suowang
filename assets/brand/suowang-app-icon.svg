@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">所往 SUOWANG</title>
+  <defs>
+    <linearGradient id="background" x1="140" y1="96" x2="884" y2="928" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7eafc2"/>
+      <stop offset="1" stop-color="#326c86"/>
+    </linearGradient>
+    <linearGradient id="road" x1="384" y1="790" x2="650" y2="228" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eaf6fa"/>
+    </linearGradient>
+  </defs>
+  <rect x="48" y="48" width="928" height="928" rx="238" fill="url(#background)"/>
+  <circle cx="512" cy="512" r="310" fill="none" stroke="#ffffff" stroke-width="76" opacity=".96"/>
+  <path d="M348 690C406 556 474 425 664 330" fill="none" stroke="url(#road)" stroke-width="80" stroke-linecap="round"/>
+  <path d="M574 284L693 315L653 431" fill="none" stroke="#ffffff" stroke-width="70" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
