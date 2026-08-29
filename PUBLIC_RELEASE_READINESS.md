@@ -4,7 +4,7 @@
 
 ## 总裁决：BLOCK
 
-仓库当前内容已经完成公开表面整改与本地门禁准备，但**还不能创建 `v0.2.0-beta.1` Tag 或公开 Release**。阻断项是最终 commit 的远端 CI、同 SHA 双平台候选资产、真实安装与升级验收，以及 Git 历史个人邮箱的公开决策。
+仓库当前内容已经完成公开表面整改与本地门禁准备，但**还不能创建 `v0.2.0-beta.1` Tag 或公开 Release**。阻断项是最终 commit 的远端 CI、同 SHA 双平台候选资产，以及真实安装与升级验收。
 
 本文件所在 commit 即候选目标；提交后必须用 `git rev-parse HEAD` 取得完整 40 位 SHA，并把同一个 SHA 传给 Windows、macOS 候选工作流。发布流程会把该 SHA 写入镜像清单。由于 Git 文件不能可靠地写入包含自身的 commit SHA，本文件不保存会自指失效的哈希。
 
@@ -21,7 +21,7 @@
 | 早期概念图 | PASS（明确标注） | 包含概念占位名 Alex 和演示事项，README 已说明它不是当前界面或真实用户数据 |
 | 已发布 migration | PASS（允许例外） | `001_init.sql` 保留历史个人默认名，因为 migration 001–006 受 SHA-256 基线保护；新数据库会被后续 migration 中性化，浏览器回归也禁止显示旧默认名 |
 | Git 完整历史高置信 secret 扫描 | PASS（模式扫描） | 扫描 41 个 commits / 664 个 objects，未命中常见云密钥、GitHub/OpenAI Token、私钥或明文赋值 secret；这不是第三方专业取证保证 |
-| Git 历史个人元数据 | BLOCK（用户决定） | 41 个 commit 的 author metadata 使用个人 Gmail，历史中也出现过本机工作区路径。切换 Public 前需由仓库所有者明确接受公开，或另行批准历史重写方案；本轮不擅自改写既有 Tag 和历史 |
+| Git 历史个人元数据 | PASS（所有者已接受） | 41 个旧 commit 的 author metadata 使用公开项目邮箱，历史中也出现过本机工作区路径；仓库所有者已于 2026-08-29 接受该披露并撤回历史重写。主邮箱未出现在 commit metadata 或历史文件中；后续提交统一使用 GitHub noreply 地址 |
 | 本地发行门禁 | PASS | 2026-08-29：67 项 Node 测试、10 项 Chromium E2E、临时数据库 smoke、npm 33 文件清单和公开表面审计全部通过 |
 
 `npm run audit:public` 会扫描 Git 已跟踪文件和未忽略候选文件，阻止常见 secret、敏感文件类型、个人工作区路径和未声明旧目录引用进入候选提交。
@@ -55,11 +55,11 @@
 4. Windows 真机验证 Setup、桌面入口、Portable、从 `0.1.x` 升级、卸载后数据保留。
 5. Apple Silicon Mac 真机验证 DMG 挂载、拖入 Applications、Control-打开、浏览器启动、升级后数据保留。
 6. 复核两端 SHA-256 与候选 run provenance，保存不含个人数据的安装验收记录。
-7. 由仓库所有者决定是否接受 Git 历史中的个人 Gmail 与旧工作区路径公开，并在切换 Public 前启用 GitHub Private vulnerability reporting。
+7. 在切换 Public 前启用 GitHub Private vulnerability reporting。
 8. 只有以上全部完成，才输入 `INSTALL_VERIFIED` 运行聚合发布工作流。
 
 ## 结论
 
-- 仓库当前是否已可安全切换为 Public：**BLOCK，等待 Git 历史个人元数据决策。**
+- 仓库当前是否已可安全切换为 Public：**PASS；历史邮箱披露已由仓库所有者接受，切换前还应启用 Private vulnerability reporting。**
 - 当前是否可创建 `v0.2.0-beta.1`：**BLOCK，尚无最终 SHA 的远端门禁、双平台候选和真实安装升级证据。**
 - 当前是否可继续做候选提交与 CI：**PASS。**
