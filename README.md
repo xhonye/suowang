@@ -4,171 +4,154 @@
 
 > **知所往 · 择其径 · 行其事。**
 
-> **人生是一场无限游戏，但我们总需要一条当前主线。**
+**所往是一个本地优先的人生主线驾驶舱。** 它帮助你在脑子很乱的时候，仍然看清自己处于什么模式、当前主要往哪里走，以及现在具体迈哪一步。
 
-**人生主线驾驶舱 / Mainline Cockpit**
+![所往 0.2 Public Beta 驾驶舱，画面使用中性演示数据](docs/assets/suowang-0.2.0-beta.1-cockpit.png)
 
-**充分参与这一次人生。**
+## Windows 30 秒开始
 
-所往帮助人在认知余量不足时，仍能快速回答四个问题：
+`0.2.0-beta.1` 当前是公开 Beta 候选。只有 [GitHub Releases](https://github.com/xhonye/suowang/releases) 出现对应版本后，下面的文件才算正式发布资产。
+
+### 推荐：安装版
+
+1. 下载 `SUOWANG-Setup-0.2.0-beta.1.exe`。
+2. 双击安装。
+3. 从桌面的「所往 SUOWANG」图标打开。
+
+安装包自带运行环境，**不需要 Node.js、npm 或命令行**。Windows 首次运行未签名测试版时，可能会要求你确认来源。
+
+### 备用：免安装版
+
+下载 `SUOWANG-Portable-0.2.0-beta.1.zip`，解压后双击 `SUOWANG.cmd`。不要直接在压缩包内运行。
+
+## 数据只在本机
+
+- 无账号、无云同步、无遥测、无运行时 AI。
+- Windows 新安装默认保存在 `%LOCALAPPDATA%/SUOWANG`。
+- 应用每天在同一设备自动备份；这能防常见误操作，**不能替代异地备份**。
+- 重要数据请定期在设置中“导出 SQLite”，并保存到另一台设备或可信同步位置。
+- 反馈问题时不要上传数据库、备份、私人事项或未脱敏截图。
+
+Windows 旧版若已经存在 `D:/5Data/suowang/suowang.db`，会继续使用这个**历史兼容目录**，不会自动搬迁。新用户不会使用该路径；两个目录同时存在数据库时，应用会停止并要求你明确选择，避免错误合并。
+
+## 它解决什么
+
+所往帮助你快速回答四个问题：
 
 1. 我现在处于什么模式？
 2. 我当前主要往哪里走？
 3. 我现在具体做什么？
 4. 如果知道要做却启动不了，怎样把第一步降到足够简单？
 
-它不是 Todo List、习惯打卡器、完整人生决策系统、项目管理器、KPI 仪表盘、RPG 或 AI 聊天窗口。它把恢复、工作、生活三个模式，各自的阶段主线、下一步和最小一步，编排成位置稳定、可以长期形成空间记忆的界面。
-
-## 为什么是主线
-
-人生没有需要一次完成的固定终局，但此刻应该有所往。
-
-主线是有限、可结束的阶段使命。一个模式可以保留几条正在推进的主线，但同一时刻只选择一条当前主线。结束一条主线不等于人生通关，切换主线也不抹掉走过的路。
-
-> AI 用来造驾驶舱，不用来当驾驶员。把 token 编译成稳定界面，而不是把人生反复编译成回答。
-
-## 项目起因
-
-![所往项目起因的早期反馈，身份信息已经脱敏](docs/assets/origin-feedback-redacted.png)
-
-## 早期概念图
-
-![所往人生主线页面早期概念图](docs/assets/early-mainline-concept.png)
-
-> 这张图记录了所往最初的产品方向，不是当前界面截图。图中的品牌占位、Timeline、NOW 和部分功能已经被后续产品合同替换；保留它是为了说明项目从哪里出发。
-
-## 产品机制
+产品心智模型只有：
 
 ```text
-知模式
-  ↓
-择主线
-  ↓
-行下一步
-  ↓
-现实变化
-  ↓
-重新知模式
+模式 → 主线 → 事项
+       ↓
+    当前主线
+       ↓
+     下一步
+       ↓
+    最小一步（可选）
 ```
 
-- **知所往**：先确认此刻处于恢复、工作还是生活模式。
-- **择其径**：在这个模式的阶段主线中，明确当前主线。
-- **行其事**：看清下一步；启动困难时，再把它降成足够简单的最小一步。
+它不是 Todo List、习惯打卡器、完整人生决策系统、项目管理器、KPI 仪表盘、RPG 或 AI 聊天窗口。
 
-道路是所往的主视觉，也是三个模式的直接入口。切换模式后，每个模式会恢复自己的当前主线和下一步；系统不自动替用户决定方向，也不按日期擅自重排。
+## 当前能力
 
-## 产品原则
+- 恢复、工作、生活三个永久模式，各自记忆当前主线和下一步。
+- 每个模式最多三条进行中主线；主线和事项支持创建、编辑、排序、完成、放弃与纠错删除。
+- 事项可以填写一个非必填的“最小一步”；下一步可以开始、暂停或完成，不记录时长和专注统计。
+- 持续事项每天最多记录一次并保留累计次数，没有连续天数、提醒、积分或缺卡惩罚。
+- 行迹保存已完成或放弃的事实；误点的事项可以撤回。
+- SQLite migration、每日备份、SQLite 完整导出、JSON 可读导出与整库恢复。
+- 桌面与 320px 手机布局；同一 Tailnet 内可选手机访问。
 
-- **稳定界面，动态内容**：让人形成空间记忆，不必每次重新理解 UI。
-- **主线意味着取舍**：可以保留多条进行中主线，但当前主线必须表达此刻的主要方向。
-- **下一步必须清楚**：下一步是注意力指针，不是新的事项状态或工作计时器。
-- **启动入口足够低**：事项可写一个非必填的最小一步，帮助知道要做却难以开始的人先迈出去。
-- **持续不等于打卡**：需要反复行动的事项可以每天记录一次并查看累计次数，但没有连续天数、缺卡惩罚、提醒或积分。
-- **行迹尊重事实**：主线完成和放弃后只能复制为新主线；事项允许撤回，以纠正误点完成或放弃。
-- **本地事实优先**：SQLite 是业务数据唯一真源，主线与事项不进入云端，也不依赖运行时 AI。
-- **AI 退居幕后**：核心功能完全不依赖 LLM，默认界面没有聊天框。
+## macOS（实验支持）
 
-> 当用户认知能力只剩 30% 时，这个页面仍然必须很好用。
+仅支持 Apple Silicon（M1 及以后）。下载 `SUOWANG-0.2.0-beta.1-mac-arm64.dmg`，打开后把「所往 SUOWANG」拖入 Applications，再双击打开。
 
-## 当前已有能力
+首个公开 Beta 未签名、未公证。首次打开可能需要按住 Control 点击应用，选择“打开”并再次确认。暂不支持 Intel Mac、App Store 安装或自动更新。
 
-- 恢复 / 工作 / 生活三个永久模式，各自记忆当前主线和下一步。
-- 每个模式最多三条进行中主线，支持槽位移动或交换。
-- 主线原地创建和编辑；事项支持名称、可选最小一步、完成、放弃、删除、重排和同模式改归属。
-- 一次事项完成后进入行迹；持续事项每天最多记录一次，保留累计次数，并可撤回当天记录或明确结束。
-- 下一步自动接棒，切当前主线不制造行迹。
-- completed/abandoned 行迹、事项撤回与行迹主线复制。
-- SQLite migration、每日备份、SQLite 完整导出、JSON 可读导出和整库恢复。
-- 显示名称、本地头像与三个模式 cue。
-- 2560×1440、1920×1080 桌面第一屏与 320px 窄屏布局。
+## 使用与反馈
 
-## 安装与运行
+- [Public Beta 使用与测试指南](docs/beta-test-guide.md)
+- [简短反馈模板](docs/beta-feedback-template.md)
+- [报告 Bug 或提交使用反馈](https://github.com/xhonye/suowang/issues/new/choose)
+- [备份、恢复与故障处理](docs/operator-runbook.md)
 
-当前开发线为 **0.2.0-alpha.1**。仓库中的版本号表示目标候选版本，不等于对应 Tag、安装包或公开 Release 已经存在；只有同一 SHA 的跨平台门禁、候选资产和真实安装升级验收全部完成后，才交给受邀用户。测试前请先导出一份 SQLite 备份，反馈时不要发送数据库或私人事项。
+请先确认问题发生在 GitHub Release 的正式资产中，并附上完整版本号和操作系统。不要发送私人数据库或事项内容。
 
-### Windows 普通用户（推荐）
+## 高级使用
 
-从 GitHub Release 下载 `SUOWANG-Setup-*.exe`：双击安装，随后从桌面「所往 SUOWANG」图标打开即可。它自带运行环境，不需要安装 Node.js、npm 或使用命令行。
+### 源码运行
 
-如果你不想安装，可下载 `SUOWANG-Portable-*.zip`，解压后双击 `SUOWANG.cmd`。请只从官方 Release 下载；首次运行新版本时，Windows 可能会要求确认。
-
-### macOS（Apple Silicon）
-
-适用于 M1 及以后芯片的 Mac。从 GitHub Release 下载 `SUOWANG-*-mac-arm64.dmg`，打开后将「所往 SUOWANG」拖入 Applications（应用程序），然后双击打开。它自带运行环境，会自动打开浏览器，不需要安装 Node.js、npm 或使用终端。
-
-首个未签名测试版首次打开时，macOS 可能会提示未知开发者：按住 Control 点击「所往 SUOWANG」并选择“打开”，再确认一次即可。
-
-### 开发者与源码使用
-
-源码运行、`npm install --global` 安装与现有的 `INSTALL.cmd` 仅支持 Node 22 或 Node 24 LTS。普通用户应使用自带固定 Node 24.15.0 的 Windows/macOS 安装包；开发线应使用仓库中已锁定的依赖，不要用漂移的全局依赖替代。
-
-### 交给本地 Agent
-
-把下面一句发给能使用终端的本地 Agent：
-
-> 请安装已确认版本的 SUOWANG：若该版本已发布到 npm，先用 `npm view suowang@<version> version` 核对后运行 `npm install --ignore-scripts --global suowang@<version>`；若你有 GitHub 仓库权限，则运行 `npm install --ignore-scripts --global github:xhonye/suowang#v<version>`。在 Windows 运行 `suowang install-shortcut`，验证 `http://127.0.0.1:2037/health` 正常并打开 SUOWANG。不要读取、移动或覆盖已有的 `SUOWANG_DATA_DIR` 数据，也不要退回安装会漂移的最新 `main`。
-
-安装为全局 npm 命令后也可以直接运行：
+源码路径只支持 Node 22 或 Node 24 LTS：
 
 ```powershell
-suowang
-suowang install-shortcut
-suowang --help
-```
-
-### 从源码运行
-
-```powershell
-Set-Location -LiteralPath 'A:/2Workspace/Projects/suowang'
+Set-Location -LiteralPath '<path-to-suowang>'
 npm install
 npm start
 ```
 
-浏览器打开 `http://127.0.0.1:2037/`。
+浏览器打开 `http://127.0.0.1:2037/`。普通用户应优先使用自带固定 Node 24.15.0 的安装包。
 
-Windows 日常使用可以直接双击 `SUOWANG.cmd`。安装桌面快捷方式：
+### npm / 本地 Agent
+
+只有在对应版本已经发布到 npm 后，才使用：
 
 ```powershell
-npm run install-shortcut
+npm view suowang@0.2.0-beta.1 version
+npm install --ignore-scripts --global suowang@0.2.0-beta.1
+suowang install-shortcut
 ```
 
-以后双击桌面的 `SUOWANG`：已运行则直接打开，未运行则隐藏启动本地服务后打开浏览器。
+本地 Agent 安装时不得读取、移动或覆盖既有 `SUOWANG_DATA_DIR`。仓库权限安装与 CLI 细节见 [本地运维手册](docs/operator-runbook.md)。
 
-### 手机通过 Tailscale 访问（可选）
+### 手机通过 Tailscale 访问
 
-电脑和手机安装并登录同一个 Tailscale 后，在电脑运行：
+电脑和手机登录同一个 Tailscale 后，在电脑运行：
 
 ```powershell
 suowang access tailscale
 ```
 
-然后再次双击桌面 `SUOWANG`。命令会显示类似 `http://100.x.x.x:2037/` 的手机地址。该模式仍保留电脑本机入口，并且只额外监听本机 Tailscale 地址，不监听普通局域网或公网。SUOWANG 目前没有应用级账号认证，因此只应允许你信任的 Tailnet 设备访问；恢复仅本机模式运行 `suowang access local` 后再次启动。
+该模式只额外监听本机 Tailscale 地址，不监听普通局域网或公网。SUOWANG 没有应用级账号认证，只能供你信任的 Tailnet 设备使用。恢复仅本机模式：
 
-访问开关保存在仓库外的数据目录 `access.json`，个人 Tailscale IP 只在启动时自动发现，不写入项目文件，也不需要提交 `.env`。开源仓库只包含通用的可选能力。
+```powershell
+suowang access local
+```
 
-## 数据位置
-
-业务数据不会写进仓库。
-
-1. 设置 `SUOWANG_DATA_DIR` 时使用该绝对路径。
-2. Windows 新安装使用 `%LOCALAPPDATA%/SUOWANG`。
-3. Windows 旧版本若已经存在 `D:/5Data/suowang/suowang.db`，继续使用该旧目录，不自动搬迁。
-4. 标准目录与旧目录同时存在数据库时，SUOWANG 会停止并要求用 `SUOWANG_DATA_DIR` 明确选择，不擅自合并。
-5. macOS 使用 `~/Library/Application Support/SUOWANG/`；Linux 使用 `$XDG_DATA_HOME/suowang` 或 `~/.local/share/suowang`。
-
-目录内包含 SQLite 数据库、每日备份、本地头像、访问配置和启动日志。正式库首次启动显示中性的“所往用户”，没有 demo 主线、事项或假统计。自动备份与原数据库位于同一设备，只防常见误操作和升级故障，**不等于异地灾备**；重要数据仍应定期导出 SQLite 到另一设备或可靠的同步位置。
-
-## 验证
+## 验证与发行边界
 
 ```powershell
 npm test
-npm run check
 npm run test:e2e
-npm run verify
+npm run smoke:temp
 npm run release:check
 ```
 
-单元测试、Playwright 浏览器测试和 `smoke:temp` 全部使用独立临时数据库与动态测试端口，不复用个人运行服务，也不读取或修改个人运行数据。`release:check` 同时运行三类门禁并审计 npm 打包清单。
+测试使用独立临时数据库和动态端口，不复用个人运行服务。候选安装包必须由同一个完整 commit SHA 构建并通过双平台门禁；人工安装与升级验收完成后，才允许创建不可移动 Tag 和公开 Release。已发布资产禁止覆盖。
+
+## 产品原则与来路
+
+- **稳定界面，动态内容**：形成空间记忆，不必每次重新理解 UI。
+- **主线意味着取舍**：同时可以推进几条主线，但此刻只选择一条当前主线。
+- **下一步必须清楚**：它是注意力指针，不是新的事项状态。
+- **启动入口足够低**：用可选的最小一步降低行动摩擦。
+- **本地事实优先**：SQLite 是业务数据唯一真源，AI 只参与造驾驶舱。
+
+> 当用户认知能力只剩 30% 时，这个页面仍然必须很好用。
+
+### 项目起因
+
+![所往项目起因的早期反馈，身份信息已经脱敏](docs/assets/origin-feedback-redacted.png)
+
+### 早期概念图
+
+![所往人生主线页面早期概念图](docs/assets/early-mainline-concept.png)
+
+这张图记录了最初的产品方向，不是当前界面。图中的 Alex、事项和统计均为概念占位；Timeline、NOW 和部分功能已被当前产品合同替换。
 
 ## 文档
 
@@ -176,16 +159,11 @@ npm run release:check
 - [视觉合同](docs/visual-contract.md)
 - [架构与数据流](docs/architecture.md)
 - [本地接口速查](docs/integration-guide.md)
-- [启动、备份与故障处理](docs/operator-runbook.md)
-- [0.2 alpha 邀请测试指南](docs/beta-test-guide.md)
-- [0.2 alpha 反馈模板](docs/beta-feedback-template.md)
 - [V0.1 实施交接](docs/handoff.md)
 - [版本记录](CHANGELOG.md)
+- [第三方依赖声明](THIRD_PARTY_NOTICES.md)
+- [安全问题报告](SECURITY.md)
 
-## 技术边界
-
-Vanilla JS + CSS + Node + `better-sqlite3`。无 React、Vue、Tailwind、ORM、Electron、Tauri、账号、云同步、遥测或运行时 LLM。
-
-## 开源与许可证
+技术栈为 Vanilla JS + CSS + Node + `better-sqlite3`。无 React、Vue、Tailwind、ORM、Electron 或 Tauri。
 
 本项目使用 [Apache License 2.0](LICENSE)。

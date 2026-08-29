@@ -123,6 +123,19 @@ jobs:
           (cd candidates/windows && sha256sum --check "SUOWANG-${PACKAGE_VERSION}-SHA256SUMS.txt")
           (cd candidates/macos && sha256sum --check "SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt")
 
+      - name: Create cross-platform mirror manifest
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          node scripts/create-mirror-manifest.mjs \
+            --version "$PACKAGE_VERSION" \
+            --sha "$CANDIDATE_SHA" \
+            --windows-dir candidates/windows \
+            --macos-dir candidates/macos \
+            --output "candidates/SUOWANG-${PACKAGE_VERSION}-MIRROR-MANIFEST.txt"
+
       - name: Create immutable tag and draft Release with all assets
         shell: bash
         env:
@@ -136,9 +149,10 @@ jobs:
           git push origin "refs/tags/$RELEASE_TAG"
           gh release create "$RELEASE_TAG" \
             candidates/windows/* candidates/macos/* \
+            "candidates/SUOWANG-${PACKAGE_VERSION}-MIRROR-MANIFEST.txt" \
             --draft --prerelease --verify-tag \
             --title "SUOWANG $PACKAGE_VERSION" \
-            --generate-notes
+            --notes-file "docs/releases/v${PACKAGE_VERSION}.md"
 
       - name: Verify draft completeness, then publish once
         shell: bash
@@ -153,6 +167,7 @@ jobs:
             "SUOWANG-${PACKAGE_VERSION}-SHA256SUMS.txt" \
             "SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt" \
             "SUOWANG-${PACKAGE_VERSION}-mac-arm64.dmg" \
+            "SUOWANG-${PACKAGE_VERSION}-MIRROR-MANIFEST.txt" \
             "SUOWANG-Portable-${PACKAGE_VERSION}.zip" \
             "SUOWANG-Setup-${PACKAGE_VERSION}.exe" | sort)"
           test "$actual" = "$expected"

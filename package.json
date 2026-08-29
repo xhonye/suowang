@@ -1,6 +1,6 @@
 {
   "name": "suowang",
-  "version": "0.2.0-alpha.1",
+  "version": "0.2.0-beta.1",
   "type": "module",
   "description": "SUOWANG is a local-first mainline cockpit for real life.",
   "license": "Apache-2.0",
@@ -45,11 +45,12 @@
     "test:unit": "node --test",
     "test:e2e": "playwright test",
     "smoke:temp": "node scripts/smoke-temp.mjs",
-    "check:syntax": "node --check src/app.js && node --check src/api.js && node --check src/view-model.js && node --check scripts/cli.mjs && node --check scripts/launcher-config.mjs && node --check scripts/serve.mjs && node --check scripts/smoke-temp.mjs && node --check scripts/verify-node-download.mjs && node --check scripts/verify-package.mjs && node --check src/server/app-meta.mjs && node --check src/server/config.mjs && node --check src/server/database.mjs && node --check src/server/launcher-policy.mjs && node --check src/server/service.mjs",
+    "check:syntax": "node --check src/app.js && node --check src/api.js && node --check src/view-model.js && node --check scripts/audit-public-surface.mjs && node --check scripts/cli.mjs && node --check scripts/create-mirror-manifest.mjs && node --check scripts/launcher-config.mjs && node --check scripts/serve.mjs && node --check scripts/smoke-temp.mjs && node --check scripts/verify-node-download.mjs && node --check scripts/verify-package.mjs && node --check src/server/app-meta.mjs && node --check src/server/config.mjs && node --check src/server/database.mjs && node --check src/server/launcher-policy.mjs && node --check src/server/service.mjs",
     "check": "npm run check:syntax && npm run test:unit",
     "verify": "npm run check && npm run test:e2e",
     "package:check": "node scripts/verify-package.mjs",
-    "release:check": "npm run verify && npm run smoke:temp && npm run package:check",
+    "audit:public": "node scripts/audit-public-surface.mjs",
+    "release:check": "npm run verify && npm run smoke:temp && npm run package:check && npm run audit:public",
     "release:windows": "npm run release:check && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows-release.ps1",
     "release:macos": "npm run release:check && bash scripts/build-macos-release.sh"
   },

@@ -3,7 +3,7 @@ import test from 'node:test';
 import { decideLauncherAction } from '../src/server/launcher-policy.mjs';
 
 const expected = {
-  expectedVersion: '0.2.0-alpha.1',
+  expectedVersion: '0.2.0-beta.1',
   expectedAccessMode: 'local',
 };
 const matchingHealth = {

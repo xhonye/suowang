@@ -48,6 +48,9 @@ test('publishing verifies both candidate runs and keeps the Release private unti
   assert.match(workflow, /Build macOS Apple Silicon candidate/);
   assert.match(workflow, /--draft --prerelease --verify-tag/);
   assert.match(workflow, /--draft=false --prerelease/);
+  assert.match(workflow, /create-mirror-manifest\.mjs/);
+  assert.match(workflow, /MIRROR-MANIFEST\.txt/);
+  assert.match(workflow, /--notes-file/);
   assert.match(workflow, /Refusing to replace existing tag/);
   assert.doesNotMatch(workflow, /--clobber/);
 });

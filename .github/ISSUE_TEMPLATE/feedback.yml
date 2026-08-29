@@ -1,0 +1,42 @@
+name: 使用反馈
+description: 反馈真实使用体验、理解障碍或改进建议。
+title: "[反馈] "
+labels:
+  - feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        不需要为了完整而测试所有功能。真实地说哪里有帮助、哪里没有打开欲望，最有价值。
+  - type: input
+    id: version
+    attributes:
+      label: 使用版本
+      placeholder: 0.2.0-beta.1
+    validations:
+      required: true
+  - type: textarea
+    id: situation
+    attributes:
+      label: 你在什么情况下打开所往？
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: 哪个部分真的有用，哪个部分没有？
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: 最影响继续使用的一处摩擦是什么？
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 隐私确认
+      options:
+        - label: 我没有上传数据库、备份、私人事项或未脱敏截图。
+          required: true

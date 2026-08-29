@@ -1,11 +1,12 @@
 # Changelog
 
-## 0.2.0-alpha.1 — Unreleased
+## 0.2.0-beta.1 — Unreleased
 
 - 新增桌面工作区空间选项，只裁切道路展示窗口以在小屏和远程桌面中让出事项空间。
 - 新增「开始这一步 / 暂停」行动指针，保持无计时、无行为日志、无专注统计的克制边界。
 - 修复结束或删除无关主线时错误清除行动中指针；只有当前下一步不再合法时才清除。
-- 将 `package.json` 建为应用版本唯一真源，CLI、health、Windows/macOS 构建和发行文件名统一使用 `0.2.0-alpha.1`；macOS plist 使用由 SemVer 派生的合法数值版本。
+- 将 `package.json` 建为应用版本唯一真源，CLI、health、Windows/macOS 构建和发行文件名统一使用 `0.2.0-beta.1`；macOS plist 使用由 SemVer 派生的合法数值版本。
+- 完成首个公开 Beta 的仓库表面审计、陌生用户安装说明、安全反馈入口、发行说明与镜像资产清单生成流程；不改变产品模型和运行时业务逻辑。
 - 修复 macOS bundle 版本在 alpha、beta、rc、正式版与下一 patch 之间的碰撞，要求预发布版本显式使用 `.0`–`.9` 序号并保证严格递增。
 - 清除首帧脚本错误、个人姓名静态默认和无事实依据的“专注天数”；新数据库使用中性身份，旧数据库保持原显示名称。
 - Windows 新安装改用 `%LOCALAPPDATA%/SUOWANG`，仅在检测到真实旧数据库时兼容 `D:/5Data/suowang`；双数据库歧义停止启动并要求显式选择。

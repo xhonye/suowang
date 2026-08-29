@@ -14,8 +14,8 @@ test('package metadata is the application version source', () => {
 });
 
 test('macOS bundle versions are legal numeric values derived from SemVer', () => {
-  const versions = deriveMacOSVersions('0.2.0-alpha.1');
-  assert.deepEqual(versions, { shortVersion: '0.2.0', bundleVersion: '0.2.11' });
+  const versions = deriveMacOSVersions('0.2.0-beta.1');
+  assert.deepEqual(versions, { shortVersion: '0.2.0', bundleVersion: '0.2.21' });
   assert.match(versions.shortVersion, /^\d+\.\d+\.\d+$/);
   assert.match(versions.bundleVersion, /^\d+(?:\.\d+){0,2}$/);
   assert.equal(versions.shortVersion.includes('alpha'), false);

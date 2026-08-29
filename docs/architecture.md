@@ -1,4 +1,4 @@
-# SUOWANG 0.2 alpha 架构
+# SUOWANG 0.2 beta 架构
 
 ## 系统边界
 
@@ -70,7 +70,7 @@ Node 单元测试、Playwright 浏览器测试和临时 smoke 都显式使用仓
 
 常规 CI 在 Linux、Windows 和 macOS 上分别用 Node 22/24 运行单元门禁与动态端口临时 smoke，并在 Linux 执行浏览器测试和包清单审计。Windows 与 macOS 候选工作流只接受完整 commit SHA：Windows 自动执行 Setup 静默安装、真实启动壳 health 与卸载后数据保留检查；macOS 挂载最终 DMG、复制 `.app`、运行真实启动壳并检查 health。候选只保存为短期 Actions artifact，不创建 Tag 或公开 Release。
 
-人工完成 Windows/macOS 真实安装、升级与未签名打开验收后，聚合发布工作流核对两个成功候选运行都来自同一 SHA，下载精确 artifact 并复验 SHA-256。它随后创建不可移动的 annotated Tag，在 Draft Release 中一次上传完整五项资产，核对名称齐全后才公开为 prerelease。任何既有 Tag 或 Release 都使流程失败，不允许 `--clobber`；因此用户可见 Release 不再经历先公开空壳、再异步追加或覆盖资产的窗口。本轮不创建 Tag 或 Release，也不声称 Gatekeeper、Safari 或人工升级路径已由自动化替代。
+人工完成 Windows/macOS 真实安装、升级与未签名打开验收后，聚合发布工作流核对两个成功候选运行都来自同一 SHA，下载精确 artifact 并复验 SHA-256。它再生成一份绑定版本、源 commit 和五个候选文件 SHA-256 的镜像清单，随后创建不可移动的 annotated Tag，在 Draft Release 中一次上传五项候选资产和镜像清单，核对名称齐全后才公开为 prerelease。任何既有 Tag 或 Release 都使流程失败，不允许 `--clobber`；因此用户可见 Release 不再经历先公开空壳、再异步追加或覆盖资产的窗口。本轮不创建 Tag 或 Release，也不声称 Gatekeeper、Safari 或人工升级路径已由自动化替代。
 
 ## 取舍
 

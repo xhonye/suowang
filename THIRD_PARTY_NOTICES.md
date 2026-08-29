@@ -10,3 +10,11 @@ The Windows and macOS self-contained distributions include the following runtime
   in `node_modules/node-addon-api/LICENSE.md`.
 
 SUOWANG itself is distributed under the Apache License 2.0; see `LICENSE`.
+
+Source development and automated browser tests additionally use:
+
+- `@playwright/test` `1.62.1`, Apache License 2.0. This dependency is not
+  included in the end-user Windows or macOS application payload.
+
+The npm lockfile is the exact dependency inventory for source builds. Release
+packages include only the runtime components listed above.

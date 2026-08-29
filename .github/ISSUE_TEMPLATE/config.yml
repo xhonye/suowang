@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全问题（请勿公开细节）
+    url: https://github.com/xhonye/suowang/security/policy
+    about: 涉及数据、权限或可利用缺陷时，请先阅读私密报告方式。

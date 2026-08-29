@@ -1,11 +1,11 @@
-# SUOWANG 0.2 alpha 邀请测试指南
+# SUOWANG 0.2 Public Beta 使用与测试指南
 
 这是一轮为期约两周的自然使用测试。目标不是把每个按钮点一遍，而是确认所往能否在真实生活里帮助你更快看清方向并开始行动。
 
 ## 安装前
 
-- Windows 下载与版本号一致的 `SUOWANG-Setup-0.2.0-alpha.1.exe`，或使用 Portable ZIP。
-- Apple Silicon Mac 下载 `SUOWANG-0.2.0-alpha.1-mac-arm64.dmg`，拖入 Applications。首个未签名测试版可能需要按住 Control 点击应用并选择“打开”。
+- Windows 下载与版本号一致的 `SUOWANG-Setup-0.2.0-beta.1.exe`，或使用 Portable ZIP。
+- Apple Silicon Mac 下载 `SUOWANG-0.2.0-beta.1-mac-arm64.dmg`，拖入 Applications。首个未签名测试版可能需要按住 Control 点击应用并选择“打开”。
 - 如果你已经使用过所往，先在设置中选择“导出 SQLite”，把文件保存在另一设备或可信同步位置。
 - 不要发送 SQLite 数据库、备份、私人事项或个人截图来反馈问题。
 

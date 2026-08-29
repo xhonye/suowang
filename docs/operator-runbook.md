@@ -1,6 +1,6 @@
 # SUOWANG 本地运维手册
 
-当前开发线为 `0.2.0-alpha.1`。它用于受邀 alpha 验证，不代表已正式发布；安装前先从现有版本导出 SQLite，测试数据中不要放无法承受丢失的唯一副本。
+当前开发线为 `0.2.0-beta.1`。它是公开 Beta 候选，不代表对应 Tag 或 Release 已经存在；安装前先从现有版本导出 SQLite，测试数据中不要放无法承受丢失的唯一副本。
 
 ## 首次安装
 
@@ -34,7 +34,7 @@ suowang install-shortcut
 ### 源码入口
 
 ```powershell
-Set-Location -LiteralPath 'A:/2Workspace/Projects/suowang'
+Set-Location -LiteralPath '<path-to-suowang>'
 npm install
 npm run install-shortcut
 ```
@@ -100,7 +100,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 ## 发布前检查
 
 ```powershell
-Set-Location -LiteralPath 'A:/2Workspace/Projects/suowang'
+Set-Location -LiteralPath '<path-to-suowang>'
 npm run check
 npm run test:e2e
 npm run verify
@@ -110,4 +110,4 @@ git diff --check
 git status --short
 ```
 
-`release:check` 会运行单元、浏览器、动态端口临时 smoke 并审阅 npm tarball 文件清单。双平台候选构建下载 Node 运行时后必须通过 nodejs.org 官方 `SHASUMS256.txt` 校验；候选工作流只接受完整 commit SHA 并上传 Actions artifact。完成 Windows/macOS 人工安装升级验收后，聚合发布工作流才允许用两个候选 run ID 和 `INSTALL_VERIFIED` 创建最终 Tag，在 Draft Release 内集齐资产后一次性公开。不得对已公开版本覆盖资产。所有测试必须显式使用临时数据目录与非默认端口；确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/事项或视觉探索归档。
+`release:check` 会运行单元、浏览器、动态端口临时 smoke、npm tarball 文件清单和公开表面审计。双平台候选构建下载 Node 运行时后必须通过 nodejs.org 官方 `SHASUMS256.txt` 校验；候选工作流只接受完整 commit SHA 并上传 Actions artifact。完成 Windows/macOS 人工安装升级验收后，聚合发布工作流才允许用两个候选 run ID 和 `INSTALL_VERIFIED` 创建最终 Tag，生成绑定源 commit 与全部候选文件 SHA-256 的镜像清单，并在 Draft Release 内集齐资产后一次性公开。不得对已公开版本覆盖资产。所有测试必须显式使用临时数据目录与非默认端口；确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/事项或视觉探索归档。

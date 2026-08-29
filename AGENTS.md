@@ -1,6 +1,6 @@
 # SUOWANG 项目合同
 
-本文件是 `A:/2Workspace/Projects/suowang` 的当前执行合同。面向用户的产品与治理文字使用简体中文；代码、标识符、文件名和 commit message 使用英文。
+本文件是 SUOWANG 仓库根目录的当前执行合同。面向用户的产品与治理文字使用简体中文；代码、标识符、文件名和 commit message 使用英文。
 
 ## 产品身份
 
@@ -150,6 +150,7 @@ npm start
 - `package.json` 是应用语义版本唯一真源。`/health` 必须返回 `app/version/database/schemaVersion/pid/accessMode`，不得暴露数据目录或业务数据；CLI、Windows/macOS 构建和启动器必须从同一版本与配置来源派生。
 - 所有开发服务、单元测试、E2E、恢复与 smoke 必须显式使用临时 `SUOWANG_DATA_DIR` 和非默认测试端口；禁止用个人数据库验证 migration。已有数据库升级前必须先生成不可覆盖且通过完整性检查的迁移前备份。
 - 发版前至少通过 `npm run release:check`、Visual Baseline 和 Node 22/24 跨平台 CI；`release:check` 必须包含临时数据库 smoke。候选构建必须以完整 commit SHA 为输入，下载内置 Node 后对照 nodejs.org 同版本 `SHASUMS256.txt` 验证精确文件名和 SHA-256。Windows/macOS 候选必须来自同一 SHA，完成人工安装升级验收后才能创建最终 Tag；公开 Release 必须先在 Draft 中集齐并验证全部资产，再一次性公开，禁止 `--clobber` 或替换既有同版本资产。不得以更新快照、改哈希或跳过浏览器测试绕过失败。
+- 面向公众的 GitHub 内容只服务于理解产品、下载安装、保护数据、安全报告和真实使用反馈。除非用户再次明确要求，不加入求 Star、开源资助申请、赞助、开发者招募或贡献者运营文案。
 - 保持键盘焦点、非颜色状态表达和 `prefers-reduced-motion`。
 - 不把私人主线、事项、数据库、日志、截图、凭据或导出放进 Git。
 - 未经明确要求，不引入外部 API、云同步、遥测、账号、通知、AI 设置或未来导航入口。
