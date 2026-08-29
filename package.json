@@ -1,6 +1,6 @@
 {
   "name": "suowang",
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0-beta.2",
   "type": "module",
   "description": "SUOWANG is a local-first mainline cockpit for real life.",
   "productName": "所往 SUOWANG",
@@ -71,7 +71,7 @@
     "test:desktop:e2e": "playwright test --config=playwright.desktop.config.mjs",
     "test:desktop": "npm run test:desktop:unit && npm run test:desktop:e2e",
     "smoke:temp": "node scripts/smoke-temp.mjs",
-    "check:syntax": "node --check src/app.js && node --check src/api.js && node --check src/view-model.js && node --check desktop/main.js && node --check desktop/desktop-policy.mjs && node --check desktop/window-state.mjs && node --check scripts/audit-electron-security.mjs && node --check scripts/audit-public-surface.mjs && node --check scripts/build-icons.mjs && node --check scripts/cli.mjs && node --check scripts/create-mirror-manifest.mjs && node --check scripts/create-upgrade-fixture.mjs && node --check scripts/install-electron-runtime.mjs && node --check scripts/launcher-config.mjs && node --check scripts/prepare-desktop.mjs && node --check scripts/serve.mjs && node --check scripts/smoke-temp.mjs && node --check scripts/verify-desktop-package.mjs && node --check scripts/verify-node-download.mjs && node --check scripts/verify-package.mjs && node --check scripts/verify-upgrade-fixture.mjs && node --check src/server/app-meta.mjs && node --check src/server/app-server.mjs && node --check src/server/config.mjs && node --check src/server/database.mjs && node --check src/server/instance-lock.mjs && node --check src/server/launcher-policy.mjs && node --check src/server/service.mjs",
+    "check:syntax": "node --check src/app.js && node --check src/api.js && node --check src/view-model.js && node --check src/visual-assets.mjs && node --check desktop/main.js && node --check desktop/desktop-policy.mjs && node --check desktop/window-state.mjs && node --check scripts/audit-electron-security.mjs && node --check scripts/audit-public-surface.mjs && node --check scripts/build-icons.mjs && node --check scripts/cli.mjs && node --check scripts/create-mirror-manifest.mjs && node --check scripts/create-upgrade-fixture.mjs && node --check scripts/install-electron-runtime.mjs && node --check scripts/launcher-config.mjs && node --check scripts/prepare-desktop.mjs && node --check scripts/serve.mjs && node --check scripts/smoke-temp.mjs && node --check scripts/verify-desktop-package.mjs && node --check scripts/verify-node-download.mjs && node --check scripts/verify-package.mjs && node --check scripts/verify-upgrade-fixture.mjs && node --check src/server/app-meta.mjs && node --check src/server/app-server.mjs && node --check src/server/config.mjs && node --check src/server/database.mjs && node --check src/server/instance-lock.mjs && node --check src/server/launcher-policy.mjs && node --check src/server/service.mjs",
     "check": "npm run check:syntax && npm run test:unit",
     "verify": "npm run check && npm run test:e2e",
     "verify:desktop": "npm run test:desktop && npm run desktop:package && node scripts/verify-desktop-package.mjs",
@@ -88,6 +88,7 @@
     "better-sqlite3": "13.0.3"
   },
   "devDependencies": {
+    "@electron/asar": "3.4.1",
     "@electron-forge/cli": "7.11.2",
     "@electron-forge/maker-dmg": "7.11.2",
     "@electron-forge/maker-zip": "7.11.2",

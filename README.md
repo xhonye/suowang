@@ -10,11 +10,11 @@
 
 ## Windows 30 秒开始
 
-`0.2.0-beta.1` 当前是公开 Beta 候选。只有 [GitHub Releases](https://github.com/xhonye/suowang/releases) 出现对应版本后，下面的文件才算正式发布资产。
+`0.2.0-beta.2` 当前是公开 Beta 候选。只有 [GitHub Releases](https://github.com/xhonye/suowang/releases) 出现对应版本后，下面的文件才算正式发布资产。`0.2.0-beta.1` 的桌面包缺少道路视觉资产，请勿继续下载或镜像。
 
 ### 推荐：安装版
 
-1. 下载 `SUOWANG-Setup-0.2.0-beta.1.exe`。
+1. 下载 `SUOWANG-Setup-0.2.0-beta.2.exe`。
 2. 双击安装。
 3. 从桌面的「所往 SUOWANG」图标打开。
 
@@ -22,7 +22,7 @@
 
 ### 备用：免安装版
 
-下载 `SUOWANG-Portable-0.2.0-beta.1.zip`，解压后双击 `SUOWANG.exe`。不要直接在压缩包内运行。
+下载 `SUOWANG-Portable-0.2.0-beta.2.zip`，解压后双击 `SUOWANG.exe`。不要直接在压缩包内运行。
 
 ## 数据只在本机
 
@@ -69,7 +69,7 @@ Windows 旧版若已经存在 `D:/5Data/suowang/suowang.db`，会继续使用这
 
 ## macOS（实验支持）
 
-仅支持 Apple Silicon（M1 及以后）。下载 `SUOWANG-0.2.0-beta.1-mac-arm64.dmg`，打开后把「所往 SUOWANG」拖入 Applications，再双击打开独立应用窗口。
+仅支持 Apple Silicon（M1 及以后）。下载 `SUOWANG-0.2.0-beta.2-mac-arm64.dmg`，打开后把「所往 SUOWANG」拖入 Applications，再双击打开独立应用窗口。
 
 首个公开 Beta 未签名、未公证。首次打开可能需要按住 Control 点击应用，选择“打开”并再次确认。暂不支持 Intel Mac、App Store 安装或自动更新。
 
@@ -100,11 +100,11 @@ npm start
 
 ### npm / 本地 Agent
 
-只有在对应版本已经发布到 npm 后，才使用：
+当前没有发布 npm registry 包；普通用户请使用 GitHub Release 的桌面安装包。未来只有在 `npm view` 能查到对应版本后，才使用：
 
 ```powershell
-npm view suowang@0.2.0-beta.1 version
-npm install --ignore-scripts --global suowang@0.2.0-beta.1
+npm view suowang@0.2.0-beta.2 version
+npm install --ignore-scripts --global suowang@0.2.0-beta.2
 suowang install-shortcut
 ```
 

@@ -4,8 +4,8 @@
 
 ## 安装前
 
-- Windows 下载与版本号一致的 `SUOWANG-Setup-0.2.0-beta.1.exe`，或使用 Portable ZIP；安装后应直接打开独立「所往 SUOWANG」窗口，不出现 PowerShell 或浏览器地址栏。
-- Apple Silicon Mac 下载 `SUOWANG-0.2.0-beta.1-mac-arm64.dmg`，拖入 Applications。首个未签名测试版可能需要按住 Control 点击应用并选择“打开”。
+- Windows 下载与版本号一致的 `SUOWANG-Setup-0.2.0-beta.2.exe`，或使用 Portable ZIP；安装后应直接打开独立「所往 SUOWANG」窗口，不出现 PowerShell 或浏览器地址栏。
+- Apple Silicon Mac 下载 `SUOWANG-0.2.0-beta.2-mac-arm64.dmg`，拖入 Applications。首个未签名测试版可能需要按住 Control 点击应用并选择“打开”。
 - 如果你已经使用过所往，先在设置中选择“导出 SQLite”，把文件保存在另一设备或可信同步位置。
 - 不要发送 SQLite 数据库、备份、私人事项或个人截图来反馈问题。
 

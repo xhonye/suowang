@@ -7,6 +7,7 @@ import { MakerDMG } from '@electron-forge/maker-dmg';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { APP_VERSION, deriveMacOSVersions } from './src/server/app-meta.mjs';
+import { ROAD_VISUAL_ASSETS } from './src/visual-assets.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const icons = resolve(root, 'assets', 'brand');
@@ -18,7 +19,7 @@ const appleTeamId = process.env.APPLE_TEAM_ID?.trim();
 const windowsCertificateFile = process.env.WINDOWS_CERTIFICATE_FILE?.trim();
 const windowsCertificatePassword = process.env.WINDOWS_CERTIFICATE_PASSWORD;
 
-function shouldIgnore(path) {
+export function shouldIgnore(path) {
   const normalized = String(path).split(sep).join('/');
   const normalizedRoot = root.split(sep).join('/').replace(/\/$/, '');
   const local = normalized.toLowerCase().startsWith(`${normalizedRoot.toLowerCase()}/`)
@@ -29,14 +30,8 @@ function shouldIgnore(path) {
   const allowedTop = new Set(['assets', 'desktop', 'migrations', 'node_modules', 'src', 'index.html', 'LICENSE', 'package.json']);
   if (!allowedTop.has(top)) return true;
   if (top === 'assets') {
-    const allowedAssets = [
-      'assets/brand/',
-      'assets/mainline-scene-bright-office-v1-no-arrows-geometry-v5.png',
-      'assets/mainline-scene-bright-office-v1-arrow-restore-light-v2.png',
-      'assets/mainline-scene-bright-office-v1-arrow-work-light-v4.png',
-      'assets/mainline-scene-bright-office-v1-arrow-life-light-v2.png',
-    ];
-    return !allowedAssets.some((allowed) => local === allowed.replace(/\/$/, '') || local.startsWith(allowed));
+    if (local === 'assets' || local === 'assets/brand' || local.startsWith('assets/brand/')) return false;
+    return !ROAD_VISUAL_ASSETS.some((asset) => local === asset.path);
   }
   if (local.startsWith('node_modules/better-sqlite3/prebuilds/')) {
     return local !== `node_modules/better-sqlite3/prebuilds/${process.platform}-${process.arch}.node`;

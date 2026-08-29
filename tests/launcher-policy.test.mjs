@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { APP_VERSION } from '../src/server/app-meta.mjs';
 import { decideLauncherAction } from '../src/server/launcher-policy.mjs';
 
 const expected = {
-  expectedVersion: '0.2.0-beta.1',
+  expectedVersion: APP_VERSION,
   expectedAccessMode: 'local',
 };
 const matchingHealth = {

@@ -153,6 +153,7 @@ npm start
 - 涉及产品定位、核心概念、名词体系、信息模型或交互哲学的修改，必须在同一轮更新本 `AGENTS.md`，并按对外/产品细节分别同步 `README.md` 或 `docs/product-brief.md`；不得只把已确认理念留在聊天记录里。
 - 修改批准视觉资产前先运行视觉基线测试；测试失败即视为受保护内容发生变化，除非用户本轮明确批准新基线，否则不得更新哈希绕过失败。
 - 修改 Electron 承载层不得重新设计页面或替换批准道路资产；生产窗口必须保持 `nodeIntegration: false`、`contextIsolation: true`、`sandbox: true`、固定外链白名单、无远程代码和无启动外网请求。
+- 桌面候选不能只以 renderer 启动或数据库可写证明视觉可用：四张批准道路资产必须实际存在于 `app.asar`，并在 packaged Electron renderer 中全部解码为 `2172×724`；任何缺失、空文件、404 或 `naturalWidth = 0` 都阻断候选。
 - 每个稳定业务规则都应有自动化测试；UI 改动必须真实验证 1920×1080、2560×1440 和 320px。
 - `package.json` 是应用语义版本唯一真源。`/health` 必须返回 `app/version/database/schemaVersion/pid/accessMode`，不得暴露数据目录或业务数据；CLI、Windows/macOS 构建和启动器必须从同一版本与配置来源派生。
 - 所有开发服务、单元测试、E2E、恢复与 smoke 必须显式使用临时 `SUOWANG_DATA_DIR` 和非默认测试端口；禁止用个人数据库验证 migration。已有数据库升级前必须先生成不可覆盖且通过完整性检查的迁移前备份。

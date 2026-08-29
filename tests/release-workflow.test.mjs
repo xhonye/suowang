@@ -115,3 +115,14 @@ test('desktop packaging preserves stable application identities and direct execu
   assert.match(installer, /Filename: "\{app\}\\\{#AppExe\}"/);
   assert.doesNotMatch(installer, /start\.ps1|SUOWANG\.cmd/);
 });
+
+test('packaged candidates require approved road assets in ASAR and decoded in the renderer', () => {
+  const verifier = read('scripts/verify-desktop-package.mjs');
+  const desktopMain = read('desktop/main.js');
+  assert.match(verifier, /statAsarFile/);
+  assert.match(verifier, /Required visual asset is missing from app\.asar/);
+  assert.match(verifier, /visualAssetsLoaded/);
+  assert.match(desktopMain, /naturalWidth/);
+  assert.match(desktopMain, /naturalHeight/);
+  assert.match(desktopMain, /Packaged renderer did not become ready/);
+});

@@ -4,7 +4,9 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FuseV1Options, getCurrentFuseWire } from '@electron/fuses';
+import { statFile as statAsarFile } from '@electron/asar';
 import { APP_VERSION } from '../src/server/app-meta.mjs';
+import { ROAD_VISUAL_ASSETS } from '../src/visual-assets.mjs';
 import { auditElectronSecurity } from './audit-electron-security.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -47,6 +49,16 @@ export async function verifyDesktopPackage(options = {}) {
   for (const path of [packaged.folder, packaged.executable, join(packaged.resources, 'app.asar')]) {
     if (!existsSync(path)) throw new Error(`Packaged desktop file is missing: ${path}`);
   }
+  const asarPath = join(packaged.resources, 'app.asar');
+  for (const asset of ROAD_VISUAL_ASSETS) {
+    let entry;
+    try {
+      entry = statAsarFile(asarPath, asset.path);
+    } catch {
+      throw new Error(`Required visual asset is missing from app.asar: ${asset.path}`);
+    }
+    if (!entry || entry.size <= 0) throw new Error(`Required visual asset is empty in app.asar: ${asset.path}`);
+  }
   const nativeModule = findNativeModule(join(packaged.resources, 'app.asar.unpacked'));
   if (!nativeModule) throw new Error('better-sqlite3 was not unpacked from ASAR.');
   for (const forbidden of ['runtime', 'scripts/start.ps1', 'SUOWANG.cmd']) {
@@ -86,7 +98,14 @@ export async function verifyDesktopPackage(options = {}) {
     }
     if (!existsSync(reportPath)) throw new Error('Packaged smoke did not write its structured report.');
     const report = JSON.parse(readFileSync(reportPath, 'utf8'));
-    if (report.status !== 'passed' || !report.rendererLoaded || !report.databaseWrite) {
+    if (
+      report.status !== 'passed'
+      || !report.rendererLoaded
+      || !report.rendererReady
+      || !report.databaseWrite
+      || !report.visualAssetsLoaded
+      || report.visualAssets?.length !== ROAD_VISUAL_ASSETS.length
+    ) {
       throw new Error(`Invalid packaged smoke report: ${JSON.stringify(report)}`);
     }
     if (report.version !== APP_VERSION) throw new Error(`Packaged version ${report.version} does not match ${APP_VERSION}.`);

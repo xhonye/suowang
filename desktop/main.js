@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { APP_VERSION } from '../src/server/app-meta.mjs';
 import { resolveDataDir } from '../src/server/config.mjs';
 import { startAppServer } from '../src/server/app-server.mjs';
+import { ROAD_VISUAL_ASSETS } from '../src/visual-assets.mjs';
 import { readBuildInfo } from './build-info.mjs';
 import {
   contentTypeForAvatar,
@@ -306,6 +307,58 @@ async function runPackagedSmoke(window) {
       window.webContents.once('did-finish-load', resolve);
       window.webContents.once('did-fail-load', (_event, code, description) => reject(new Error(`${code}:${description}`)));
     });
+    const rendererState = await window.webContents.executeJavaScript(`(async () => {
+      const readyDeadline = Date.now() + 10000;
+      while (!document.querySelector('#loading-layer')?.classList.contains('done') && Date.now() < readyDeadline) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      if (!document.querySelector('#loading-layer')?.classList.contains('done')) {
+        throw new Error('Renderer did not finish its initial snapshot before packaged visual verification.');
+      }
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      const expected = ${JSON.stringify(ROAD_VISUAL_ASSETS)};
+      const results = [];
+      for (const asset of expected) {
+        const image = document.querySelector(\`img[src="/\${asset.path}"]\`);
+        if (image && !image.complete) {
+          await new Promise((resolve) => {
+            image.addEventListener('load', resolve, { once: true });
+            image.addEventListener('error', resolve, { once: true });
+          });
+        }
+        results.push({
+          id: asset.id,
+          path: asset.path,
+          found: Boolean(image),
+          complete: Boolean(image?.complete),
+          naturalWidth: image?.naturalWidth ?? 0,
+          naturalHeight: image?.naturalHeight ?? 0,
+          expectedWidth: asset.width,
+          expectedHeight: asset.height,
+        });
+      }
+      const errorBanner = document.querySelector('#error-banner');
+      return {
+        visualAssets: results,
+        loadingDone: document.querySelector('#loading-layer')?.classList.contains('done') ?? false,
+        errorVisible: errorBanner ? !errorBanner.hidden : true,
+        errorText: errorBanner?.textContent?.trim().slice(0, 240) ?? '',
+        greeting: document.querySelector('#greeting')?.textContent?.trim() ?? '',
+      };
+    })()`, true);
+    if (!rendererState.loadingDone || rendererState.errorVisible || rendererState.greeting === '正在打开所往') {
+      throw new Error(`Packaged renderer did not become ready: ${JSON.stringify(rendererState)}`);
+    }
+    const visualAssets = rendererState.visualAssets;
+    const invalidVisualAsset = visualAssets.find((asset) => (
+      !asset.found
+      || !asset.complete
+      || asset.naturalWidth !== asset.expectedWidth
+      || asset.naturalHeight !== asset.expectedHeight
+    ));
+    if (invalidVisualAsset) {
+      throw new Error(`Packaged visual asset failed to decode: ${JSON.stringify(invalidVisualAsset)}`);
+    }
     const health = await (await fetchLocal('/health')).json();
     const created = await (await fetchLocal('/api/todos', {
       method: 'POST',
@@ -317,7 +370,23 @@ async function runPackagedSmoke(window) {
       || state.mainlines.some((mainline) => mainline.todos.some((todo) => todo.title === 'Packaged desktop smoke'))
     ));
     if (health.status !== 'ok' || !wroteTodo) throw new Error('Smoke health or write verification failed.');
-    Object.assign(report, { status: 'passed', schemaVersion: health.schemaVersion, rendererLoaded: true, databaseWrite: true });
+    Object.assign(report, {
+      status: 'passed',
+      schemaVersion: health.schemaVersion,
+      rendererLoaded: true,
+      databaseWrite: true,
+      visualAssetsLoaded: true,
+      visualAssets,
+      rendererReady: true,
+    });
+    const screenshotPath = process.env.SUOWANG_SMOKE_SCREENSHOT;
+    if (screenshotPath) {
+      window.show();
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      mkdirSync(dirname(screenshotPath), { recursive: true });
+      writeFileSync(screenshotPath, (await window.webContents.capturePage()).toPNG(), { flag: 'w' });
+      report.screenshotWritten = true;
+    }
     if (reportPath) {
       mkdirSync(dirname(reportPath), { recursive: true });
       writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
