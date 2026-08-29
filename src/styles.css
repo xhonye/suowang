@@ -35,8 +35,8 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 .app-shell { display: grid; min-height: 0; grid-template-columns: 196px minmax(0, 1fr); height: 100%; height: 100dvh; }
 .side-rail { position: relative; z-index: 30; display: flex; min-height: 0; flex-direction: column; padding: 24px 14px 18px; background: rgba(251, 252, 250, 0.96); border-right: 1px solid var(--line); box-shadow: 10px 0 40px rgba(47, 70, 78, 0.035); backdrop-filter: blur(24px); }
 .brand { display: flex; align-items: center; gap: 11px; padding: 0 10px 24px; color: inherit; text-decoration: none; }
-.brand-mark { display: grid; flex: 0 0 40px; width: 40px; height: 40px; place-items: center; color: white; background: linear-gradient(145deg, #6d9db2, #386f88); border-radius: 14px; box-shadow: 0 8px 20px rgba(61, 108, 130, 0.18); }
-.brand-mark svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.brand-mark { display: grid; flex: 0 0 42px; width: 42px; height: 42px; place-items: center; overflow: hidden; background: transparent; border-radius: 13px; box-shadow: 0 7px 18px rgba(44, 79, 94, 0.12); }
+.brand-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .brand-copy { display: grid; gap: 1px; }
 .brand-copy strong { font-family: var(--display-font); font-size: 19px; font-weight: 720; letter-spacing: 0.08em; }
 .brand-copy small { color: var(--quiet); font-family: var(--utility-font); font-size: 9px; letter-spacing: 0.22em; }
@@ -48,12 +48,12 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 .rail-nav button[aria-current="page"] { color: var(--signal-strong); background: var(--signal-soft); font-weight: 670; }
 .rail-nav button[aria-current="page"]::before { background: var(--signal); }
 .rail-nav svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.65; }
-.rail-profile { display: flex; align-items: center; gap: 10px; margin: auto 5px 0; padding: 12px 10px; border-top: 1px solid var(--line); }
-.profile-avatar { display: grid; flex: 0 0 40px; width: 40px; height: 40px; place-items: center; overflow: hidden; color: white; background: linear-gradient(150deg, #7da1ad, #405f68); border-radius: 50%; font-family: var(--display-font); font-weight: 720; }
+.rail-profile { display: flex; align-items: center; gap: 9px; margin: auto 7px 0; padding: 11px 7px 8px; border-top: 1px solid var(--line); }
+.profile-avatar { display: grid; flex: 0 0 34px; width: 34px; height: 34px; place-items: center; overflow: hidden; color: #3d6c7e; background: #e4eef0; border: 1px solid rgba(78, 131, 156, 0.16); border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7); font-family: var(--display-font); font-size: 12px; font-weight: 720; }
 .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .profile-copy { display: grid; min-width: 0; gap: 2px; }
-.profile-copy strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
-.brand-slogan { margin: 5px 15px 0; color: var(--quiet); font-size: 10px; letter-spacing: 0.18em; }
+.profile-copy strong { overflow: hidden; color: #334b56; font-size: 13px; font-weight: 640; text-overflow: ellipsis; white-space: nowrap; }
+.brand-slogan { margin: 3px 15px 0; color: #9aa7aa; font-size: 10px; letter-spacing: 0.18em; }
 
 .workspace-shell { position: relative; display: grid; min-width: 0; min-height: 0; height: 100%; grid-template-rows: minmax(0, 1fr); }
 .greeting-block { display: flex; align-items: center; min-width: 0; gap: 10px; }
@@ -579,15 +579,57 @@ body.busy button, body.busy input, body.busy select { pointer-events: none; }
   .stuck-options > button { min-height: 66px; }
 }
 
-/* Kept last so the workspace control wins over the desktop comfort rules above. */
+/* Desktop adapts as one cockpit: the road keeps its presence, only todo lists absorb surplus height. */
 @media (min-width: 901px) {
-  .dashboard-page { --road-stage-base-height: clamp(430px, 42vh, 460px); --workspace-sky-crop: 0px; }
+  .dashboard-page {
+    --road-stage-base-height: clamp(400px, min(23vw, 46vh), 520px);
+    --workspace-sky-crop: 0px;
+    --mainline-dock-height: 106px;
+    --mainline-dock-overlap: 82px;
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    padding-bottom: 24px;
+  }
   html[data-workspace-density="medium"] .dashboard-page { --workspace-sky-crop: 28px; }
   html[data-workspace-density="large"] .dashboard-page { --workspace-sky-crop: 50px; }
   html[data-workspace-density="max"] .dashboard-page { --workspace-sky-crop: 72px; }
-  .road-stage { height: calc(var(--road-stage-base-height) - var(--workspace-sky-crop)); min-height: calc(430px - var(--workspace-sky-crop)); }
+  .road-stage {
+    height: calc(var(--road-stage-base-height) - var(--workspace-sky-crop));
+    min-height: calc(var(--road-stage-base-height) - var(--workspace-sky-crop));
+    flex: 0 0 calc(var(--road-stage-base-height) - var(--workspace-sky-crop));
+  }
   .road-image { top: calc(var(--workspace-sky-crop) * -1); bottom: auto; height: var(--road-stage-base-height); object-position: center 68%; }
-  .mainline-deck { margin-top: -90px; }
+  .mainline-deck {
+    min-height: var(--mainline-dock-height);
+    flex: 0 0 var(--mainline-dock-height);
+    margin-top: calc(var(--mainline-dock-overlap) * -1);
+  }
+  .mainline-card, .empty-mainline, .create-mainline-form { min-height: var(--mainline-dock-height); }
+  .cockpit { display: flex; min-height: 344px; flex: 1 0 344px; flex-direction: column; margin-top: 10px; }
+  .current-detail { min-height: 62px; flex: 0 0 62px; }
+  .work-area { min-height: 276px; flex: 1 1 auto; }
+  .todo-grid { height: 100%; min-height: 0; }
+  .todo-column { height: 100%; min-height: 276px; grid-template-rows: 44px minmax(0, 1fr) 42px; }
+  .priority-zone { height: 252px; min-height: 252px; align-self: start; margin: 12px; }
+}
+
+@media (max-height: 820px) and (min-width: 901px) {
+  .dashboard-page {
+    --road-stage-base-height: 360px;
+    --mainline-dock-height: 96px;
+    --mainline-dock-overlap: 74px;
+    padding-bottom: 18px;
+  }
+  .cockpit { min-height: 332px; flex-basis: 332px; }
+  .work-area { min-height: 268px; }
+  .todo-column { min-height: 268px; }
+  .priority-zone { height: 244px; min-height: 244px; }
+}
+
+@media (min-height: 1080px) and (min-width: 901px) {
+  .dashboard-page { --road-stage-base-height: clamp(460px, 23vw, 520px); }
+  .cockpit { min-height: 390px; flex-basis: 390px; }
 }
 
 @media (max-width: 900px) {
