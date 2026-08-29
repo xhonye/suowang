@@ -32,6 +32,11 @@ test('candidate builds require a full commit SHA and cannot mutate a published R
   assert.match(windows, /shortcut\.TargetPath/);
   assert.match(windows, /SUOWANG\.exe/);
   assert.match(windows, /PowerShell child|command shell/);
+  assert.match(windows, /\$setupProcess = Start-Process -FilePath \$setup/);
+  assert.match(windows, /\$uninstallProcess = Start-Process -FilePath \$uninstaller/);
+  assert.match(windows, /\$setupProcess\.ExitCode/);
+  assert.match(windows, /\$uninstallProcess\.ExitCode/);
+  assert.doesNotMatch(windows, /& \$setup|& \$uninstaller/);
   assert.match(read('.github/workflows/release-windows.yml'), /unins000\.exe/);
   assert.match(read('.github/workflows/release-macos.yml'), /hdiutil attach/);
   assert.match(read('.github/workflows/release-macos.yml'), /Contents\/MacOS\/SUOWANG/);

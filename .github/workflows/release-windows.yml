@@ -94,8 +94,13 @@ jobs:
             $portableExe = Join-Path $portableRoot 'SUOWANG.exe'
             Invoke-PackagedSmoke $portableExe $portableData 'portable'
 
-            & $setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/DIR=$installRoot"
-            if ($LASTEXITCODE -ne 0) { throw "Setup exited with $LASTEXITCODE" }
+            $setupProcess = Start-Process -FilePath $setup -ArgumentList @(
+              '/VERYSILENT',
+              '/SUPPRESSMSGBOXES',
+              '/NORESTART',
+              "/DIR=$installRoot"
+            ) -Wait -PassThru -WindowStyle Hidden
+            if ($setupProcess.ExitCode -ne 0) { throw "Setup exited with $($setupProcess.ExitCode)" }
             $installedExe = Join-Path $installRoot 'SUOWANG.exe'
             $uninstaller = Join-Path $installRoot 'unins000.exe'
             foreach ($path in @($installedExe, $uninstaller)) {
@@ -128,8 +133,12 @@ jobs:
             if (-not $first.WaitForExit(15000)) { throw 'SUOWANG did not exit after its window closed.' }
             if (Test-Path -LiteralPath $lock) { throw 'Instance lock remained after graceful exit.' }
 
-            & $uninstaller /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
-            if ($LASTEXITCODE -ne 0) { throw "Uninstaller exited with $LASTEXITCODE" }
+            $uninstallProcess = Start-Process -FilePath $uninstaller -ArgumentList @(
+              '/VERYSILENT',
+              '/SUPPRESSMSGBOXES',
+              '/NORESTART'
+            ) -Wait -PassThru -WindowStyle Hidden
+            if ($uninstallProcess.ExitCode -ne 0) { throw "Uninstaller exited with $($uninstallProcess.ExitCode)" }
             if (-not (Test-Path -LiteralPath (Join-Path $installedData 'suowang.db'))) { throw 'User database did not survive uninstall.' }
             node scripts/verify-upgrade-fixture.mjs $installedData
           } finally {
