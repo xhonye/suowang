@@ -130,4 +130,6 @@ test('packaged candidates require approved road assets in ASAR and decoded in th
   assert.match(windowsWorkflow, /visualAssetsLoaded/);
   assert.match(windowsWorkflow, /attempt -lt 50/);
   assert.match(windowsWorkflow, /bounded shutdown wait/);
+  assert.match(windowsWorkflow, /Get-Process -Id \$owner/);
+  assert.match(windowsWorkflow, /MainWindowHandle/);
 });

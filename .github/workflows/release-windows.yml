@@ -140,14 +140,20 @@ jobs:
             $first = Start-Process -FilePath $installedExe -PassThru -WindowStyle Hidden
             $lock = Join-Path $env:SUOWANG_DATA_DIR 'instance.lock'
             for ($i = 0; $i -lt 100 -and -not (Test-Path -LiteralPath $lock); $i++) { Start-Sleep -Milliseconds 100 }
-            if (-not (Test-Path -LiteralPath $lock)) { throw 'Desktop instance lock did not appear.' }
-            $owner = (Get-Content -LiteralPath $lock -Raw | ConvertFrom-Json).pid
-            $second = Start-Process -FilePath $installedExe -PassThru -WindowStyle Hidden
-            if (-not $second.WaitForExit(10000)) { throw 'Second desktop instance did not exit.' }
-            if ((Get-Content -LiteralPath $lock -Raw | ConvertFrom-Json).pid -ne $owner) { throw 'Second launch replaced the database owner.' }
-            if (-not $first.CloseMainWindow()) { throw 'SUOWANG window did not accept a normal close request.' }
-            if (-not $first.WaitForExit(15000)) { throw 'SUOWANG did not exit after its window closed.' }
-            if (Test-Path -LiteralPath $lock) { throw 'Instance lock remained after graceful exit.' }
+          if (-not (Test-Path -LiteralPath $lock)) { throw 'Desktop instance lock did not appear.' }
+          $owner = (Get-Content -LiteralPath $lock -Raw | ConvertFrom-Json).pid
+          $ownerProcess = Get-Process -Id $owner -ErrorAction Stop
+          $second = Start-Process -FilePath $installedExe -PassThru -WindowStyle Hidden
+          if (-not $second.WaitForExit(10000)) { throw 'Second desktop instance did not exit.' }
+          if ((Get-Content -LiteralPath $lock -Raw | ConvertFrom-Json).pid -ne $owner) { throw 'Second launch replaced the database owner.' }
+          for ($i = 0; $i -lt 100 -and -not $ownerProcess.HasExited -and $ownerProcess.MainWindowHandle -eq 0; $i++) {
+            Start-Sleep -Milliseconds 100
+            $ownerProcess.Refresh()
+          }
+          if ($ownerProcess.HasExited -or $ownerProcess.MainWindowHandle -eq 0) { throw 'SUOWANG owner process did not expose its desktop window.' }
+          if (-not $ownerProcess.CloseMainWindow()) { throw 'SUOWANG window did not accept a normal close request.' }
+          if (-not $ownerProcess.WaitForExit(15000)) { throw 'SUOWANG did not exit after its window closed.' }
+          if (Test-Path -LiteralPath $lock) { throw 'Instance lock remained after graceful exit.' }
 
             $uninstallProcess = Start-Process -FilePath $uninstaller -ArgumentList @(
               '/VERYSILENT',
