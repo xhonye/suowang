@@ -3,6 +3,7 @@
   #define AppVersion "0.1.1"
 #endif
 #define PortableName "SUOWANG-Portable-" + AppVersion
+#define AppExe "SUOWANG.exe"
 
 [Setup]
 AppId={{65D34BEA-B5D2-42E8-BF6C-44AB2B7E309A}
@@ -22,14 +23,19 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayName={#AppName}
+SetupIconFile=..\assets\brand\suowang-app-icon.ico
+UninstallDisplayIcon={app}\{#AppExe}
+CloseApplications=yes
+CloseApplicationsFilter={#AppExe}
+RestartApplications=no
 
 [Files]
 Source: "..\dist\windows\{#PortableName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autodesktop}\{#AppName}"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\scripts\start.ps1"""; WorkingDir: "{app}"; IconFilename: "{sys}\shell32.dll"; IconIndex: 18
-Name: "{group}\{#AppName}"; Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\scripts\start.ps1"""; WorkingDir: "{app}"; IconFilename: "{sys}\shell32.dll"; IconIndex: 18
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; IconFilename: "{app}\{#AppExe}"
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; IconFilename: "{app}\{#AppExe}"
 Name: "{group}\卸载 {#AppName}"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ""{app}\scripts\start.ps1"""; WorkingDir: "{app}"; Description: "立即打开所往 SUOWANG"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Description: "立即打开所往 SUOWANG"; Flags: nowait postinstall skipifsilent

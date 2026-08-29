@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import packageMetadata from '../package.json' with { type: 'json' };
 
 function parseArguments(args) {
   const values = new Map();
@@ -18,9 +19,21 @@ function sha256(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
-export function createMirrorManifest({ version, commitSha, windowsDir, macosDir, outputPath }) {
+export function createMirrorManifest({
+  version,
+  commitSha,
+  windowsDir,
+  macosDir,
+  outputPath,
+  electronVersion = packageMetadata.devDependencies.electron,
+  windowsSigningStatus = 'UNSIGNED',
+  macosSigningStatus = 'UNSIGNED',
+}) {
   if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) throw new Error('Invalid release version.');
   if (!/^[0-9a-f]{40}$/.test(commitSha)) throw new Error('Commit SHA must be 40 lowercase hexadecimal characters.');
+  if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(electronVersion)) throw new Error('Invalid Electron version.');
+  if (!/^(?:SIGNED|UNSIGNED)$/.test(windowsSigningStatus)) throw new Error('Invalid Windows signing status.');
+  if (!/^(?:SIGNED(?:\+NOTARIZED)?|UNSIGNED)$/.test(macosSigningStatus)) throw new Error('Invalid macOS signing status.');
 
   const assets = [
     [windowsDir, `SUOWANG-Setup-${version}.exe`],
@@ -39,6 +52,9 @@ export function createMirrorManifest({ version, commitSha, windowsDir, macosDir,
     'SUOWANG RELEASE MIRROR MANIFEST',
     `Version: ${version}`,
     `Source commit: ${commitSha}`,
+    `Electron: ${electronVersion}`,
+    `Windows signing: ${windowsSigningStatus}`,
+    `macOS signing: ${macosSigningStatus}`,
     `Official release: https://github.com/xhonye/suowang/releases/tag/v${version}`,
     '',
     'A mirror is valid only when every mirrored file has the same name and SHA-256 below.',
@@ -61,6 +77,9 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     windowsDir: resolve(args.get('windows-dir')),
     macosDir: resolve(args.get('macos-dir')),
     outputPath,
+    electronVersion: args.get('electron'),
+    windowsSigningStatus: args.get('windows-signing'),
+    macosSigningStatus: args.get('macos-signing'),
   });
   console.log(`mirror manifest: ${outputPath}`);
 }

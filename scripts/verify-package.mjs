@@ -1,10 +1,26 @@
 import { spawnSync } from 'node:child_process';
 
 const requiredFiles = [
+  'assets/brand/favicon.png',
+  'assets/brand/suowang-app-icon.ico',
+  'assets/brand/suowang-app-icon.svg',
+  'desktop/main.js',
+  'desktop/preload.cjs',
+  'desktop/desktop-policy.mjs',
+  'forge.config.mjs',
+  'installer/SUOWANG.iss',
+  'scripts/audit-electron-security.mjs',
+  'scripts/build-icons.mjs',
+  'scripts/build-macos-release.sh',
+  'scripts/build-windows-release.ps1',
+  'scripts/create-upgrade-fixture.mjs',
+  'scripts/install-electron-runtime.mjs',
+  'scripts/verify-upgrade-fixture.mjs',
   'scripts/launcher-config.mjs',
-  'scripts/macos-launcher.sh',
   'scripts/start.ps1',
   'src/server/app-meta.mjs',
+  'src/server/app-server.mjs',
+  'src/server/instance-lock.mjs',
   'src/server/launcher-policy.mjs',
 ];
 
