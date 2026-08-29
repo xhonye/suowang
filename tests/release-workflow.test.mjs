@@ -92,7 +92,9 @@ test('publishing verifies both candidate runs and keeps the Release private unti
   assert.match(workflow, /Build Windows candidate/);
   assert.match(workflow, /Build macOS Apple Silicon candidate/);
   assert.match(workflow, /--draft --prerelease --verify-tag/);
-  assert.match(workflow, /--draft=false --prerelease/);
+  assert.match(workflow, /select\(\.tag_name == \\"\$RELEASE_TAG\\" and \.draft == true\)/);
+  assert.match(workflow, /gh api --method PATCH "\$release_endpoint" -F draft=false -F prerelease=true/);
+  assert.doesNotMatch(workflow, /releases\/tags\/\$RELEASE_TAG/);
   assert.match(workflow, /create-mirror-manifest\.mjs/);
   assert.match(workflow, /MIRROR-MANIFEST\.txt/);
   assert.match(workflow, /ELECTRON_VERSION/);
