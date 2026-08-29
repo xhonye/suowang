@@ -9,7 +9,7 @@
 - 主线结束时逐条处理 active 事项，行迹主线复制为新主线。
 - SQLite migration、每日备份、JSON/SQLite 导出、整库安全恢复和本地头像。
 - Windows 双击入口、重复启动保护和桌面快捷方式。
-- Windows 与 macOS Apple Silicon 的 Electron `.exe` / `.app` / `.dmg` 桌面承载层；复用现有页面与服务，但在独立窗口中显示，不打开浏览器。
+- Windows 同时提供 Lite 与 Desktop 自包含承载层：Lite 使用无控制台原生启动器、包内 Node 与默认浏览器，Desktop 使用 Electron 独立窗口；macOS Apple Silicon 继续提供 Electron `.app` / `.dmg`。
 - npm CLI（`suowang`）与双击安装入口（`INSTALL.cmd`）。
 - 1920×1080、2560×1440 与 320px 响应式驾驶舱；大窗口只延展事项列表，下一步保持稳定紧凑高度。
 
@@ -36,7 +36,7 @@
 - 内部端点：`docs/integration-guide.md`
 - 启动、备份与故障处理：`docs/operator-runbook.md`
 - 发布记录：`CHANGELOG.md`
-- 双平台候选构建：`.github/workflows/release-windows.yml`、`.github/workflows/release-macos.yml`；均以完整 commit SHA 为输入，只产出短期 Actions artifact。
+- 双平台候选构建：`.github/workflows/release-windows.yml`、`.github/workflows/release-macos.yml`；均以完整 commit SHA 为输入，只产出短期 Actions artifact。Windows artifact 固定包含 Lite/Desktop 两套 Setup/Portable、统一 SHA-256 与真实入口验收。
 - 聚合公开发布：`.github/workflows/publish-release.yml`；只有同 SHA 候选与人工安装升级证据齐全后，才创建最终 Tag，在 Draft 中集齐资产并一次性公开。
 
 ## 变更闸门

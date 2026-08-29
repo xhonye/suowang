@@ -4,8 +4,9 @@
 
 ## 安装前
 
-- Windows 下载与版本号一致的 `SUOWANG-Setup-0.2.0-beta.2.exe`，或使用 Portable ZIP；安装后应直接打开独立「所往 SUOWANG」窗口，不出现 PowerShell 或浏览器地址栏。
-- Apple Silicon Mac 下载 `SUOWANG-0.2.0-beta.2-mac-arm64.dmg`，拖入 Applications。首个未签名测试版可能需要按住 Control 点击应用并选择“打开”。
+- Windows 默认下载 `SUOWANG-Lite-Setup-0.2.0-beta.3.exe`；双击桌面图标后应无终端窗口并在默认浏览器打开。偏好独立窗口时选择 `SUOWANG-Desktop-Setup-0.2.0-beta.3.exe`。
+- Apple Silicon Mac 下载 `SUOWANG-0.2.0-beta.3-mac-arm64.dmg`，拖入 Applications。未签名测试版可能需要按住 Control 点击应用并选择“打开”。
+- Windows Lite 与 Desktop 使用同一份本地数据，不要同时打开；测试反馈请写清所用文件名。
 - 如果你已经使用过所往，先在设置中选择“导出 SQLite”，把文件保存在另一设备或可信同步位置。
 - 不要发送 SQLite 数据库、备份、私人事项或个人截图来反馈问题。
 
@@ -44,7 +45,7 @@
 - 安装文件的完整文件名与来源页面；
 - 操作系统版本，以及 Windows / Apple Silicon Mac；
 - 错误窗口中的阶段、原因和下一步；
-- 是否出现独立应用窗口、是否意外出现终端或浏览器；开发者排查时再提供 `/health` 的 `version`（不要提供数据目录）；
+- 使用的是 Lite 还是 Desktop；Lite 是否无终端并在浏览器打开，Desktop 是否出现独立应用窗口；开发者排查时再提供 `/health` 的 `version`（不要提供数据目录）；
 - 启动日志中的报错文本。
 
 不要发送 `suowang.db`、`backups/`、头像、SQLite/JSON 导出或包含私人事项的截图。日志若包含个人路径，可先遮盖用户名部分。

@@ -20,9 +20,11 @@ test('mirror manifest binds all public assets to one version and source commit',
   const version = '0.2.0-beta.1';
   const commitSha = 'a'.repeat(40);
   const assets = [
-    [windowsDir, `SUOWANG-Setup-${version}.exe`],
-    [windowsDir, `SUOWANG-Portable-${version}.zip`],
-    [windowsDir, `SUOWANG-${version}-SHA256SUMS.txt`],
+    [windowsDir, `SUOWANG-Lite-Setup-${version}.exe`],
+    [windowsDir, `SUOWANG-Lite-Portable-${version}.zip`],
+    [windowsDir, `SUOWANG-Desktop-Setup-${version}.exe`],
+    [windowsDir, `SUOWANG-Desktop-Portable-${version}.zip`],
+    [windowsDir, `SUOWANG-${version}-Windows-SHA256SUMS.txt`],
     [macosDir, `SUOWANG-${version}-mac-arm64.dmg`],
     [macosDir, `SUOWANG-${version}-mac-arm64-SHA256SUMS.txt`],
   ];
@@ -47,5 +49,5 @@ test('mirror manifest binds all public assets to one version and source commit',
   assert.match(manifest, /Windows signing: SIGNED/);
   assert.match(manifest, /macOS signing: SIGNED\+NOTARIZED/);
   for (const [, name] of assets) assert.match(manifest, new RegExp(`\\*${name.replaceAll('.', '\\.').replaceAll('-', '\\-')}`));
-  assert.equal((manifest.match(/^[0-9a-f]{64} \*/gm) ?? []).length, 5);
+  assert.equal((manifest.match(/^[0-9a-f]{64} \*/gm) ?? []).length, 7);
 });

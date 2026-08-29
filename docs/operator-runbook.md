@@ -4,11 +4,13 @@
 
 ## 首次安装
 
-源码和 npm 的浏览器兼容入口只支持 Node 22 或 Node 24 LTS；Windows Setup/Portable 与 macOS `.dmg` 是自包含 Electron 桌面应用，不需要用户安装 Node。
+源码和 npm 的浏览器兼容入口只支持 Node 22 或 Node 24 LTS；Windows Lite、Windows Desktop 与 macOS `.dmg` 都是自包含发行物，不需要用户安装 Node。
 
 ### GitHub Release / 双击入口
 
-Windows 从 Release 下载 `SUOWANG-Setup-*.exe` 后双击安装，再从桌面图标打开独立应用窗口。Portable ZIP 解压后双击 `SUOWANG.exe`。两种方式共用同一个 Forge packaged app，不打开浏览器，不读取或覆盖已有数据目录。
+Windows 普通用户下载 `SUOWANG-Lite-Setup-*.exe`，桌面快捷方式直指 `SUOWANG-Lite.exe`。这个原生 GUI 启动器以隐藏窗口方式调用系统 PowerShell，再使用包内已校验的 Node 启动本地服务并在默认浏览器打开；用户不会看到命令窗口，也不需要安装 Node。需要独立窗口时可选择 `SUOWANG-Desktop-Setup-*.exe`，快捷方式直指 Forge packaged `SUOWANG.exe`。
+
+两版安装身份、目录和快捷方式互不覆盖，但共用同一个业务数据目录与实例锁，不得同时运行。Portable ZIP 解压后分别双击 `SUOWANG-Lite.exe` 或 `SUOWANG.exe`；不要在压缩包内直接运行。
 
 ### macOS Apple Silicon / 双击入口
 
@@ -52,7 +54,7 @@ npm run install-shortcut
 
 Windows 旧版若已经存在 `D:/5Data/suowang/suowang.db`，会继续使用旧目录且不自动搬迁。若旧目录与 `%LOCALAPPDATA%/SUOWANG` 同时存在数据库，启动会停止并列出两个路径；设置 `SUOWANG_DATA_DIR` 明确选择后再启动，禁止手工合并运行中的数据库。
 
-Electron 桌面模式使用动态 loopback 端口且不向用户显示地址；源码/npm 浏览器兼容入口默认仍为 `http://127.0.0.1:2037/`。
+Electron 桌面模式使用动态 loopback 端口且不向用户显示地址；Windows Lite 与源码/npm 浏览器兼容入口默认使用 `http://127.0.0.1:2037/`。
 
 手机访问使用 `suowang access tailscale` 启用，使用 `suowang access local` 关闭。设置保存在数据目录的 `access.json`，不进入仓库；环境变量可用于临时覆盖。再次双击桌面入口时，启动器会确认现有进程确实是 SUOWANG 后自动切换监听模式。远程模式不绑定 `0.0.0.0`，手机必须登录同一 Tailnet，并受 Tailscale ACL 与 Windows 防火墙共同约束。
 
@@ -89,7 +91,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 
 按下面顺序检查：
 
-1. 桌面应用先查看原生错误提示与数据目录 `logs/`；源码/npx 入口再确认 `node --version` 的主版本为 22 或 24，并检查 `/health`。
+1. Windows Lite 先查看启动错误提示和数据目录 `logs/`；Desktop 先查看原生错误提示；只有源码/npm 入口需要确认 `node --version` 的主版本为 22 或 24。
 2. 源码浏览器模式的 2037 端口是否被其他程序占用；桌面动态端口不依赖 2037。
 3. 数据目录是否可写，数据库或备份盘是否有空间。
 4. macOS 启动失败时检查 `~/Library/Application Support/SUOWANG/logs/latest-stderr.log`。
@@ -112,4 +114,4 @@ git diff --check
 git status --short
 ```
 
-`release:check` 会运行单元、浏览器、动态端口临时 smoke、npm tarball 文件清单和公开表面审计；`verify:desktop` 另行运行 Electron E2E、Forge package、安全扫描和真实 packaged smoke。候选工作流只接受完整 commit SHA，在目标系统重建原生依赖并上传不可变 Actions artifact。完成 Windows/macOS 人工安装升级验收后，聚合发布工作流才允许用两个候选 run ID 和 `INSTALL_VERIFIED` 创建最终 Tag，生成绑定源 commit、Electron 版本、签名状态与全部候选文件 SHA-256 的镜像清单，并在 Draft Release 内集齐资产后一次性公开。不得对已公开版本覆盖资产。所有测试必须显式使用临时数据目录与非默认端口；确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/事项或视觉探索归档。
+`release:check` 会运行单元、浏览器、动态端口临时 smoke、npm tarball 文件清单和公开表面审计；`verify:desktop` 另行运行 Electron E2E、Forge package、安全扫描和真实 packaged smoke。Windows 候选同时构建 Lite/Desktop 的 Setup 与 Portable，验证 Lite GUI 子系统、隐藏命令壳、默认浏览器服务、视觉资产、两个真实快捷方式、旧库升级、卸载后数据保留，以及 Desktop 的真实 renderer 和单实例。候选工作流只接受完整 commit SHA，并上传不可变 Actions artifact。完成 Windows/macOS 安装升级验收后，聚合发布工作流才允许用两个候选 run ID 和 `INSTALL_VERIFIED` 创建最终 Tag，生成绑定源 commit、Electron 版本、签名状态与全部候选文件 SHA-256 的镜像清单，并在 Draft Release 内集齐资产后一次性公开。不得对已公开版本覆盖资产。所有测试必须显式使用临时数据目录与非默认端口；确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/事项或视觉探索归档。

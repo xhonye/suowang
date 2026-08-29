@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { APP_VERSION } from '../src/server/app-meta.mjs';
-import { decideLauncherAction } from '../src/server/launcher-policy.mjs';
+import { decideLauncherAction, parseLauncherCliInput } from '../src/server/launcher-policy.mjs';
 
 const expected = {
   expectedVersion: APP_VERSION,
@@ -69,4 +69,10 @@ test('launcher policy starts through restart action when the port is free', () =
     ...expected,
     listener: { occupied: false, accessModeMatches: false },
   }), { action: 'restart', reason: 'no_listener', stopExisting: false });
+});
+
+test('launcher policy accepts Base64 input without Windows native argument quoting', () => {
+  const fixture = { expectedVersion: APP_VERSION, listener: { occupied: false } };
+  const encoded = Buffer.from(JSON.stringify(fixture), 'utf8').toString('base64');
+  assert.deepEqual(parseLauncherCliInput(`--base64=${encoded}`), fixture);
 });

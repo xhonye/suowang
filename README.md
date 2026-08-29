@@ -10,19 +10,21 @@
 
 ## Windows 30 秒开始
 
-`0.2.0-beta.2` 是当前公开 Beta，可从 [GitHub Release](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.2) 下载。`0.2.0-beta.1` 的桌面包缺少道路视觉资产，请勿继续下载或镜像。
+`0.2.0-beta.3` 是当前公开 Beta，可从 [GitHub Release](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.3) 下载。`0.2.0-beta.1` 的桌面包缺少道路视觉资产，请勿继续下载或镜像。
 
-### 推荐：安装版
+### 推荐：轻量版
 
-1. 下载 `SUOWANG-Setup-0.2.0-beta.2.exe`。
+1. 下载 `SUOWANG-Lite-Setup-0.2.0-beta.3.exe`。
 2. 双击安装。
-3. 从桌面的「所往 SUOWANG」图标打开。
+3. 从桌面的「所往 SUOWANG（轻量版）」图标打开。
 
-安装包自带完整桌面运行环境，**不需要 Node.js、npm、命令行或浏览器窗口**。双击后直接打开独立的「所往 SUOWANG」应用。Windows 首次运行未签名测试版时，可能会要求你确认来源。
+轻量版自带运行环境，**不需要 Node.js、npm 或命令行**。双击后不会弹出终端，会在你的默认浏览器中打开所往；程序和数据仍只在本机运行。Windows 首次运行未签名测试版时，可能会要求你确认来源。
 
-### 备用：免安装版
+### 可选：独立桌面窗口
 
-下载 `SUOWANG-Portable-0.2.0-beta.2.zip`，解压后双击 `SUOWANG.exe`。不要直接在压缩包内运行。
+如果你更喜欢没有地址栏的独立应用窗口，下载 `SUOWANG-Desktop-Setup-0.2.0-beta.3.exe`。它内置 Electron/Chromium，因此体积明显更大，但功能与数据模型相同。
+
+两版都有 Portable ZIP：解压后分别双击 `SUOWANG-Lite.exe` 或 `SUOWANG.exe`；不要直接在压缩包内运行。Lite 与 Desktop 共享同一个 SQLite 数据目录，**不要同时打开两版**，实例锁会拒绝第二个入口以保护数据。
 
 ## 数据只在本机
 
@@ -69,7 +71,7 @@ Windows 旧版若已经存在 `D:/5Data/suowang/suowang.db`，会继续使用这
 
 ## macOS（实验支持）
 
-仅支持 Apple Silicon（M1 及以后）。下载 `SUOWANG-0.2.0-beta.2-mac-arm64.dmg`，打开后把「所往 SUOWANG」拖入 Applications，再双击打开独立应用窗口。
+仅支持 Apple Silicon（M1 及以后）。下载 `SUOWANG-0.2.0-beta.3-mac-arm64.dmg`，打开后把「所往 SUOWANG」拖入 Applications，再双击打开独立应用窗口。
 
 首个公开 Beta 未签名、未公证。首次打开可能需要按住 Control 点击应用，选择“打开”并再次确认。暂不支持 Intel Mac、App Store 安装或自动更新。
 
@@ -94,7 +96,7 @@ npm install
 npm start
 ```
 
-浏览器打开 `http://127.0.0.1:2037/`。普通用户应优先使用自带 Electron 运行环境的桌面安装包。
+浏览器打开 `http://127.0.0.1:2037/`。普通 Windows 用户应优先使用自包含 Lite 安装包；需要独立窗口时再选择 Desktop 安装包。
 
 开发桌面壳可运行 `npm run desktop:start`；完整桌面门禁为 `npm run test:desktop` 与 `npm run verify:desktop`。浏览器模式和桌面模式共享同一服务、migration、数据库路径与页面。
 
@@ -103,8 +105,8 @@ npm start
 当前没有发布 npm registry 包；普通用户请使用 GitHub Release 的桌面安装包。未来只有在 `npm view` 能查到对应版本后，才使用：
 
 ```powershell
-npm view suowang@0.2.0-beta.2 version
-npm install --ignore-scripts --global suowang@0.2.0-beta.2
+npm view suowang@0.2.0-beta.3 version
+npm install --ignore-scripts --global suowang@0.2.0-beta.3
 suowang install-shortcut
 ```
 

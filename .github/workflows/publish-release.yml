@@ -109,9 +109,11 @@ jobs:
         run: |
           set -euo pipefail
           windows_files=(
-            "SUOWANG-Portable-${PACKAGE_VERSION}.zip"
-            "SUOWANG-Setup-${PACKAGE_VERSION}.exe"
-            "SUOWANG-${PACKAGE_VERSION}-SHA256SUMS.txt"
+            "SUOWANG-Lite-Portable-${PACKAGE_VERSION}.zip"
+            "SUOWANG-Lite-Setup-${PACKAGE_VERSION}.exe"
+            "SUOWANG-Desktop-Portable-${PACKAGE_VERSION}.zip"
+            "SUOWANG-Desktop-Setup-${PACKAGE_VERSION}.exe"
+            "SUOWANG-${PACKAGE_VERSION}-Windows-SHA256SUMS.txt"
           )
           macos_files=(
             "SUOWANG-${PACKAGE_VERSION}-mac-arm64.dmg"
@@ -121,8 +123,8 @@ jobs:
           for file in "${macos_files[@]}"; do test -f "candidates/macos/$file"; done
           test -f candidates/windows/SIGNING-STATUS.txt
           test -f candidates/macos/SIGNING-STATUS.txt
-          test "$(find candidates -type f | wc -l | tr -d ' ')" = 7
-          (cd candidates/windows && sha256sum --check "SUOWANG-${PACKAGE_VERSION}-SHA256SUMS.txt")
+          test "$(find candidates -type f | wc -l | tr -d ' ')" = 9
+          (cd candidates/windows && sha256sum --check "SUOWANG-${PACKAGE_VERSION}-Windows-SHA256SUMS.txt")
           (cd candidates/macos && sha256sum --check "SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt")
 
           windows_signing="$(tr -d '\r\n' < candidates/windows/SIGNING-STATUS.txt)"
@@ -162,9 +164,11 @@ jobs:
           git tag --annotate "$RELEASE_TAG" "$CANDIDATE_SHA" --message "SUOWANG $PACKAGE_VERSION"
           git push origin "refs/tags/$RELEASE_TAG"
           gh release create "$RELEASE_TAG" \
-            "candidates/windows/SUOWANG-Portable-${PACKAGE_VERSION}.zip" \
-            "candidates/windows/SUOWANG-Setup-${PACKAGE_VERSION}.exe" \
-            "candidates/windows/SUOWANG-${PACKAGE_VERSION}-SHA256SUMS.txt" \
+            "candidates/windows/SUOWANG-Lite-Portable-${PACKAGE_VERSION}.zip" \
+            "candidates/windows/SUOWANG-Lite-Setup-${PACKAGE_VERSION}.exe" \
+            "candidates/windows/SUOWANG-Desktop-Portable-${PACKAGE_VERSION}.zip" \
+            "candidates/windows/SUOWANG-Desktop-Setup-${PACKAGE_VERSION}.exe" \
+            "candidates/windows/SUOWANG-${PACKAGE_VERSION}-Windows-SHA256SUMS.txt" \
             "candidates/macos/SUOWANG-${PACKAGE_VERSION}-mac-arm64.dmg" \
             "candidates/macos/SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt" \
             "candidates/SUOWANG-${PACKAGE_VERSION}-MIRROR-MANIFEST.txt" \
@@ -189,12 +193,14 @@ jobs:
           test "$(gh api "$release_endpoint" --jq .draft)" = true
           actual="$(gh api "$release_endpoint" --jq '[.assets[].name] | sort | join("\n")')"
           expected="$(printf '%s\n' \
-            "SUOWANG-${PACKAGE_VERSION}-SHA256SUMS.txt" \
+            "SUOWANG-${PACKAGE_VERSION}-Windows-SHA256SUMS.txt" \
             "SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt" \
             "SUOWANG-${PACKAGE_VERSION}-mac-arm64.dmg" \
             "SUOWANG-${PACKAGE_VERSION}-MIRROR-MANIFEST.txt" \
-            "SUOWANG-Portable-${PACKAGE_VERSION}.zip" \
-            "SUOWANG-Setup-${PACKAGE_VERSION}.exe" | sort)"
+            "SUOWANG-Lite-Portable-${PACKAGE_VERSION}.zip" \
+            "SUOWANG-Lite-Setup-${PACKAGE_VERSION}.exe" \
+            "SUOWANG-Desktop-Portable-${PACKAGE_VERSION}.zip" \
+            "SUOWANG-Desktop-Setup-${PACKAGE_VERSION}.exe" | sort)"
           test "$actual" = "$expected"
           printf 'Install evidence: %s\n' "$INSTALL_EVIDENCE" >> "$GITHUB_STEP_SUMMARY"
           gh api --method PATCH "$release_endpoint" -F draft=false -F prerelease=true >/dev/null

@@ -36,9 +36,11 @@ export function createMirrorManifest({
   if (!/^(?:SIGNED(?:\+NOTARIZED)?|UNSIGNED)$/.test(macosSigningStatus)) throw new Error('Invalid macOS signing status.');
 
   const assets = [
-    [windowsDir, `SUOWANG-Setup-${version}.exe`],
-    [windowsDir, `SUOWANG-Portable-${version}.zip`],
-    [windowsDir, `SUOWANG-${version}-SHA256SUMS.txt`],
+    [windowsDir, `SUOWANG-Lite-Setup-${version}.exe`],
+    [windowsDir, `SUOWANG-Lite-Portable-${version}.zip`],
+    [windowsDir, `SUOWANG-Desktop-Setup-${version}.exe`],
+    [windowsDir, `SUOWANG-Desktop-Portable-${version}.zip`],
+    [windowsDir, `SUOWANG-${version}-Windows-SHA256SUMS.txt`],
     [macosDir, `SUOWANG-${version}-mac-arm64.dmg`],
     [macosDir, `SUOWANG-${version}-mac-arm64-SHA256SUMS.txt`],
   ];

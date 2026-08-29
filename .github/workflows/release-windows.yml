@@ -46,28 +46,50 @@ jobs:
         shell: pwsh
         run: choco install innosetup --no-progress -y
 
-      - name: Run release gates and build Windows desktop candidates
+      - name: Run release gates and build Windows Lite and Desktop candidates
         run: npm run release:windows
+
+      - name: Verify Lite Portable, Setup, shortcut, upgrade and data retention
+        shell: pwsh
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/verify-windows-lite-package.ps1 -VerifyShortcut
 
       - name: Verify assets, real entry points, upgrade and data retention
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $version = $env:PACKAGE_VERSION
-          $portableRoot = Join-Path $PWD "dist/windows/SUOWANG-Portable-$version"
-          $portableZip = Join-Path $PWD "dist/windows/SUOWANG-Portable-$version.zip"
-          $setup = Join-Path $PWD "dist/windows/SUOWANG-Setup-$version.exe"
-          $checksums = Join-Path $PWD "dist/windows/SUOWANG-$version-SHA256SUMS.txt"
+          $desktopPortableRoot = Join-Path $PWD "dist/windows/SUOWANG-Desktop-Portable-$version"
+          $desktopPortableZip = Join-Path $PWD "dist/windows/SUOWANG-Desktop-Portable-$version.zip"
+          $desktopSetup = Join-Path $PWD "dist/windows/SUOWANG-Desktop-Setup-$version.exe"
+          $litePortableRoot = Join-Path $PWD "dist/windows/SUOWANG-Lite-Portable-$version"
+          $litePortableZip = Join-Path $PWD "dist/windows/SUOWANG-Lite-Portable-$version.zip"
+          $liteSetup = Join-Path $PWD "dist/windows/SUOWANG-Lite-Setup-$version.exe"
+          $checksums = Join-Path $PWD "dist/windows/SUOWANG-$version-Windows-SHA256SUMS.txt"
           $signingStatus = Join-Path $PWD 'dist/windows/SIGNING-STATUS.txt'
-          foreach ($path in @($portableRoot, $portableZip, $setup, $checksums, $signingStatus)) {
+          foreach ($path in @(
+            $desktopPortableRoot,
+            $desktopPortableZip,
+            $desktopSetup,
+            $litePortableRoot,
+            $litePortableZip,
+            $liteSetup,
+            $checksums,
+            $signingStatus
+          )) {
             if (-not (Test-Path -LiteralPath $path)) { throw "Missing release candidate: $path" }
           }
           foreach ($forbidden in @('runtime/node.exe', 'scripts/start.ps1', 'SUOWANG.cmd')) {
-            if (Test-Path -LiteralPath (Join-Path $portableRoot $forbidden)) { throw "Legacy launcher leaked into Portable: $forbidden" }
+            if (Test-Path -LiteralPath (Join-Path $desktopPortableRoot $forbidden)) { throw "Legacy launcher leaked into Desktop Portable: $forbidden" }
+          }
+          foreach ($required in @('SUOWANG-Lite.exe', 'runtime/node.exe', 'scripts/start.ps1', 'scripts/serve.mjs')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $litePortableRoot $required) -PathType Leaf)) { throw "Lite Portable is missing: $required" }
+          }
+          foreach ($forbidden in @('SUOWANG.exe', 'resources/app.asar', 'chrome_100_percent.pak')) {
+            if (Test-Path -LiteralPath (Join-Path $litePortableRoot $forbidden)) { throw "Desktop shell leaked into Lite Portable: $forbidden" }
           }
 
           $testRoot = Join-Path $env:RUNNER_TEMP "suowang-desktop-smoke-$PID"
-          $installRoot = Join-Path $testRoot 'installed'
+          $desktopInstallRoot = Join-Path $testRoot 'desktop-installed'
           $portableData = Join-Path $testRoot 'portable-data'
           $installedData = Join-Path $testRoot 'installed-data'
           $shortcutData = Join-Path $testRoot 'shortcut-data'
@@ -108,23 +130,23 @@ jobs:
           }
 
           try {
-            $portableExe = Join-Path $portableRoot 'SUOWANG.exe'
+            $portableExe = Join-Path $desktopPortableRoot 'SUOWANG.exe'
             Invoke-PackagedSmoke $portableExe $portableData 'portable'
 
-            $setupProcess = Start-Process -FilePath $setup -ArgumentList @(
+            $setupProcess = Start-Process -FilePath $desktopSetup -ArgumentList @(
               '/VERYSILENT',
               '/SUPPRESSMSGBOXES',
               '/NORESTART',
-              "/DIR=$installRoot"
+              "/DIR=$desktopInstallRoot"
             ) -Wait -PassThru -WindowStyle Hidden
             if ($setupProcess.ExitCode -ne 0) { throw "Setup exited with $($setupProcess.ExitCode)" }
-            $installedExe = Join-Path $installRoot 'SUOWANG.exe'
-            $uninstaller = Join-Path $installRoot 'unins000.exe'
+            $installedExe = Join-Path $desktopInstallRoot 'SUOWANG.exe'
+            $uninstaller = Join-Path $desktopInstallRoot 'unins000.exe'
             foreach ($path in @($installedExe, $uninstaller)) {
               if (-not (Test-Path -LiteralPath $path)) { throw "Installed file missing: $path" }
             }
             foreach ($forbidden in @('runtime/node.exe', 'scripts/start.ps1', 'SUOWANG.cmd')) {
-              if (Test-Path -LiteralPath (Join-Path $installRoot $forbidden)) { throw "Legacy launcher installed: $forbidden" }
+              if (Test-Path -LiteralPath (Join-Path $desktopInstallRoot $forbidden)) { throw "Legacy launcher installed: $forbidden" }
             }
             $desktop = [Environment]::GetFolderPath('Desktop')
             $shortcutPath = Join-Path $desktop '所往 SUOWANG.lnk'
@@ -177,9 +199,11 @@ jobs:
         with:
           name: SUOWANG-Windows-${{ env.PACKAGE_VERSION }}-${{ env.CANDIDATE_SHORT_SHA }}
           path: |
-            dist/windows/SUOWANG-Portable-${{ env.PACKAGE_VERSION }}.zip
-            dist/windows/SUOWANG-Setup-${{ env.PACKAGE_VERSION }}.exe
-            dist/windows/SUOWANG-${{ env.PACKAGE_VERSION }}-SHA256SUMS.txt
+            dist/windows/SUOWANG-Lite-Portable-${{ env.PACKAGE_VERSION }}.zip
+            dist/windows/SUOWANG-Lite-Setup-${{ env.PACKAGE_VERSION }}.exe
+            dist/windows/SUOWANG-Desktop-Portable-${{ env.PACKAGE_VERSION }}.zip
+            dist/windows/SUOWANG-Desktop-Setup-${{ env.PACKAGE_VERSION }}.exe
+            dist/windows/SUOWANG-${{ env.PACKAGE_VERSION }}-Windows-SHA256SUMS.txt
             dist/windows/SIGNING-STATUS.txt
           if-no-files-found: error
           retention-days: 14

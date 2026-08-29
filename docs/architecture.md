@@ -82,9 +82,9 @@ Node 单元测试、Playwright 浏览器测试和临时 smoke 都显式使用仓
 
 仓库级 `.npmrc` 禁用依赖安装生命周期脚本，避免 `better-sqlite3` 在已有锁定跨平台预编译文件时仍隐式调用 `node-gyp`。因此 CI 必须显式执行 Playwright Chromium 安装和发行工具准备；`npm ci` 后的单元与 health smoke 会验证当前平台原生 SQLite 模块确实可加载。
 
-常规 CI 在 Linux、Windows 和 macOS 上分别用 Node 22/24 运行单元门禁与动态端口临时 smoke，在 Linux 执行浏览器测试，并在 Windows/macOS 执行 Electron 单元与开发态 E2E。Windows 与 macOS 候选工作流只接受完整 commit SHA：Windows 验证 Portable、静默安装、直接 EXE 启动、无命令壳、单实例、受控旧 schema 升级、卸载和数据保留；macOS 挂载最终 DMG、复制 `.app`、执行 packaged smoke、受控升级并检查无残留进程。候选只保存为短期 Actions artifact，不创建 Tag 或公开 Release。
+常规 CI 在 Linux、Windows 和 macOS 上分别用 Node 22/24 运行单元门禁与动态端口临时 smoke，在 Linux 执行浏览器测试，并在 Windows/macOS 执行 Electron 单元与开发态 E2E。Windows 与 macOS 候选工作流只接受完整 commit SHA：Windows 同时验证 Lite/Desktop 的 Portable、静默安装、直接 EXE/快捷方式启动、无可见命令壳、视觉资产、单实例、受控旧 schema 升级、卸载和数据保留；macOS 挂载最终 DMG、复制 `.app`、执行 packaged smoke、受控升级并检查无残留进程。候选只保存为短期 Actions artifact，不创建 Tag 或公开 Release。
 
-人工完成 Windows/macOS 真实安装、升级与未签名打开验收后，聚合发布工作流核对两个成功候选运行都来自同一 SHA，下载精确 artifact 并复验 SHA-256。它读取候选的真实签名状态，生成绑定版本、完整源 commit、Electron 版本、双平台签名状态和五个候选文件 SHA-256 的镜像清单，随后创建不可移动的 annotated Tag，在 Draft Release 中只上传五项公开候选资产和镜像清单，核对名称齐全后才公开为 prerelease。任何既有 Tag 或 Release 都使流程失败，不允许 `--clobber`。
+人工完成 Windows/macOS 安装、升级与未签名打开验收后，聚合发布工作流核对两个成功候选运行都来自同一 SHA，下载精确 artifact 并复验 SHA-256。它读取候选的真实签名状态，生成绑定版本、完整源 commit、Electron 版本、双平台签名状态和七个候选文件 SHA-256 的镜像清单，随后创建不可移动的 annotated Tag，在 Draft Release 中上传四个 Windows 发行物、两个 macOS 文件及镜像清单，核对名称齐全后才公开为 prerelease。任何既有 Tag 或 Release 都使流程失败，不允许 `--clobber`。
 
 ## 取舍
 

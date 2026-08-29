@@ -65,7 +65,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 
 ## 数据与技术合同
 
-- 源码入口只承诺 Node 22 与 Node 24 LTS；普通用户桌面包固定使用 Electron `44.0.0` 内含的 Node `24.18.1`。核心产品继续使用 Vanilla JS、CSS、Node HTTP 与 `better-sqlite3`，不引入前端框架、ORM 或 Tauri。Electron 只承担独立窗口、单实例、原生文件对话框和系统链接等桌面集成；不得复制业务服务、改写 SQLite 真源或把 HTTP API 全部改成 IPC。
+- 源码入口只承诺 Node 22 与 Node 24 LTS。Windows 普通用户默认使用 Lite 自包含包：固定内置经 nodejs.org SHA-256 校验的 Node `24.15.0`，由 Windows GUI 子系统启动器隐藏调用 PowerShell、启动本地服务并打开默认浏览器，不得出现命令窗口；需要独立窗口的用户可选择 Desktop 自包含包，它固定使用 Electron `44.0.0` 内含的 Node `24.18.1`。两种 Windows 壳共享同一 Node HTTP 服务、SQLite、数据目录和实例锁，但使用不同安装身份、目录与快捷方式，不能同时打开。核心产品继续使用 Vanilla JS、CSS、Node HTTP 与 `better-sqlite3`，不引入前端框架、ORM 或 Tauri。Electron 只承担独立窗口、单实例、原生文件对话框和系统链接等桌面集成；不得复制业务服务、改写 SQLite 真源或把 HTTP API 全部改成 IPC。
 - 仓库安装通过 `.npmrc` 禁用依赖生命周期脚本，使用锁定的 `better-sqlite3` 跨平台预编译文件；Playwright 浏览器与发行工具必须由 CI 显式安装，不依赖隐式 postinstall。
 - 浏览器 UI 只通过本地 JSON API 读写；SQLite 是业务数据唯一真源，`localStorage` 不得保存主线、事项或指针。
 - 正式库首次启动只有固定三模式和设置，不注入 demo 主线、事项或假统计。
@@ -117,7 +117,8 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - `src/app.js`：页面渲染与交互编排。
 - `src/styles.css`：桌面第一屏与窄屏视觉系统。
 - `scripts/start.ps1`、`SUOWANG.cmd`：仅供源码/npm 的浏览器兼容入口，不得作为普通用户安装包快捷方式目标。
-- `forge.config.mjs`、`scripts/build-windows-release.ps1`、`scripts/build-macos-release.sh`：从同一 Forge packaged app 构建 Windows Portable/Setup 与 macOS arm64 DMG，并执行安全与 packaged smoke 门禁。
+- `forge.config.mjs`、`scripts/build-windows-release.ps1`、`scripts/build-macos-release.sh`：Windows 同时构建 Lite/Desktop 两套 Portable/Setup，macOS 从 Forge packaged app 构建 arm64 DMG，并执行安全与 packaged smoke 门禁。
+- `windows-lite/SUOWANGLiteLauncher.cs`、`installer/SUOWANG-Lite.iss`：无控制台 Lite 原生入口与独立安装身份；只能隐藏启动既有浏览器兼容服务，不能复制业务逻辑、嵌入远程页面或绕开实例锁。
 - `scripts/install-shortcut.ps1`：安装桌面快捷方式。
 - `INSTALL.cmd`：Release 解压后的 Windows 双击安装入口。
 - `scripts/cli.mjs`：npm 全局命令 `suowang` 的启动与快捷方式入口。
@@ -127,7 +128,7 @@ V0.1 桌面优先，目标分辨率为 2560×1440，1920×1080 下核心驾驶�
 - `docs/handoff.md`：当前已实现边界与后续维护入口。
 - `docs/visual-final-preview.html`：正式页面当前 2172×724 分层视觉的静态交互基准；图片基座、透明箭头与生成溯源见 `assets/milestones/2026-08-23-arrow-pipeline/`。
 - `.github/workflows/ci.yml`：Linux、Windows、macOS 的 Node 22/24 单元与临时 smoke 门禁、Linux Playwright 和 npm 包清单审计。
-- `.github/workflows/release-windows.yml`、`.github/workflows/release-macos.yml`：只接受完整 commit SHA，构建并验证不可变候选资产，不依赖最终 Tag，也不修改 GitHub Release。
+- `.github/workflows/release-windows.yml`、`.github/workflows/release-macos.yml`：只接受完整 commit SHA，构建并验证不可变候选资产，不依赖最终 Tag，也不修改 GitHub Release；Windows 候选必须同时覆盖 Lite/Desktop 的 Setup 与 Portable、快捷方式、升级和数据保留。
 - `.github/workflows/publish-release.yml`：在人工安装升级验收后核对同 SHA 的双平台候选运行和校验和，创建不可移动 Tag，把完整资产放入 Draft Release，核齐后一次性公开；禁止覆盖既有 Tag、Release 或资产。
 
 在仓库根目录运行：

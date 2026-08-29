@@ -12,10 +12,11 @@ function Get-SuowangLauncherConfig([string]$nodePath) {
     return ($configJson | ConvertFrom-Json)
 }
 
-function Get-LauncherDecision([string]$nodePath, [hashtable]$input) {
+function Get-LauncherDecision([string]$nodePath, [hashtable]$policyInput) {
     $policyPath = Join-Path $projectRoot 'src/server/launcher-policy.mjs'
-    $inputJson = $input | ConvertTo-Json -Depth 8 -Compress
-    $decisionJson = & $nodePath $policyPath $inputJson
+    $inputJson = $policyInput | ConvertTo-Json -Depth 8 -Compress
+    $inputBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($inputJson))
+    $decisionJson = & $nodePath $policyPath "--base64=$inputBase64"
     if ($LASTEXITCODE -ne 0 -or -not $decisionJson) {
         throw '启动安全策略没有返回有效结果。请重新安装所往。'
     }

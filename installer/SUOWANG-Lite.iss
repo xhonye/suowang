@@ -1,24 +1,24 @@
-#define AppName "所往 SUOWANG"
+#define AppName "所往 SUOWANG（轻量版）"
 #ifndef AppVersion
-  #define AppVersion "0.1.1"
+  #define AppVersion "0.2.0-beta.3"
 #endif
-#define PortableName "SUOWANG-Desktop-Portable-" + AppVersion
-#define AppExe "SUOWANG.exe"
+#define PortableName "SUOWANG-Lite-Portable-" + AppVersion
+#define AppExe "SUOWANG-Lite.exe"
 
 [Setup]
-AppId={{65D34BEA-B5D2-42E8-BF6C-44AB2B7E309A}
+AppId={{43D37C7B-85BD-4690-B31A-9F468B06BE90}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher=SUOWANG
 AppPublisherURL=https://github.com/xhonye/suowang
-DefaultDirName={localappdata}\Programs\SUOWANG
+DefaultDirName={localappdata}\Programs\SUOWANG Lite
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=..\dist\windows
-OutputBaseFilename=SUOWANG-Desktop-Setup-{#AppVersion}
+OutputBaseFilename=SUOWANG-Lite-Setup-{#AppVersion}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -38,4 +38,4 @@ Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Ic
 Name: "{group}\卸载 {#AppName}"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Description: "立即打开所往 SUOWANG"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Description: "立即在浏览器中打开所往"; Flags: nowait postinstall skipifsilent

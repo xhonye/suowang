@@ -46,11 +46,18 @@ export function assertLauncherDecision(decision) {
   return decision;
 }
 
+export function parseLauncherCliInput(argument = '') {
+  const text = argument.startsWith('--base64=')
+    ? Buffer.from(argument.slice('--base64='.length), 'base64').toString('utf8')
+    : argument;
+  return JSON.parse(text || '{}');
+}
+
 const isDirectRun = process.argv[1]
   && fileURLToPath(import.meta.url).toLowerCase() === resolve(process.argv[1]).toLowerCase();
 if (isDirectRun) {
   try {
-    const input = JSON.parse(process.argv[2] ?? '{}');
+    const input = parseLauncherCliInput(process.argv[2] ?? '');
     process.stdout.write(`${JSON.stringify(assertLauncherDecision(decideLauncherAction(input)))}\n`);
   } catch (error) {
     process.stderr.write(`${error.message}\n`);

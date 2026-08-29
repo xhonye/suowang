@@ -30,14 +30,17 @@ test('candidate builds require a full commit SHA and cannot mutate a published R
   }
   const windows = read('.github/workflows/release-windows.yml');
   assert.match(windows, /SUOWANG\.exe/);
+  assert.match(windows, /SUOWANG-Lite\.exe/);
   assert.match(windows, /PowerShell child|command shell/);
   assert.match(windows, /Invoke-PackagedSmoke \$shortcutPath \$shortcutData 'desktop-shortcut'/);
   assert.match(windows, /\$result\.version -ne \$version/);
-  assert.match(windows, /\$setupProcess = Start-Process -FilePath \$setup/);
+  assert.match(windows, /\$setupProcess = Start-Process -FilePath \$desktopSetup/);
+  assert.match(windows, /verify-windows-lite-package\.ps1 -VerifyShortcut/);
+  assert.match(read('scripts/verify-windows-lite-package.ps1'), /\$setupProcess = Start-Process -FilePath \$setupPath/);
   assert.match(windows, /\$uninstallProcess = Start-Process -FilePath \$uninstaller/);
   assert.match(windows, /\$setupProcess\.ExitCode/);
   assert.match(windows, /\$uninstallProcess\.ExitCode/);
-  assert.doesNotMatch(windows, /& \$setup|& \$uninstaller/);
+  assert.doesNotMatch(windows, /& \$desktopSetup|& \$uninstaller/);
   assert.match(read('.github/workflows/release-windows.yml'), /unins000\.exe/);
   assert.match(read('.github/workflows/release-macos.yml'), /hdiutil attach/);
   assert.match(read('.github/workflows/release-macos.yml'), /Contents\/MacOS\/SUOWANG/);
@@ -80,7 +83,11 @@ test('Windows browser cleanup tolerates transient filesystem locks', () => {
 });
 
 test('source launchers enforce the documented Node 22 or 24 LTS contract', () => {
-  assert.match(read('scripts/start.ps1'), /\$nodeMajor -notin @\(22, 24\)/);
+  const launcher = read('scripts/start.ps1');
+  assert.match(launcher, /\$nodeMajor -notin @\(22, 24\)/);
+  assert.match(launcher, /\[hashtable\]\$policyInput/);
+  assert.doesNotMatch(launcher, /\[hashtable\]\$input/);
+  assert.match(launcher, /ToBase64String/);
   const installer = read('INSTALL.cmd');
   assert.match(installer, /"%NODE_MAJOR%"=="22"/);
   assert.match(installer, /"%NODE_MAJOR%"=="24"/);
@@ -114,6 +121,22 @@ test('desktop packaging preserves stable application identities and direct execu
   assert.match(installer, /AppId=\{\{65D34BEA-B5D2-42E8-BF6C-44AB2B7E309A\}/);
   assert.match(installer, /Filename: "\{app\}\\\{#AppExe\}"/);
   assert.doesNotMatch(installer, /start\.ps1|SUOWANG\.cmd/);
+});
+
+test('Lite packaging uses a distinct installer identity and a no-console native entry point', () => {
+  const installer = read('installer/SUOWANG-Lite.iss');
+  const launcher = read('windows-lite/SUOWANGLiteLauncher.cs');
+  const build = read('scripts/build-windows-release.ps1');
+  assert.match(installer, /AppId=\{\{43D37C7B-85BD-4690-B31A-9F468B06BE90\}/);
+  assert.match(installer, /SUOWANG-Lite\.exe/);
+  assert.match(build, /\/target:winexe/);
+  assert.match(build, /verify-node-download\.mjs/);
+  assert.match(build, /SUOWANG-Lite-Setup-\$version\.exe/);
+  assert.match(read('scripts/verify-windows-lite-package.ps1'), /Get-PeSubsystem/);
+  assert.match(read('scripts/verify-windows-lite-package.ps1'), /VisibleShells/);
+  assert.match(launcher, /UseShellExecute = false/);
+  assert.match(launcher, /CreateNoWindow = true/);
+  assert.match(launcher, /WindowStyle = ProcessWindowStyle\.Hidden/);
 });
 
 test('packaged candidates require approved road assets in ASAR and decoded in the renderer', () => {
