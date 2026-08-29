@@ -384,12 +384,13 @@ if (ownsApplicationInstance) {
     else if (runningServer) mainWindow = createMainWindow(runningServer.origin);
   });
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
+    if (!quitting && process.platform !== 'darwin') app.quit();
   });
   app.on('before-quit', (event) => {
     if (quitting || !runningServer) return;
     event.preventDefault();
     quitting = true;
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close();
     const active = runningServer;
     runningServer = null;
     void active.close().then(() => {

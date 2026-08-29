@@ -52,6 +52,8 @@ async function requestWithHeaders(url, headers) {
 
 test('graceful shutdown closes every listener and checkpoints the runtime only once', async () => {
   let listenerCloses = 0;
+  let idleConnectionCloses = 0;
+  let allConnectionCloses = 0;
   let runtimeCloses = 0;
   const listener = {
     listening: true,
@@ -60,6 +62,8 @@ test('graceful shutdown closes every listener and checkpoints the runtime only o
       this.listening = false;
       callback();
     },
+    closeIdleConnections() { idleConnectionCloses += 1; },
+    closeAllConnections() { allConnectionCloses += 1; },
   };
   const shutdown = createGracefulShutdown({
     listeners: [listener],
@@ -67,6 +71,8 @@ test('graceful shutdown closes every listener and checkpoints the runtime only o
   });
   await Promise.all([shutdown(), shutdown()]);
   assert.equal(listenerCloses, 1);
+  assert.equal(idleConnectionCloses, 1);
+  assert.equal(allConnectionCloses, 1);
   assert.equal(runtimeCloses, 1);
 });
 

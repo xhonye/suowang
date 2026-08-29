@@ -426,6 +426,8 @@ export function createGracefulShutdown({ listeners, runtime, onError = console.e
     const results = await Promise.allSettled(listeners.map((listener) => new Promise((resolve, reject) => {
       if (!listener.listening) return resolve();
       listener.close((error) => error ? reject(error) : resolve());
+      listener.closeIdleConnections?.();
+      listener.closeAllConnections?.();
     })));
     failure = results.find((result) => result.status === 'rejected')?.reason ?? null;
     try {
