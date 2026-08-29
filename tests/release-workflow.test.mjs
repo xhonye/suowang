@@ -29,9 +29,10 @@ test('candidate builds require a full commit SHA and cannot mutate a published R
     assert.doesNotMatch(workflow, /gh release upload/);
   }
   const windows = read('.github/workflows/release-windows.yml');
-  assert.match(windows, /shortcut\.TargetPath/);
   assert.match(windows, /SUOWANG\.exe/);
   assert.match(windows, /PowerShell child|command shell/);
+  assert.match(windows, /Invoke-PackagedSmoke \$shortcutPath \$shortcutData 'desktop-shortcut'/);
+  assert.match(windows, /\$result\.version -ne \$version/);
   assert.match(windows, /\$setupProcess = Start-Process -FilePath \$setup/);
   assert.match(windows, /\$uninstallProcess = Start-Process -FilePath \$uninstaller/);
   assert.match(windows, /\$setupProcess\.ExitCode/);
