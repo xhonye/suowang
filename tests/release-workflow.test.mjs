@@ -37,6 +37,18 @@ test('candidate builds require a full commit SHA and cannot mutate a published R
   assert.match(read('.github/workflows/release-macos.yml'), /Contents\/MacOS\/SUOWANG/);
 });
 
+test('macOS release explicitly builds the DMG maker native dependency', () => {
+  const script = read('scripts/build-macos-release.sh');
+  assert.match(script, /npm rebuild macos-alias --ignore-scripts=false --foreground-scripts/);
+  assert.match(script, /macos-alias\/build\/Release\/volume\.node/);
+});
+
+test('Windows browser cleanup tolerates transient filesystem locks', () => {
+  const teardown = read('tests/e2e/global-teardown.mjs');
+  assert.match(teardown, /maxRetries: 10/);
+  assert.match(teardown, /retryDelay: 200/);
+});
+
 test('source launchers enforce the documented Node 22 or 24 LTS contract', () => {
   assert.match(read('scripts/start.ps1'), /\$nodeMajor -notin @\(22, 24\)/);
   const installer = read('INSTALL.cmd');

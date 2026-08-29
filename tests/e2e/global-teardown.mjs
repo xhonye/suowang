@@ -42,7 +42,12 @@ export default async function globalTeardown() {
     if (!dataDir.startsWith(tempRoot) || !basename(dataDir).startsWith('suowang-playwright-')) {
       throw new Error(`Refusing to remove unexpected E2E data path: ${dataDir}`);
     }
-    rmSync(dataDir, { recursive: true, force: true });
+    rmSync(dataDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 200,
+    });
   }
   rmSync(markerPath, { force: true });
 }

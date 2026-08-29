@@ -24,6 +24,11 @@ mkdir -p "$dist_root"
 rm -rf "$forge_app" "$dmg_path" "$checksums_path"
 
 npm run desktop:prepare
+npm rebuild macos-alias --ignore-scripts=false --foreground-scripts
+if [[ ! -f "$project_root/node_modules/macos-alias/build/Release/volume.node" ]]; then
+  echo "The macOS DMG maker native dependency was not built." >&2
+  exit 1
+fi
 npx electron-forge make --platform=darwin --arch=arm64
 node scripts/verify-desktop-package.mjs
 
