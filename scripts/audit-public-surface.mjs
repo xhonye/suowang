@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -62,7 +62,9 @@ export function auditTrackedFiles(files = trackedFiles()) {
       continue;
     }
 
-    const bytes = readFileSync(new URL(`../${normalizedPath}`, import.meta.url));
+    const candidatePath = fileURLToPath(new URL(`../${normalizedPath}`, import.meta.url));
+    if (!existsSync(candidatePath)) continue;
+    const bytes = readFileSync(candidatePath);
     if (!isText(bytes)) continue;
     const content = bytes.toString('utf8');
 

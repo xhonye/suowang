@@ -28,7 +28,10 @@ test('candidate builds require a full commit SHA and cannot mutate a published R
     assert.doesNotMatch(workflow, /--clobber/);
     assert.doesNotMatch(workflow, /gh release upload/);
   }
-  assert.match(read('.github/workflows/release-windows.yml'), /SUOWANG\.cmd/);
+  const windows = read('.github/workflows/release-windows.yml');
+  assert.match(windows, /shortcut\.TargetPath/);
+  assert.match(windows, /SUOWANG\.exe/);
+  assert.match(windows, /PowerShell child|command shell/);
   assert.match(read('.github/workflows/release-windows.yml'), /unins000\.exe/);
   assert.match(read('.github/workflows/release-macos.yml'), /hdiutil attach/);
   assert.match(read('.github/workflows/release-macos.yml'), /Contents\/MacOS\/SUOWANG/);
@@ -50,7 +53,21 @@ test('publishing verifies both candidate runs and keeps the Release private unti
   assert.match(workflow, /--draft=false --prerelease/);
   assert.match(workflow, /create-mirror-manifest\.mjs/);
   assert.match(workflow, /MIRROR-MANIFEST\.txt/);
+  assert.match(workflow, /ELECTRON_VERSION/);
+  assert.match(workflow, /WINDOWS_SIGNING_STATUS/);
+  assert.match(workflow, /MACOS_SIGNING_STATUS/);
+  assert.match(workflow, /SIGNING-STATUS\.txt/);
   assert.match(workflow, /--notes-file/);
   assert.match(workflow, /Refusing to replace existing tag/);
   assert.doesNotMatch(workflow, /--clobber/);
+});
+
+test('desktop packaging preserves stable application identities and direct executable entry points', () => {
+  const forge = read('forge.config.mjs');
+  const installer = read('installer/SUOWANG.iss');
+  assert.match(forge, /appBundleId: 'com\.xhonye\.suowang'/);
+  assert.match(forge, /executableName: 'SUOWANG'/);
+  assert.match(installer, /AppId=\{\{65D34BEA-B5D2-42E8-BF6C-44AB2B7E309A\}/);
+  assert.match(installer, /Filename: "\{app\}\\\{#AppExe\}"/);
+  assert.doesNotMatch(installer, /start\.ps1|SUOWANG\.cmd/);
 });

@@ -119,9 +119,20 @@ jobs:
           )
           for file in "${windows_files[@]}"; do test -f "candidates/windows/$file"; done
           for file in "${macos_files[@]}"; do test -f "candidates/macos/$file"; done
-          test "$(find candidates -type f | wc -l | tr -d ' ')" = 5
+          test -f candidates/windows/SIGNING-STATUS.txt
+          test -f candidates/macos/SIGNING-STATUS.txt
+          test "$(find candidates -type f | wc -l | tr -d ' ')" = 7
           (cd candidates/windows && sha256sum --check "SUOWANG-${PACKAGE_VERSION}-SHA256SUMS.txt")
           (cd candidates/macos && sha256sum --check "SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt")
+
+          windows_signing="$(tr -d '\r\n' < candidates/windows/SIGNING-STATUS.txt)"
+          macos_signing="$(tr -d '\r\n' < candidates/macos/SIGNING-STATUS.txt)"
+          [[ "$windows_signing" =~ ^(SIGNED|UNSIGNED)$ ]]
+          [[ "$macos_signing" =~ ^(SIGNED\+NOTARIZED|SIGNED|UNSIGNED)$ ]]
+          electron_version="$(node -p "require('./package.json').devDependencies.electron")"
+          echo "ELECTRON_VERSION=$electron_version" >> "$GITHUB_ENV"
+          echo "WINDOWS_SIGNING_STATUS=$windows_signing" >> "$GITHUB_ENV"
+          echo "MACOS_SIGNING_STATUS=$macos_signing" >> "$GITHUB_ENV"
 
       - name: Create cross-platform mirror manifest
         shell: bash
@@ -132,6 +143,9 @@ jobs:
           node scripts/create-mirror-manifest.mjs \
             --version "$PACKAGE_VERSION" \
             --sha "$CANDIDATE_SHA" \
+            --electron "$ELECTRON_VERSION" \
+            --windows-signing "$WINDOWS_SIGNING_STATUS" \
+            --macos-signing "$MACOS_SIGNING_STATUS" \
             --windows-dir candidates/windows \
             --macos-dir candidates/macos \
             --output "candidates/SUOWANG-${PACKAGE_VERSION}-MIRROR-MANIFEST.txt"
@@ -148,7 +162,11 @@ jobs:
           git tag --annotate "$RELEASE_TAG" "$CANDIDATE_SHA" --message "SUOWANG $PACKAGE_VERSION"
           git push origin "refs/tags/$RELEASE_TAG"
           gh release create "$RELEASE_TAG" \
-            candidates/windows/* candidates/macos/* \
+            "candidates/windows/SUOWANG-Portable-${PACKAGE_VERSION}.zip" \
+            "candidates/windows/SUOWANG-Setup-${PACKAGE_VERSION}.exe" \
+            "candidates/windows/SUOWANG-${PACKAGE_VERSION}-SHA256SUMS.txt" \
+            "candidates/macos/SUOWANG-${PACKAGE_VERSION}-mac-arm64.dmg" \
+            "candidates/macos/SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt" \
             "candidates/SUOWANG-${PACKAGE_VERSION}-MIRROR-MANIFEST.txt" \
             --draft --prerelease --verify-tag \
             --title "SUOWANG $PACKAGE_VERSION" \

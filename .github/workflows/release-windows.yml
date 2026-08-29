@@ -20,6 +20,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sha }}
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
@@ -31,107 +32,113 @@ jobs:
         env:
           CANDIDATE_SHA: ${{ inputs.sha }}
         run: |
-          if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$') {
-            throw 'Candidate input must be a full lowercase 40-character commit SHA.'
-          }
+          if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$') { throw 'Candidate input must be a full lowercase 40-character commit SHA.' }
           $actual = (git rev-parse HEAD).Trim()
-          if ($actual -ne $env:CANDIDATE_SHA) {
-            throw "Checked out $actual instead of requested $env:CANDIDATE_SHA"
-          }
+          if ($actual -ne $env:CANDIDATE_SHA) { throw "Checked out $actual instead of requested $env:CANDIDATE_SHA" }
           $version = node -p "require('./package.json').version"
           "PACKAGE_VERSION=$version" >> $env:GITHUB_ENV
           "CANDIDATE_SHORT_SHA=$($actual.Substring(0, 12))" >> $env:GITHUB_ENV
 
       - run: npm ci
+      - run: npm run desktop:bootstrap
       - run: npx playwright install chromium
-
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup --no-progress -y
 
-      - name: Run release gates and build Windows candidates
+      - name: Run release gates and build Windows desktop candidates
         run: npm run release:windows
 
-      - name: Verify assets, install, launch and uninstall candidate
+      - name: Verify assets, real entry points, upgrade and data retention
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           $version = $env:PACKAGE_VERSION
           $portableRoot = Join-Path $PWD "dist/windows/SUOWANG-Portable-$version"
           $portableZip = Join-Path $PWD "dist/windows/SUOWANG-Portable-$version.zip"
           $setup = Join-Path $PWD "dist/windows/SUOWANG-Setup-$version.exe"
           $checksums = Join-Path $PWD "dist/windows/SUOWANG-$version-SHA256SUMS.txt"
-          foreach ($path in @($portableRoot, $portableZip, $setup, $checksums)) {
-            if (-not (Test-Path -LiteralPath $path)) { throw "Missing release asset: $path" }
+          $signingStatus = Join-Path $PWD 'dist/windows/SIGNING-STATUS.txt'
+          foreach ($path in @($portableRoot, $portableZip, $setup, $checksums, $signingStatus)) {
+            if (-not (Test-Path -LiteralPath $path)) { throw "Missing release candidate: $path" }
+          }
+          foreach ($forbidden in @('runtime/node.exe', 'scripts/start.ps1', 'SUOWANG.cmd')) {
+            if (Test-Path -LiteralPath (Join-Path $portableRoot $forbidden)) { throw "Legacy launcher leaked into Portable: $forbidden" }
           }
 
-          $testRoot = Join-Path $env:RUNNER_TEMP "suowang-setup-smoke-$PID"
+          $testRoot = Join-Path $env:RUNNER_TEMP "suowang-desktop-smoke-$PID"
           $installRoot = Join-Path $testRoot 'installed'
-          $dataRoot = Join-Path $testRoot 'data'
+          $portableData = Join-Path $testRoot 'portable-data'
+          $installedData = Join-Path $testRoot 'installed-data'
           New-Item -ItemType Directory -Force -Path $testRoot | Out-Null
-          function Get-FreePort {
-            $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
-            $listener.Start()
-            $port = ([System.Net.IPEndPoint]$listener.LocalEndpoint).Port
-            $listener.Stop()
-            return $port
-          }
-          function Stop-TestService($health) {
-            Stop-Process -Id ([int]$health.pid)
-            Wait-Process -Id ([int]$health.pid) -Timeout 10 -ErrorAction SilentlyContinue
-            if (Get-Process -Id ([int]$health.pid) -ErrorAction SilentlyContinue) {
-              throw 'Packaged SUOWANG service did not stop cleanly.'
+
+          function Invoke-PackagedSmoke([string]$exe, [string]$data, [string]$name) {
+            $report = Join-Path $testRoot "$name-report.json"
+            $env:SUOWANG_DATA_DIR = $data
+            $env:SUOWANG_SMOKE_REPORT = $report
+            $process = Start-Process -FilePath $exe -ArgumentList '--smoke-test' -PassThru -WindowStyle Hidden
+            $seenChildren = @()
+            while (-not $process.HasExited) {
+              $seenChildren += Get-CimInstance Win32_Process -Filter "ParentProcessId=$($process.Id)" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
+              Start-Sleep -Milliseconds 100
+              $process.Refresh()
             }
+            if ($process.ExitCode -ne 0) { throw "$name smoke exited with $($process.ExitCode)" }
+            if ($seenChildren | Where-Object { $_ -match '^(powershell|pwsh|cmd)\.exe$' }) { throw "$name launched a command shell." }
+            $result = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
+            if ($result.status -ne 'passed' -or -not $result.rendererLoaded -or -not $result.databaseWrite) { throw "$name smoke report failed." }
+            if (Get-Process -Name SUOWANG -ErrorAction SilentlyContinue) { throw "$name left a SUOWANG process running." }
           }
-          $portableHealth = $null
-          $health = $null
+
           try {
-            $portablePort = Get-FreePort
-            $env:SUOWANG_DATA_DIR = Join-Path $testRoot 'portable-data'
-            $env:SUOWANG_PORT = [string]$portablePort
-            $env:SUOWANG_SKIP_BROWSER = '1'
-            & cmd.exe /c (Join-Path $portableRoot 'SUOWANG.cmd')
-            if ($LASTEXITCODE -ne 0) { throw "Portable launcher exited with $LASTEXITCODE" }
-            $portableHealth = Invoke-RestMethod -Uri "http://127.0.0.1:$portablePort/health" -TimeoutSec 5
-            if ($portableHealth.app -ne 'suowang' -or $portableHealth.version -ne $version -or $portableHealth.database -ne 'ready') {
-              throw 'Portable launcher health verification failed.'
-            }
-            Stop-TestService $portableHealth
+            $portableExe = Join-Path $portableRoot 'SUOWANG.exe'
+            Invoke-PackagedSmoke $portableExe $portableData 'portable'
 
             & $setup /VERYSILENT /SUPPRESSMSGBOXES /NORESTART "/DIR=$installRoot"
             if ($LASTEXITCODE -ne 0) { throw "Setup exited with $LASTEXITCODE" }
-            $launcher = Join-Path $installRoot 'scripts/start.ps1'
+            $installedExe = Join-Path $installRoot 'SUOWANG.exe'
             $uninstaller = Join-Path $installRoot 'unins000.exe'
-            foreach ($path in @($launcher, $uninstaller)) {
+            foreach ($path in @($installedExe, $uninstaller)) {
               if (-not (Test-Path -LiteralPath $path)) { throw "Installed file missing: $path" }
             }
-
-            $env:SUOWANG_DATA_DIR = $dataRoot
-            $installedPort = Get-FreePort
-            $env:SUOWANG_PORT = [string]$installedPort
-            $env:SUOWANG_SKIP_BROWSER = '1'
-            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher
-            if ($LASTEXITCODE -ne 0) { throw "Installed launcher exited with $LASTEXITCODE" }
-            $health = Invoke-RestMethod -Uri "http://127.0.0.1:$installedPort/health" -TimeoutSec 5
-            if ($health.app -ne 'suowang' -or $health.version -ne $version -or $health.database -ne 'ready') {
-              throw 'Installed launcher health verification failed.'
+            foreach ($forbidden in @('runtime/node.exe', 'scripts/start.ps1', 'SUOWANG.cmd')) {
+              if (Test-Path -LiteralPath (Join-Path $installRoot $forbidden)) { throw "Legacy launcher installed: $forbidden" }
             }
-            Stop-TestService $health
+            $desktop = [Environment]::GetFolderPath('Desktop')
+            $shortcutPath = Join-Path $desktop '所往 SUOWANG.lnk'
+            if (-not (Test-Path -LiteralPath $shortcutPath)) { throw 'Desktop shortcut was not created.' }
+            $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
+            if ([System.IO.Path]::GetFullPath($shortcut.TargetPath) -ne [System.IO.Path]::GetFullPath($installedExe)) { throw 'Desktop shortcut does not target SUOWANG.exe.' }
+            if ((Get-Item $portableExe).VersionInfo.ProductVersion -ne (Get-Item $installedExe).VersionInfo.ProductVersion) { throw 'Portable and installed product versions differ.' }
+
+            node scripts/create-upgrade-fixture.mjs $installedData
+            Invoke-PackagedSmoke $installedExe $installedData 'installed-upgrade'
+            node scripts/verify-upgrade-fixture.mjs $installedData
+
+            $env:SUOWANG_DATA_DIR = Join-Path $testRoot 'single-instance-data'
+            $first = Start-Process -FilePath $installedExe -PassThru -WindowStyle Hidden
+            $lock = Join-Path $env:SUOWANG_DATA_DIR 'instance.lock'
+            for ($i = 0; $i -lt 100 -and -not (Test-Path -LiteralPath $lock); $i++) { Start-Sleep -Milliseconds 100 }
+            if (-not (Test-Path -LiteralPath $lock)) { throw 'Desktop instance lock did not appear.' }
+            $owner = (Get-Content -LiteralPath $lock -Raw | ConvertFrom-Json).pid
+            $second = Start-Process -FilePath $installedExe -PassThru -WindowStyle Hidden
+            if (-not $second.WaitForExit(10000)) { throw 'Second desktop instance did not exit.' }
+            if ((Get-Content -LiteralPath $lock -Raw | ConvertFrom-Json).pid -ne $owner) { throw 'Second launch replaced the database owner.' }
+            if (-not $first.CloseMainWindow()) { throw 'SUOWANG window did not accept a normal close request.' }
+            if (-not $first.WaitForExit(15000)) { throw 'SUOWANG did not exit after its window closed.' }
+            if (Test-Path -LiteralPath $lock) { throw 'Instance lock remained after graceful exit.' }
 
             & $uninstaller /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
             if ($LASTEXITCODE -ne 0) { throw "Uninstaller exited with $LASTEXITCODE" }
-            if (-not (Test-Path -LiteralPath (Join-Path $dataRoot 'suowang.db'))) {
-              throw 'User data did not survive uninstall.'
-            }
+            if (-not (Test-Path -LiteralPath (Join-Path $installedData 'suowang.db'))) { throw 'User database did not survive uninstall.' }
+            node scripts/verify-upgrade-fixture.mjs $installedData
           } finally {
-            foreach ($candidate in @($portableHealth, $health)) {
-              if ($candidate -and $candidate.app -eq 'suowang' -and (Get-Process -Id ([int]$candidate.pid) -ErrorAction SilentlyContinue)) {
-                Stop-Process -Id ([int]$candidate.pid) -Force -ErrorAction SilentlyContinue
-              }
-            }
+            Get-Process -Name SUOWANG -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
             Remove-Item Env:SUOWANG_DATA_DIR -ErrorAction SilentlyContinue
-            Remove-Item Env:SUOWANG_PORT -ErrorAction SilentlyContinue
-            Remove-Item Env:SUOWANG_SKIP_BROWSER -ErrorAction SilentlyContinue
-            Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
+            Remove-Item Env:SUOWANG_SMOKE_REPORT -ErrorAction SilentlyContinue
+            if ([System.IO.Path]::GetFullPath($testRoot).StartsWith([System.IO.Path]::GetFullPath($env:RUNNER_TEMP))) {
+              Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
+            }
           }
 
       - name: Upload immutable Windows candidate artifacts
@@ -142,5 +149,6 @@ jobs:
             dist/windows/SUOWANG-Portable-${{ env.PACKAGE_VERSION }}.zip
             dist/windows/SUOWANG-Setup-${{ env.PACKAGE_VERSION }}.exe
             dist/windows/SUOWANG-${{ env.PACKAGE_VERSION }}-SHA256SUMS.txt
+            dist/windows/SIGNING-STATUS.txt
           if-no-files-found: error
           retention-days: 14

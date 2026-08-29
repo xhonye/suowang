@@ -13,24 +13,26 @@ permissions:
 
 jobs:
   build-macos-arm64:
-    name: Build, mount and launch macOS arm64 DMG
+    name: Build, mount and smoke macOS arm64 DMG
     runs-on: macos-14
     steps:
       - name: Check out the audited commit
         uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sha }}
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
           node-version: '24.15.0'
           cache: npm
 
-      - name: Verify immutable candidate identity and Apple Silicon runner
+      - name: Verify immutable candidate identity and runner
         shell: bash
         env:
           CANDIDATE_SHA: ${{ inputs.sha }}
         run: |
+          set -euo pipefail
           [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
           actual="$(git rev-parse HEAD)"
           test "$actual" = "$CANDIDATE_SHA"
@@ -41,57 +43,55 @@ jobs:
           echo "CANDIDATE_SHORT_SHA=${actual:0:12}" >> "$GITHUB_ENV"
 
       - run: npm ci
+      - run: npm run desktop:bootstrap
       - run: npx playwright install chromium
-
-      - name: Run release gates and build unsigned Apple Silicon candidate
+      - name: Run release gates and build macOS desktop candidate
         run: npm run release:macos
+        env:
+          APPLE_CODESIGN_IDENTITY: ${{ secrets.APPLE_CODESIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
-      - name: Verify, mount, copy and launch final DMG
+      - name: Mount, copy and smoke the final DMG
         shell: bash
         run: |
+          set -euo pipefail
           dmg="dist/macos/SUOWANG-${PACKAGE_VERSION}-mac-arm64.dmg"
           checksums="dist/macos/SUOWANG-${PACKAGE_VERSION}-mac-arm64-SHA256SUMS.txt"
+          signing_status="dist/macos/SIGNING-STATUS.txt"
           test -f "$dmg"
           test -f "$checksums"
+          test -f "$signing_status"
+          (cd dist/macos && shasum -a 256 -c "$(basename "$checksums")")
+
           mount_dir="$(mktemp -d "$RUNNER_TEMP/suowang-dmg.XXXXXX")"
-          install_dir="$(mktemp -d "$RUNNER_TEMP/suowang-applications.XXXXXX")"
-          data_dir="$(mktemp -d "$RUNNER_TEMP/suowang-data.XXXXXX")"
-          mounted='false'
+          applications_dir="$(mktemp -d "$RUNNER_TEMP/suowang-applications.XXXXXX")"
+          data_dir="$(mktemp -d "$RUNNER_TEMP/suowang-upgrade.XXXXXX")"
+          report="$RUNNER_TEMP/suowang-macos-smoke.json"
+          mounted=false
           cleanup() {
-            if [[ "$mounted" == 'true' ]]; then hdiutil detach "$mount_dir" -quiet || true; fi
-            rm -rf "$mount_dir" "$install_dir" "$data_dir"
+            if [[ "$mounted" == true ]]; then hdiutil detach "$mount_dir" -quiet || true; fi
+            rm -rf "$mount_dir" "$applications_dir" "$data_dir" "$report"
           }
           trap cleanup EXIT
           hdiutil attach "$dmg" -mountpoint "$mount_dir" -nobrowse -readonly
-          mounted='true'
-          cp -R "$mount_dir/所往 SUOWANG.app" "$install_dir/"
-          app_root="$install_dir/所往 SUOWANG.app"
+          mounted=true
+          test -L "$mount_dir/Applications"
+          cp -R "$mount_dir/所往 SUOWANG.app" "$applications_dir/"
+          app_root="$applications_dir/所往 SUOWANG.app"
+          executable="$app_root/Contents/MacOS/SUOWANG"
           plutil -lint "$app_root/Contents/Info.plist"
-          test -x "$app_root/Contents/MacOS/SUOWANG"
-          test -x "$app_root/Contents/Resources/app/runtime/bin/node"
-          "$app_root/Contents/Resources/app/runtime/bin/node" -e "import('$app_root/Contents/Resources/app/node_modules/better-sqlite3/lib/index.js').then(() => console.log('packaged better-sqlite3 OK'))"
+          test -x "$executable"
+          test ! -e "$app_root/Contents/Resources/app/runtime/bin/node"
+          test ! -e "$app_root/Contents/Resources/app/scripts/start.ps1"
 
-          port="$(python3 - <<'PY'
-          import socket
-          sock = socket.socket()
-          sock.bind(('127.0.0.1', 0))
-          print(sock.getsockname()[1])
-          sock.close()
-          PY
-          )"
-          export SUOWANG_DATA_DIR="$data_dir"
-          export SUOWANG_PORT="$port"
-          export SUOWANG_SKIP_BROWSER=1
-          "$app_root/Contents/MacOS/SUOWANG"
-          health="$(curl --fail --silent "http://127.0.0.1:$port/health")"
-          pid="$("$app_root/Contents/Resources/app/runtime/bin/node" -e 'const h=JSON.parse(process.argv[1]); if(h.app!=="suowang"||h.version!==process.argv[2]||h.database!=="ready") process.exit(1); process.stdout.write(String(h.pid));' "$health" "$PACKAGE_VERSION")"
-          kill -TERM "$pid"
-          for _ in {1..50}; do
-            kill -0 "$pid" 2>/dev/null || break
-            sleep 0.1
-          done
-          if kill -0 "$pid" 2>/dev/null; then
-            echo 'Packaged SUOWANG service did not stop cleanly.' >&2
+          node scripts/create-upgrade-fixture.mjs "$data_dir"
+          SUOWANG_DATA_DIR="$data_dir" SUOWANG_SMOKE_REPORT="$report" "$executable" --smoke-test
+          node -e "const r=require('$report'); if(r.status!=='passed'||!r.rendererLoaded||!r.databaseWrite) process.exit(1)"
+          node scripts/verify-upgrade-fixture.mjs "$data_dir"
+          if pgrep -f "$executable" >/dev/null; then
+            echo 'macOS packaged smoke left a process running.' >&2
             exit 1
           fi
 
@@ -102,5 +102,6 @@ jobs:
           path: |
             dist/macos/SUOWANG-${{ env.PACKAGE_VERSION }}-mac-arm64.dmg
             dist/macos/SUOWANG-${{ env.PACKAGE_VERSION }}-mac-arm64-SHA256SUMS.txt
+            dist/macos/SIGNING-STATUS.txt
           if-no-files-found: error
           retention-days: 14

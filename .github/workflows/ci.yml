@@ -54,15 +54,42 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-failure-${{ github.run_id }}
+          name: playwright-browser-failure-${{ github.run_id }}
           path: |
             test-results/
             playwright-report/
           if-no-files-found: warn
           retention-days: 14
 
-  package-dry-run:
-    name: Package manifest
+  desktop-test:
+    name: Desktop - ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.15.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run desktop:bootstrap
+      - run: npm run test:desktop
+      - name: Upload desktop failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-desktop-failure-${{ matrix.os }}-${{ github.run_id }}
+          path: |
+            test-results/
+            playwright-report/desktop/
+          if-no-files-found: warn
+          retention-days: 14
+
+  package-and-public-audit:
+    name: Package manifest and public surface
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -72,3 +99,5 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run package:check
+      - run: npm run audit:public
+      - run: npm audit --omit=dev
