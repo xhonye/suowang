@@ -88,12 +88,12 @@ jobs:
             if ($seenChildren | Where-Object { $_ -match '^(powershell|pwsh|cmd)\.exe$' }) { throw "$name launched a command shell." }
             $result = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
             if (
-              $result.status -ne 'passed'
-              -or -not $result.rendererLoaded
-              -or -not $result.rendererReady
-              -or -not $result.visualAssetsLoaded
-              -or @($result.visualAssets).Count -ne 4
-              -or -not $result.databaseWrite
+              $result.status -ne 'passed' -or
+              -not $result.rendererLoaded -or
+              -not $result.rendererReady -or
+              -not $result.visualAssetsLoaded -or
+              @($result.visualAssets).Count -ne 4 -or
+              -not $result.databaseWrite
             ) { throw "$name smoke report failed." }
             if ($result.version -ne $version) { throw "$name reported version $($result.version), expected $version." }
             $remaining = @()
