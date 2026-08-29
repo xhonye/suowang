@@ -87,9 +87,24 @@ jobs:
             if ($process.ExitCode -ne 0) { throw "$name smoke exited with $($process.ExitCode)" }
             if ($seenChildren | Where-Object { $_ -match '^(powershell|pwsh|cmd)\.exe$' }) { throw "$name launched a command shell." }
             $result = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
-            if ($result.status -ne 'passed' -or -not $result.rendererLoaded -or -not $result.databaseWrite) { throw "$name smoke report failed." }
+            if (
+              $result.status -ne 'passed'
+              -or -not $result.rendererLoaded
+              -or -not $result.rendererReady
+              -or -not $result.visualAssetsLoaded
+              -or @($result.visualAssets).Count -ne 4
+              -or -not $result.databaseWrite
+            ) { throw "$name smoke report failed." }
             if ($result.version -ne $version) { throw "$name reported version $($result.version), expected $version." }
-            if (Get-Process -Name SUOWANG -ErrorAction SilentlyContinue) { throw "$name left a SUOWANG process running." }
+            $remaining = @()
+            for ($attempt = 0; $attempt -lt 50; $attempt++) {
+              $remaining = @(Get-Process -Name SUOWANG -ErrorAction SilentlyContinue)
+              if ($remaining.Count -eq 0) { break }
+              Start-Sleep -Milliseconds 100
+            }
+            if ($remaining.Count -gt 0) {
+              throw "$name left SUOWANG processes running after bounded shutdown wait: $($remaining.Id -join ',')."
+            }
           }
 
           try {

@@ -119,10 +119,15 @@ test('desktop packaging preserves stable application identities and direct execu
 test('packaged candidates require approved road assets in ASAR and decoded in the renderer', () => {
   const verifier = read('scripts/verify-desktop-package.mjs');
   const desktopMain = read('desktop/main.js');
+  const windowsWorkflow = read('.github/workflows/release-windows.yml');
   assert.match(verifier, /statAsarFile/);
   assert.match(verifier, /Required visual asset is missing from app\.asar/);
   assert.match(verifier, /visualAssetsLoaded/);
   assert.match(desktopMain, /naturalWidth/);
   assert.match(desktopMain, /naturalHeight/);
   assert.match(desktopMain, /Packaged renderer did not become ready/);
+  assert.match(windowsWorkflow, /rendererReady/);
+  assert.match(windowsWorkflow, /visualAssetsLoaded/);
+  assert.match(windowsWorkflow, /attempt -lt 50/);
+  assert.match(windowsWorkflow, /bounded shutdown wait/);
 });
