@@ -31,7 +31,9 @@ function Get-PeSubsystem([string]$path) {
     return [System.BitConverter]::ToUInt16($bytes, $peOffset + 24 + 68)
 }
 
-function Invoke-LiteSmoke([string]$entry, [string]$dataDir, [string]$name) {
+function Invoke-LiteSmoke([string]$entry, [string]$dataDir, [string]$name, [string]$expectedRoot) {
+    if (-not $expectedRoot) { $expectedRoot = Split-Path -Parent $entry }
+    $isShortcut = [System.IO.Path]::GetExtension($entry) -ieq '.lnk'
     $port = Get-FreePort
     $healthUrl = "http://127.0.0.1:$port/health"
     $env:SUOWANG_DATA_DIR = $dataDir
@@ -41,7 +43,7 @@ function Invoke-LiteSmoke([string]$entry, [string]$dataDir, [string]$name) {
     $process = Start-Process -FilePath $entry -PassThru
     $visibleShells = @()
     $launcherDeadline = (Get-Date).AddSeconds(45)
-    while (-not $process.HasExited) {
+    while (-not $isShortcut -and -not $process.HasExited) {
         if ((Get-Date) -ge $launcherDeadline) {
             Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
             throw "$name launcher did not exit within 45 seconds."
@@ -54,7 +56,7 @@ function Invoke-LiteSmoke([string]$entry, [string]$dataDir, [string]$name) {
         Start-Sleep -Milliseconds 100
         $process.Refresh()
     }
-    if ($process.ExitCode -ne 0) {
+    if (-not $isShortcut -and $process.ExitCode -ne 0) {
         $failureLog = Join-Path $dataDir 'logs/latest-launcher-error.log'
         $detail = if (Test-Path -LiteralPath $failureLog -PathType Leaf) {
             ((Get-Content -LiteralPath $failureLog -Tail 20) -join [Environment]::NewLine).Trim()
@@ -67,10 +69,16 @@ function Invoke-LiteSmoke([string]$entry, [string]$dataDir, [string]$name) {
 
     $health = $null
     for ($attempt = 0; $attempt -lt 50; $attempt++) {
+        $shells = @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe' OR Name='pwsh.exe' OR Name='cmd.exe'" -ErrorAction SilentlyContinue)
+        foreach ($shell in $shells | Where-Object { $_.CommandLine -match [regex]::Escape($expectedRoot) }) {
+            $shellProcess = Get-Process -Id $shell.ProcessId -ErrorAction SilentlyContinue
+            if ($shellProcess -and $shellProcess.MainWindowHandle -ne 0) { $visibleShells += $shell.ProcessId }
+        }
         try { $health = Invoke-RestMethod -Uri $healthUrl -TimeoutSec 2; break }
         catch { Start-Sleep -Milliseconds 100 }
     }
     if (-not $health) { throw "$name service did not become healthy." }
+    if ($visibleShells.Count -gt 0) { throw "$name exposed a command shell window." }
     if ($health.version -ne $Version -or $health.app -ne 'suowang' -or $health.accessMode -ne 'local') {
         throw "$name returned an invalid health identity."
     }
@@ -89,7 +97,8 @@ function Invoke-LiteSmoke([string]$entry, [string]$dataDir, [string]$name) {
     }
 
     $owner = Get-CimInstance Win32_Process -Filter "ProcessId=$($health.pid)" -ErrorAction Stop
-    if ($owner.Name -ine 'node.exe' -or $owner.CommandLine -notmatch 'scripts[/\\]serve\.mjs') {
+    $expectedNode = [System.IO.Path]::GetFullPath((Join-Path $expectedRoot 'runtime/node.exe'))
+    if ($owner.Name -ine 'node.exe' -or $owner.CommandLine -notmatch 'scripts[/\\]serve\.mjs' -or -not $owner.ExecutablePath.Equals($expectedNode, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw "$name health PID was not the bundled SUOWANG service."
     }
     Stop-Process -Id $health.pid
@@ -140,22 +149,7 @@ try {
     if ($VerifyShortcut) {
         $shortcutPath = Join-Path ([Environment]::GetFolderPath('Desktop')) '所往 SUOWANG（轻量版）.lnk'
         if (-not (Test-Path -LiteralPath $shortcutPath -PathType Leaf)) { throw 'Lite desktop shortcut was not created.' }
-        $shortcutShell = New-Object -ComObject WScript.Shell
-        $shortcut = $shortcutShell.CreateShortcut($shortcutPath)
-        $resolvedTarget = [System.IO.Path]::GetFullPath($shortcut.TargetPath)
-        $expectedTarget = [System.IO.Path]::GetFullPath($installedExe)
-        if (-not $resolvedTarget.Equals($expectedTarget, [System.StringComparison]::OrdinalIgnoreCase)) {
-            throw "Lite desktop shortcut targets $resolvedTarget instead of $expectedTarget."
-        }
-        $resolvedWorkingDirectory = [System.IO.Path]::GetFullPath($shortcut.WorkingDirectory)
-        $expectedWorkingDirectory = [System.IO.Path]::GetFullPath($installRoot)
-        if (-not $resolvedWorkingDirectory.Equals($expectedWorkingDirectory, [System.StringComparison]::OrdinalIgnoreCase)) {
-            throw "Lite desktop shortcut has an invalid working directory: $resolvedWorkingDirectory."
-        }
-        if (-not [string]::IsNullOrWhiteSpace($shortcut.Arguments)) {
-            throw 'Lite desktop shortcut unexpectedly includes command-line arguments.'
-        }
-        $shortcutResult = Invoke-LiteSmoke $resolvedTarget $shortcutData 'desktop-shortcut-target'
+        $shortcutResult = Invoke-LiteSmoke $shortcutPath $shortcutData 'desktop-shortcut' $installRoot
     }
 
     & node (Join-Path $projectRoot 'scripts/create-upgrade-fixture.mjs') $upgradeData
