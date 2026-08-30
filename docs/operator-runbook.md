@@ -1,6 +1,6 @@
 # SUOWANG 本地运维手册
 
-公开安装包只以 [GitHub Releases](https://github.com/xhonye/suowang/releases) 为准；本地 `package.json` 版本、分支构建或 `dist/` 文件都只是开发候选，不能冒充已发布资产。安装或升级前先从现有版本导出 SQLite，测试数据中不要放无法承受丢失的唯一副本。
+公开安装包只以 [GitHub Releases](https://github.com/xhonye/suowang/releases) 为准；单独凭本地 `package.json` 版本、分支构建或 `dist/` 文件不能证明已经发布。从 Release 下载的本地副本或镜像必须与公开附件同名且 SHA-256 一致。安装或升级前先从现有版本导出 SQLite，测试数据中不要放无法承受丢失的唯一副本。
 
 ## 首次安装
 
@@ -26,7 +26,7 @@ suowang install-shortcut
 suowang
 ```
 
-仅有私有 GitHub 仓库权限、npm 包尚未发布时：
+npm 包尚未发布时，可从公开 GitHub 仓库的指定 Tag 安装；不需要私有仓库权限，但仍需 Node 22/24、npm 与 Git。这是开发者入口，不是普通用户的安装步骤：
 
 ```powershell
 npm install --ignore-scripts --global github:xhonye/suowang#v<version>

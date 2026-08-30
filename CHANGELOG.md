@@ -1,12 +1,11 @@
 # Changelog
 
-## 0.2.0-beta.3 — candidate
+## 0.2.0-beta.3 — 2026-08-30
 
 - 发布前加固：Lite 复用和切换服务同时核对包内 Node、精确服务入口、当前数据目录实例锁、端口 PID 与进程创建时间，拒绝误认其他安装或数据目录；保留隐藏窗口启动体验。
 - SQLite 导出和恢复前快照加入独立操作 ID，避免同毫秒请求发生文件重名；自动桌面测试同时隔离数据库和 Chromium 配置。
 - 聚合发布必须验证同 SHA 的完整 main CI 与双平台候选，并回读 Draft 上传字节后才允许公开；构建输入固定 Electron 校验和，重新从已校验 Node 压缩包解压。
 - 增加构建依赖专项审计：已知未修复的打包工具告警显式报告且限时复核，未知告警或运行时漏洞立即阻断，详见 `docs/security-review-beta.3.md`。
-
 - Windows 同时提供 Lite 与 Desktop 两套自包含发行物：Lite 使用无控制台原生启动器、官方校验 Node 和用户默认浏览器，Desktop 保留独立 Electron 窗口；两版共享 SQLite 与实例锁。
 - Windows 安装版和 Portable 分别使用明确的 `Lite` / `Desktop` 文件名与独立安装身份；Lite 不携带 Chromium，普通用户下载体积显著下降。
 - 候选与公开发布门禁扩展到四个 Windows 二进制资产，逐项验证校验和、Lite 真实快捷方式启动、无可见命令窗口、视觉资产、旧库升级和卸载后数据保留。

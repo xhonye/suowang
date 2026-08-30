@@ -10,7 +10,7 @@
 
 ## Windows 30 秒开始
 
-当前可下载版本以 [GitHub Releases](https://github.com/xhonye/suowang/releases) 为准。以下是本分支 `0.2.0-beta.3` 的安装说明；若 Release 列表尚未出现这个版本，它仍是候选，不能把 Actions artifact 当作公开发行。`0.2.0-beta.1` 的桌面包缺少道路视觉资产，请勿继续下载或镜像。
+当前公开测试版是 [0.2.0-beta.3](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.3)，已于 2026-08-30 发布。以下安装包均可从该下载页取得；后续版本以 [GitHub Releases](https://github.com/xhonye/suowang/releases) 为准。`0.2.0-beta.1` 的桌面包缺少道路视觉资产，请勿继续下载或镜像。
 
 ### 推荐：轻量版
 
@@ -73,7 +73,7 @@ Windows 旧版若已经存在 `D:/5Data/suowang/suowang.db`，会继续使用这
 
 仅支持 Apple Silicon（M1 及以后）。下载 `SUOWANG-0.2.0-beta.3-mac-arm64.dmg`，打开后把「所往 SUOWANG」拖入 Applications，再双击打开独立应用窗口。
 
-首个公开 Beta 未签名、未公证。首次打开可能需要按住 Control 点击应用，选择“打开”并再次确认。暂不支持 Intel Mac、App Store 安装或自动更新。
+当前公开 Beta 未签名、未公证。首次打开可能需要按住 Control 点击应用，选择“打开”并再次确认。暂不支持 Intel Mac、App Store 安装或自动更新。
 
 ## 使用与反馈
 
@@ -102,7 +102,7 @@ npm start
 
 ### npm / 本地 Agent
 
-当前没有发布 npm registry 包；普通用户请使用 GitHub Release 的桌面安装包。未来只有在 `npm view` 能查到对应版本后，才使用：
+当前没有发布 npm registry 包；普通用户请使用 GitHub Release 的自包含安装包。未来只有在 `npm view` 能查到对应版本后，才使用：
 
 ```powershell
 npm view suowang@0.2.0-beta.3 version

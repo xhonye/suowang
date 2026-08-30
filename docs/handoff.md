@@ -1,5 +1,13 @@
 # SUOWANG 当前实施交接
 
+## 当前发布基线
+
+[0.2.0-beta.3](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.3) 已于 2026-08-30 公开为 Beta，不是稳定版晋级。不可变 Tag `v0.2.0-beta.3` 指向 `43057bd83e8a0d3c660ae829c0a9bbcdd2d98ac3`；后续源码或文档变动不改变这批安装包。
+
+- [聚合发布运行](https://github.com/xhonye/suowang/actions/runs/33304926772) 已通过：同 SHA 的完整 CI、Windows Lite/Desktop 与 Mac 候选通过后，在 Draft 集齐并回读校验 8 个附件，再一次性公开。
+- 人工试装依据维护者确认，不能表述为 Agent 独立现场验收；首次 Windows 桌面 CI 进程异常、同 SHA 重跑通过的记录仍保留在 [CI 运行](https://github.com/xhonye/suowang/actions/runs/33293749989) 中。
+- 安装包、镜像校验清单以该 Release 的附件为准；短期 Actions artifact、本地构建和旧候选不得替代已发布字节。仍未签名／未公证，已知构建依赖风险见 [安全复核](security-review-beta.3.md)。
+
 ## 当前已有
 
 - 三个永久模式及每个模式三个 active 主线槽。
@@ -10,7 +18,7 @@
 - SQLite migration、每日备份、JSON/SQLite 导出、整库安全恢复和本地头像。
 - Windows 双击入口、重复启动保护和桌面快捷方式。
 - Windows 同时提供 Lite 与 Desktop 自包含承载层：Lite 使用无控制台原生启动器、包内 Node 与默认浏览器，Desktop 使用 Electron 独立窗口；macOS Apple Silicon 继续提供 Electron `.app` / `.dmg`。
-- npm CLI（`suowang`）与双击安装入口（`INSTALL.cmd`）。
+- 源码包包含 CLI（`suowang`）与双击安装入口（`INSTALL.cmd`），不代表已发布 npm registry 包；普通用户使用 Release 中的自包含安装包。
 - 1920×1080、2560×1440 与 320px 响应式驾驶舱；大窗口只延展事项列表，下一步保持稳定紧凑高度。
 
 核心产品与数据模型从 `0.1.0` 起形成不可改写的发布基线；Electron 桌面壳、持续事项、行动中指针与后续视觉适配在 `0.2` Beta 继续演进。任何已发布 Tag 都不可移动或重打，后续改变必须通过新 commit 和新版本推进。
