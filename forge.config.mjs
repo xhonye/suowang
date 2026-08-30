@@ -1,5 +1,6 @@
 import { resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { ElectronegativityPlugin } from '@electron-forge/plugin-electronegativity';
@@ -10,6 +11,7 @@ import { APP_VERSION, deriveMacOSVersions } from './src/server/app-meta.mjs';
 import { ROAD_VISUAL_ASSETS } from './src/visual-assets.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
+const require = createRequire(import.meta.url);
 const icons = resolve(root, 'assets', 'brand');
 const macVersions = deriveMacOSVersions(APP_VERSION);
 const macIdentity = process.env.APPLE_CODESIGN_IDENTITY?.trim();
@@ -40,6 +42,8 @@ export function shouldIgnore(path) {
 }
 
 const packagerConfig = {
+  // Pin the archive digest independently of the download host before extraction.
+  download: { checksums: require('electron/checksums.json') },
   asar: true,
   executableName: 'SUOWANG',
   appBundleId: 'com.xhonye.suowang',

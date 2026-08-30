@@ -17,6 +17,9 @@ export function decideLauncherAction({
   if (!health || health.app !== 'suowang') {
     return { action: 'conflict', reason: 'port_not_owned_by_suowang', stopExisting: false };
   }
+  if (!processVerified) {
+    return { action: 'conflict', reason: 'suowang_process_unverified', stopExisting: false };
+  }
 
   const healthy = health.status === 'ok' && health.database === 'ready';
   const versionMatches = health.version === expectedVersion;
@@ -24,9 +27,6 @@ export function decideLauncherAction({
     && listener.accessModeMatches === true;
   if (healthy && versionMatches && accessModeMatches) {
     return { action: 'reuse', reason: 'matching_service', stopExisting: false };
-  }
-  if (!processVerified) {
-    return { action: 'conflict', reason: 'suowang_process_unverified', stopExisting: false };
   }
   return {
     action: 'restart',

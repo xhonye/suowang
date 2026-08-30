@@ -62,6 +62,8 @@ function Get-ListenerState([int]$port, [string]$accessMode, [string]$tailscaleIp
     } else {
         $local -and -not $remote
     }
+    $expectedAddresses = if ($accessMode -eq 'tailscale') { @('127.0.0.1', $tailscaleIp) } else { @('127.0.0.1') }
+    if (@($listeners | Where-Object { $_.LocalAddress -notin $expectedAddresses }).Count -gt 0) { $matches = $false }
     return @{
         Occupied = $listeners.Count -gt 0
         AccessModeMatches = [bool]$matches
@@ -81,15 +83,30 @@ function Get-VerifiedSuowangProcess($health, $listenerState) {
         return @{ Verified = $false; Pid = $candidatePid }
     }
     $process = Get-CimInstance Win32_Process -Filter "ProcessId=$candidatePid" -ErrorAction SilentlyContinue
+    $lock = $null
+    try {
+        $lock = Get-Content -LiteralPath (Join-Path $dataDir 'instance.lock') -Raw | ConvertFrom-Json
+    } catch {
+        return @{ Verified = $false; Pid = $candidatePid }
+    }
+    $servePath = Join-Path $projectRoot 'scripts/serve.mjs'
+    $escapedServePath = [regex]::Escape($servePath.Replace('\', '/')).Replace('/', '[/\\]')
+    $nodeArgument = '(?:"' + [regex]::Escape($nodePath) + '"|' + [regex]::Escape($nodePath) + '|node(?:\.exe)?)'
+    $serveArgument = '^' + $nodeArgument + '\s+(?:"' + $escapedServePath + '"|' + $escapedServePath + '|"?scripts[/\\]serve\.mjs"?)\s*$'
     $verified = $process `
         -and $process.Name -ieq 'node.exe' `
-        -and $process.CommandLine -match 'scripts[/\\]serve\.mjs'
-    return @{ Verified = [bool]$verified; Pid = $candidatePid }
+        -and $process.ExecutablePath -ieq $nodePath `
+        -and $process.CommandLine -match $serveArgument `
+        -and $lock.pid -eq $candidatePid `
+        -and $lock.kind -in @('cli-local', 'cli-tailscale') `
+        -and -not [string]::IsNullOrWhiteSpace($lock.token)
+    return @{ Verified = [bool]$verified; Pid = $candidatePid; Token = $lock.token; Created = $process.CreationDate }
 }
 
-function Stop-VerifiedSuowangProcess([int]$processId, [int]$port) {
-    $process = Get-CimInstance Win32_Process -Filter "ProcessId=$processId" -ErrorAction SilentlyContinue
-    if (-not $process -or $process.Name -ine 'node.exe' -or $process.CommandLine -notmatch 'scripts[/\\]serve\.mjs') {
+function Stop-VerifiedSuowangProcess($expectedIdentity, [int]$port) {
+    $processId = [int]$expectedIdentity.Pid
+    $currentIdentity = Get-VerifiedSuowangProcess (Get-SuowangHealth $healthUrl) (Get-ListenerState $port $accessMode $tailscaleIp)
+    if (-not $currentIdentity.Verified -or $currentIdentity.Pid -ne $processId -or $currentIdentity.Token -ne $expectedIdentity.Token -or $currentIdentity.Created -ne $expectedIdentity.Created) {
         throw "$port 端口上的进程无法确认为 SUOWANG，已拒绝终止以保护其他程序。"
     }
     Stop-Process -Id $processId
@@ -98,8 +115,8 @@ function Stop-VerifiedSuowangProcess([int]$processId, [int]$port) {
         if (-not (Get-Process -Id $processId -ErrorAction SilentlyContinue)) { break }
     }
     if (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
-        $stillVerified = Get-CimInstance Win32_Process -Filter "ProcessId=$processId" -ErrorAction SilentlyContinue
-        if (-not $stillVerified -or $stillVerified.Name -ine 'node.exe' -or $stillVerified.CommandLine -notmatch 'scripts[/\\]serve\.mjs') {
+        $stillVerified = Get-VerifiedSuowangProcess (Get-SuowangHealth $healthUrl) (Get-ListenerState $port $accessMode $tailscaleIp)
+        if (-not $stillVerified.Verified -or $stillVerified.Pid -ne $processId -or $stillVerified.Token -ne $expectedIdentity.Token -or $stillVerified.Created -ne $expectedIdentity.Created) {
             throw '旧进程未正常退出，且身份已无法再次确认。请重启电脑后再试。'
         }
         Stop-Process -Id $processId -Force
@@ -115,7 +132,7 @@ function Stop-VerifiedSuowangProcess([int]$processId, [int]$port) {
 function Get-ConflictReason([string]$reason, [int]$port) {
     switch ($reason) {
         'port_not_owned_by_suowang' { return "$port 端口已被其他程序占用，SUOWANG 不会终止它。" }
-        'suowang_process_unverified' { return '检测到旧服务或模式不匹配，但无法安全验证后台进程身份。' }
+        'suowang_process_unverified' { return '端口上的服务不属于当前安装或数据目录，或无法核实身份。请先退出原入口再打开；不会终止未知进程。' }
         default { return "启动安全检查未通过：$reason" }
     }
 }
@@ -163,25 +180,27 @@ try {
     if ($decision.action -eq 'conflict') { throw (Get-ConflictReason $decision.reason $port) }
     if ($decision.action -eq 'restart' -and $decision.stopExisting) {
         $stage = '安全切换旧服务'
-        Stop-VerifiedSuowangProcess ([int]$identity.Pid) $port
+        Stop-VerifiedSuowangProcess $identity $port
     }
 
     if ($decision.action -ne 'reuse') {
         $stage = '启动本地服务'
         New-Item -ItemType Directory -Force -Path $logsDir | Out-Null
-        Start-Process `
+        $startedProcess = Start-Process `
             -FilePath $nodePath `
-            -ArgumentList 'scripts/serve.mjs' `
+            -ArgumentList ('"' + (Join-Path $projectRoot 'scripts/serve.mjs') + '"') `
             -WorkingDirectory $projectRoot `
             -WindowStyle Hidden `
             -RedirectStandardOutput $stdoutLog `
-            -RedirectStandardError $stderrLog
+            -RedirectStandardError $stderrLog `
+            -PassThru
 
         $ready = $false
         for ($attempt = 0; $attempt -lt 40; $attempt++) {
             Start-Sleep -Milliseconds 250
             $health = Get-SuowangHealth $healthUrl
             $listenerState = Get-ListenerState $port $accessMode $tailscaleIp
+            $startedIdentity = Get-VerifiedSuowangProcess $health $listenerState
             $postDecision = Get-LauncherDecision $nodePath @{
                 expectedVersion = $expectedVersion
                 expectedAccessMode = $accessMode
@@ -190,7 +209,7 @@ try {
                     occupied = $listenerState.Occupied
                     accessModeMatches = $listenerState.AccessModeMatches
                 }
-                processVerified = $false
+                processVerified = $startedIdentity.Verified -and $startedIdentity.Pid -eq $startedProcess.Id
             }
             if ($postDecision.action -eq 'reuse') { $ready = $true; break }
         }

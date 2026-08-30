@@ -11,6 +11,10 @@ on:
         description: Successful Build Windows candidate run ID for this SHA
         required: true
         type: string
+      core_ci_run_id:
+        description: Successful Verify SUOWANG main CI run ID for this SHA
+        required: true
+        type: string
       macos_run_id:
         description: Successful Build macOS Apple Silicon candidate run ID for this SHA
         required: true
@@ -54,12 +58,13 @@ jobs:
           CANDIDATE_SHA: ${{ inputs.sha }}
           WINDOWS_RUN_ID: ${{ inputs.windows_run_id }}
           MACOS_RUN_ID: ${{ inputs.macos_run_id }}
+          CORE_CI_RUN_ID: ${{ inputs.core_ci_run_id }}
           INSTALL_EVIDENCE: ${{ inputs.install_evidence }}
           CONFIRMATION: ${{ inputs.confirmation }}
         run: |
           set -euo pipefail
           test "$CONFIRMATION" = 'INSTALL_VERIFIED'
-          test -n "$INSTALL_EVIDENCE"
+          [[ "$INSTALL_EVIDENCE" =~ [^[:space:]] ]]
           [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
           version="$(node -p "require('./package.json').version")"
@@ -70,14 +75,14 @@ jobs:
           echo "CANDIDATE_SHORT_SHA=$short_sha" >> "$GITHUB_ENV"
 
           verify_run() {
-            local run_id="$1" expected_workflow="$2"
-            test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .head_sha)" = "$CANDIDATE_SHA"
-            test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .conclusion)" = success
-            test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .event)" = workflow_dispatch
-            test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .name)" = "$expected_workflow"
+            local run_id="$1" kind="$2"
+            [[ "$run_id" =~ ^[0-9]+$ ]]
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > "$RUNNER_TEMP/$kind-run.json"
+            node scripts/release-provenance.mjs "$kind" "$RUNNER_TEMP/$kind-run.json"
           }
-          verify_run "$WINDOWS_RUN_ID" 'Build Windows candidate'
-          verify_run "$MACOS_RUN_ID" 'Build macOS Apple Silicon candidate'
+          verify_run "$CORE_CI_RUN_ID" core
+          verify_run "$WINDOWS_RUN_ID" windows
+          verify_run "$MACOS_RUN_ID" macos
 
           if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
             echo "Refusing to replace existing tag $tag" >&2
@@ -202,5 +207,13 @@ jobs:
             "SUOWANG-Desktop-Portable-${PACKAGE_VERSION}.zip" \
             "SUOWANG-Desktop-Setup-${PACKAGE_VERSION}.exe" | sort)"
           test "$actual" = "$expected"
+          # Verify uploaded bytes too: names alone cannot prove a complete, identical upload.
+          mkdir -p "$RUNNER_TEMP/release-verification"
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/release-verification"
+          while IFS= read -r filename; do
+            candidate="$(find candidates -type f -name "$filename")"
+            test -f "$candidate"
+            cmp -- "$candidate" "$RUNNER_TEMP/release-verification/$filename"
+          done <<< "$expected"
           printf 'Install evidence: %s\n' "$INSTALL_EVIDENCE" >> "$GITHUB_STEP_SUMMARY"
           gh api --method PATCH "$release_endpoint" -F draft=false -F prerelease=true >/dev/null

@@ -37,7 +37,8 @@
 - 启动、备份与故障处理：`docs/operator-runbook.md`
 - 发布记录：`CHANGELOG.md`
 - 双平台候选构建：`.github/workflows/release-windows.yml`、`.github/workflows/release-macos.yml`；均以完整 commit SHA 为输入，只产出短期 Actions artifact。Windows artifact 固定包含 Lite/Desktop 两套 Setup/Portable、统一 SHA-256 与真实入口验收。
-- 聚合公开发布：`.github/workflows/publish-release.yml`；只有同 SHA 候选与人工安装升级证据齐全后，才创建最终 Tag，在 Draft 中集齐资产并一次性公开。
+- 聚合公开发布：`.github/workflows/publish-release.yml`；只有同 SHA 的完整 main CI、双平台候选与人工安装升级证据齐全后，才创建最终 Tag，在 Draft 中集齐资产并回读字节后一次性公开。
+- 发布前安全审查与剩余风险：`docs/security-review-beta.3.md`；`npm run audit:build` 对未修复的已知开发依赖告警限时复核，未知或运行时告警阻断。
 
 ## 变更闸门
 

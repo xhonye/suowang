@@ -23,7 +23,17 @@ test('launcher policy reuses the matching service', () => {
     ...expected,
     health: matchingHealth,
     listener: matchingListener,
+    processVerified: true,
   }), { action: 'reuse', reason: 'matching_service', stopExisting: false });
+});
+
+test('matching health cannot authorize reuse of an unverified or different-data-directory process', () => {
+  assert.deepEqual(decideLauncherAction({
+    ...expected,
+    health: matchingHealth,
+    listener: matchingListener,
+    processVerified: false,
+  }), { action: 'conflict', reason: 'suowang_process_unverified', stopExisting: false });
 });
 
 test('launcher policy restarts a verified older SUOWANG including legacy health without pid', () => {

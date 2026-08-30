@@ -20,6 +20,21 @@ test('backup replacement preserves the previous file when candidate creation fai
   assert.deepEqual(readdirSync(dataDir).filter((name) => name.endsWith('.tmp') || name.endsWith('.previous')), []);
 });
 
+test('same-millisecond exports and restore safeguards never share a file', async (context) => {
+  const { runtime } = createServiceHarness(context);
+  const date = new Date('2026-08-30T00:00:00.000Z');
+  const first = await runtime.createDownloadBackup(date);
+  const second = await runtime.createDownloadBackup(date);
+  assert.notEqual(first, second);
+  runtime.validateBackupFile(first);
+  runtime.validateBackupFile(second);
+  const one = await runtime.restoreFrom(first, date);
+  const two = await runtime.restoreFrom(second, date);
+  assert.notEqual(one.safetyBackup, two.safetyBackup);
+  runtime.validateBackupFile(one.safetyBackup);
+  runtime.validateBackupFile(two.safetyBackup);
+});
+
 test('an invalid existing daily backup is verified and replaced', async (context) => {
   const { runtime } = createServiceHarness(context);
   const date = new Date(2026, 7, 28, 9);

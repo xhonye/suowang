@@ -148,10 +148,10 @@ if (-not (Test-Path -LiteralPath $nodeShasumsPath -PathType Leaf)) {
 }
 node scripts/verify-node-download.mjs $nodeShasumsPath $nodeArchivePath $nodeArchiveName
 if ($LASTEXITCODE -ne 0) { throw 'Bundled Node archive verification failed.' }
-if (-not (Test-Path -LiteralPath (Join-Path $nodeExtractedRoot 'node.exe') -PathType Leaf)) {
-    if (Test-Path -LiteralPath $nodeExtractedRoot) { Remove-Item -LiteralPath $nodeExtractedRoot -Recurse -Force }
-    Expand-Archive -LiteralPath $nodeArchivePath -DestinationPath $cacheRoot -Force
-}
+# Always extract from the verified archive; an old extracted executable is not checksum evidence.
+Assert-ChildPath $cacheRoot $nodeExtractedRoot
+if (Test-Path -LiteralPath $nodeExtractedRoot) { Remove-Item -LiteralPath $nodeExtractedRoot -Recurse -Force }
+Expand-Archive -LiteralPath $nodeArchivePath -DestinationPath $cacheRoot -Force
 $runtimeRoot = Join-Path $litePortableRoot 'runtime'
 New-Item -ItemType Directory -Force -Path $runtimeRoot | Out-Null
 Copy-Item -LiteralPath (Join-Path $nodeExtractedRoot 'node.exe') -Destination (Join-Path $runtimeRoot 'node.exe') -Force

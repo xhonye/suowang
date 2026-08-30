@@ -70,7 +70,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:2037/health'
 {"status":"ok","app":"suowang","version":"<package.json version>","database":"ready","schemaVersion":7,"pid":12345,"accessMode":"local"}
 ```
 
-实际 `version` 必须等于当前安装包的 `package.json` 版本；启动器据此决定复用还是安全切换旧服务。health 不会返回数据目录或事项内容。
+实际 `version` 必须等于当前安装包的 `package.json` 版本；启动器还必须确认当前安装的 Node、精确服务入口、端口 PID 和当前数据目录实例锁，不能仅凭 health 复用。锁缺失或属于其他目录／安装时，请先退出原入口再启动；程序不会猜测或终止身份不明的进程。health 不会返回数据目录或事项内容。
 
 新安装的 Windows 数据库默认为 `%LOCALAPPDATA%/SUOWANG/suowang.db`；既有旧数据库继续留在 `D:/5Data/suowang/suowang.db`。不要手工编辑、复制运行中的数据库或把它放进仓库；使用设置页的 SQLite 导出取得一致性副本。
 
@@ -114,4 +114,8 @@ git diff --check
 git status --short
 ```
 
-`release:check` 会运行单元、浏览器、动态端口临时 smoke、npm tarball 文件清单和公开表面审计；`verify:desktop` 另行运行 Electron E2E、Forge package、安全扫描和真实 packaged smoke。Windows 候选同时构建 Lite/Desktop 的 Setup 与 Portable，验证 Lite GUI 子系统、隐藏命令壳、默认浏览器服务、视觉资产、两个真实快捷方式、旧库升级、卸载后数据保留，以及 Desktop 的真实 renderer 和单实例。候选工作流只接受完整 commit SHA，并上传不可变 Actions artifact。完成 Windows/macOS 安装升级验收后，聚合发布工作流才允许用两个候选 run ID 和 `INSTALL_VERIFIED` 创建最终 Tag，生成绑定源 commit、Electron 版本、签名状态与全部候选文件 SHA-256 的镜像清单，并在 Draft Release 内集齐资产后一次性公开。不得对已公开版本覆盖资产。所有测试必须显式使用临时数据目录与非默认端口；确认 Git 中没有 `.db`、`.sqlite`、备份、日志、头像、导出、个人主线/事项或视觉探索归档。
+`release:check` 会运行单元、浏览器、动态端口临时 smoke、npm 清单、公开表面及生产／构建依赖审计；`verify:desktop` 另行运行 Electron E2E、Forge package、安全扫描和真实 packaged smoke。自动桌面启动必须显式使用临时 `SUOWANG_DATA_DIR`，Chromium profile 也放在该临时目录；不得复用个人配置。构建依赖的限时风险审查见 `security-review-beta.3.md`，已知告警仍须显式报告。
+
+Windows 候选同时验证 Lite/Desktop 的 Setup、Portable、真实快捷方式、无可见命令窗口、视觉资产、受控旧库升级和卸载保留数据。安装／卸载测试会修改安装注册信息，应在一次性 CI runner 或测试机执行，不在日常使用的个人安装上跑。
+
+候选工作流只接受完整 commit SHA，并上传不可变 Actions artifact。完成 Windows/macOS 人工安装升级验收后，向聚合流程提供 `sha`、`core_ci_run_id`、`windows_run_id`、`macos_run_id`、`install_evidence` 和 `confirmation=INSTALL_VERIFIED`；它核对同 SHA 的 main CI 与两平台构建，并在 Draft 内集齐、重新下载比对全部资产后才公开。不得伪填人工验收证据，不得覆盖已公开资产。确认 Git 中没有私人数据库、备份、日志、头像、导出或未脱敏截图。

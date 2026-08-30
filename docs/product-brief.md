@@ -57,7 +57,7 @@ SUOWANG 是人生主线驾驶舱。它让用户在认知余量不足时，看清
 
 ## 技术与隐私
 
-当前核心使用 Vanilla JS + CSS + Node HTTP + SQLite；普通用户版以安全 Electron 薄壳提供独立桌面窗口，源码/npm 继续保留 Node 22/24 浏览器入口。Electron 不改变产品模型、HTTP API 或 SQLite 真源。业务数据只存在本机，没有登录、云同步、远程数据库、遥测或运行时 AI。正式数据库从空人生数据开始；demo 与测试使用独立临时库。
+当前核心使用 Vanilla JS + CSS + Node HTTP + SQLite；Windows Lite 自带 Node 并无命令窗口地打开默认浏览器，Desktop 与 macOS 以安全 Electron 薄壳提供独立窗口，源码/npm 保留 Node 22/24 浏览器入口。承载层不改变产品模型、HTTP API 或 SQLite 真源。业务数据只存在本机，没有登录、云同步、远程数据库、遥测或运行时 AI。正式数据库从空人生数据开始；demo 与测试使用独立临时库。
 
 邀请测试不改变这一边界：应用不会自动上传使用记录、反馈或数据库。自动备份保存在同一设备，只提供本地恢复能力，不构成异地灾备；用户应通过设置页导出 SQLite 后自行保存在另一设备或可信位置。
 

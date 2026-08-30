@@ -25,6 +25,8 @@ test('secure desktop window preserves the complete local workflow', async () => 
       env: { ...process.env, NODE_ENV: 'test', SUOWANG_DATA_DIR: dataDir },
     });
     const page = await electronApp.firstWindow();
+    expect(await electronApp.evaluate(({ app }) => ({ userData: app.getPath('userData'), sessionData: app.getPath('sessionData') })))
+      .toEqual({ userData: join(dataDir, 'electron-test-profile'), sessionData: join(dataDir, 'electron-test-profile') });
     origin = new URL(page.url()).origin;
     page.on('request', (request) => {
       if (new URL(request.url()).origin !== origin && !request.url().startsWith('data:') && !request.url().startsWith('blob:')) {

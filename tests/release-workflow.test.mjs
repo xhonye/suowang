@@ -96,8 +96,11 @@ test('source launchers enforce the documented Node 22 or 24 LTS contract', () =>
 test('publishing verifies both candidate runs and keeps the Release private until all assets exist', () => {
   const workflow = read('.github/workflows/publish-release.yml');
   assert.match(workflow, /INSTALL_VERIFIED/);
-  assert.match(workflow, /Build Windows candidate/);
-  assert.match(workflow, /Build macOS Apple Silicon candidate/);
+  assert.match(workflow, /core_ci_run_id:/);
+  assert.match(workflow, /verify_run "\$CORE_CI_RUN_ID" core/);
+  assert.match(workflow, /verify_run "\$WINDOWS_RUN_ID" windows/);
+  assert.match(workflow, /verify_run "\$MACOS_RUN_ID" macos/);
+  assert.match(workflow, /node scripts\/release-provenance\.mjs/);
   assert.match(workflow, /--draft --prerelease --verify-tag/);
   assert.match(workflow, /select\(\.tag_name == \\"\$RELEASE_TAG\\" and \.draft == true\)/);
   assert.match(workflow, /gh api --method PATCH "\$release_endpoint" -F draft=false -F prerelease=true/);
@@ -110,7 +113,20 @@ test('publishing verifies both candidate runs and keeps the Release private unti
   assert.match(workflow, /SIGNING-STATUS\.txt/);
   assert.match(workflow, /--notes-file/);
   assert.match(workflow, /Refusing to replace existing tag/);
+  assert.match(workflow, /cmp -- "\$candidate" "\$RUNNER_TEMP\/release-verification\/\$filename"/);
   assert.doesNotMatch(workflow, /--clobber/);
+});
+
+test('desktop packaging pins trusted Electron checksums and excludes vulnerable build-only tools', () => {
+  assert.match(read('forge.config.mjs'), /download: \{ checksums: require\('electron\/checksums\.json'\) \}/);
+  assert.match(read('scripts/verify-desktop-package.mjs'), /Build-only dependency leaked into the user package/);
+});
+
+test('automated desktop launches isolate Chromium profile before acquiring the application lock', () => {
+  const main = read('desktop/main.js');
+  assert.match(main, /Automated desktop launches require an explicit isolated SUOWANG_DATA_DIR/);
+  assert.match(main, /app\.setPath\('sessionData', testProfile\)/);
+  assert.ok(main.indexOf("app.setPath('userData', testProfile)") < main.indexOf('app.requestSingleInstanceLock()'));
 });
 
 test('desktop packaging preserves stable application identities and direct executable entry points', () => {

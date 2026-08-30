@@ -16,11 +16,11 @@
 ## 公开前硬门槛
 
 1. 版本来自 `package.json`，候选工作区干净，构建输入是完整 40 位 commit SHA。
-2. 核心 CI、Chromium E2E、临时数据库 smoke、npm 清单、公开表面审计和运行时依赖审计全部通过。
+2. 核心 CI、Chromium E2E、临时数据库 smoke、npm 清单、公开表面审计和运行时依赖审计全部通过。构建依赖同时运行 `audit:build`；未知告警必须阻断，任何已审查例外必须限定为开发依赖、精确版本与到期日，不能写成“已修复”。
 3. Windows 与 macOS 候选工作流使用同一 SHA；安装包、Portable/DMG、校验文件和签名状态均来自各自目标平台。
 4. Windows 的 Lite 与 Desktop 均验收 Setup、桌面快捷方式、Portable、旧库升级、卸载与数据保留；Lite 额外验证 GUI 子系统、无可见命令窗口与默认浏览器服务，Desktop 额外验证独立 renderer 和单实例。macOS 验收 DMG 挂载、Applications 拖放、首次打开、升级、退出和无残留进程。
 5. 候选未签名时如实标记 `UNSIGNED`，不得使用自签名证书冒充可信发布者；只有实际完成 Apple notarization 才能写 `SIGNED+NOTARIZED`。
-6. 人工验收后，聚合流程下载精确候选 artifact、复验 SHA-256、创建不可移动 annotated Tag，并在 Draft 中集齐资产后一次性公开。
+6. 人工验收后，聚合流程核对同 SHA、同仓库 main 的完整 CI 和双平台候选运行（校验 workflow 路径与事件），下载精确 artifact、复验 SHA-256、创建不可移动 annotated Tag，并在 Draft 中集齐资产、重新下载逐字节比对后一次性公开。
 7. 已存在的 Tag、Release 或同名资产必须使流程失败；禁止 `--clobber` 已公开资产。
 
 ## 公开资产合同

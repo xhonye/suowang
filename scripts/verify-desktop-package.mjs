@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FuseV1Options, getCurrentFuseWire } from '@electron/fuses';
-import { statFile as statAsarFile } from '@electron/asar';
+import { statFile as statAsarFile, listPackage } from '@electron/asar';
 import { APP_VERSION } from '../src/server/app-meta.mjs';
 import { ROAD_VISUAL_ASSETS } from '../src/visual-assets.mjs';
 import { auditElectronSecurity } from './audit-electron-security.mjs';
@@ -50,6 +50,11 @@ export async function verifyDesktopPackage(options = {}) {
     if (!existsSync(path)) throw new Error(`Packaged desktop file is missing: ${path}`);
   }
   const asarPath = join(packaged.resources, 'app.asar');
+  const buildOnlyDependency = listPackage(asarPath).find((path) => (
+    /[/\\]node_modules[/\\](?:extract-zip|image-size|appdmg|@electron-forge|@electron[/\\]packager)(?:[/\\]|$)/.test(path)
+    && !statAsarFile(asarPath, path.replace(/^[/\\]+/, '')).files
+  ));
+  if (buildOnlyDependency) throw new Error(`Build-only dependency leaked into the user package: ${buildOnlyDependency}`);
   for (const asset of ROAD_VISUAL_ASSETS) {
     let entry;
     try {

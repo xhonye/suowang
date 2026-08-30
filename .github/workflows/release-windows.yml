@@ -55,6 +55,8 @@ jobs:
 
       - name: Verify assets, real entry points, upgrade and data retention
         shell: pwsh
+        env:
+          NODE_ENV: test
         run: |
           $ErrorActionPreference = 'Stop'
           $version = $env:PACKAGE_VERSION

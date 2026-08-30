@@ -48,6 +48,15 @@ app.setName(PRODUCT_NAME);
 app.setAppUserModelId(APP_USER_MODEL_ID);
 app.enableSandbox();
 
+// Automated launches must not write Chromium cache or single-instance state into a real user's profile.
+if (isSmokeTest || process.env.NODE_ENV === 'test') {
+  if (!process.env.SUOWANG_DATA_DIR) throw new Error('Automated desktop launches require an explicit isolated SUOWANG_DATA_DIR.');
+  const testProfile = join(resolveDataDir(), 'electron-test-profile');
+  mkdirSync(testProfile, { recursive: true });
+  app.setPath('userData', testProfile);
+  app.setPath('sessionData', testProfile);
+}
+
 const ownsApplicationInstance = app.requestSingleInstanceLock();
 if (!ownsApplicationInstance) app.quit();
 

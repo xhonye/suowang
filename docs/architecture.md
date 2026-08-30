@@ -43,6 +43,7 @@ Sandbox renderer
 - `src/server/app-server.mjs`：桌面与浏览器入口共用的服务 bootstrap，显式接收 resource root，返回 server、origin、actualPort、runtime、实例锁和 `close()`。
 - `src/server/instance-lock.mjs`：跨 Electron/CLI 的数据目录所有权；原子创建并只清理可验证 stale lock，不终止未知进程。
 - `scripts/launcher-config.mjs`、`src/server/launcher-policy.mjs`：浏览器兼容入口的版本、端口、访问模式与旧服务识别策略。
+- `scripts/start.ps1`：复用或切换旧服务前核对精确 Node/入口、端口 PID、当前数据目录实例锁；终止前再次核对锁 token 和进程创建时间，拒绝其他安装或数据目录。没有可验证实例锁的旧入口须先手动退出。
 - `src/server/database.mjs`：migration、连接生命周期、每日备份、下载备份与整库恢复。
 - `src/server/service.mjs`：全部业务规则和 snapshot 组装。
 - `scripts/serve.mjs`：精简浏览器/CLI 入口，调用共享 app server。
@@ -64,7 +65,7 @@ Sandbox renderer
 
 1. 启动时识别全部未运行的 migration。已有数据库升级前先 checkpoint WAL，并在 `backups/` 创建带起止 schema 版本和 UTC 时间戳的不可覆盖快照；全部待执行 migration 与 schema 记录在单一事务中执行，提交前必须通过 `integrity_check` 和 `foreign_key_check`。失败时事务完整回滚，迁移前快照保留。
 2. 当天首次启动前创建一致性 SQLite 备份：先写同目录唯一临时文件，验证 `integrity_check`、`foreign_key_check`、SUOWANG 必需表、固定三模式和当前完整 migration 集后再提升为正式文件；当天文件已存在时也执行同一语义校验，合法但属于其他应用的 SQLite 或旧 schema 文件都用已验证候选替换。自动备份滚动保留 30 份。
-3. 手动 SQLite 导出复用同一原子备份路径；JSON 导出只用于人类阅读。
+3. 手动 SQLite 导出复用同一原子备份逻辑；每次下载和恢复前快照使用独立随机操作 ID，同毫秒请求不会共用或覆盖文件。JSON 导出只用于人类阅读。
 4. 整库恢复先验证文件结构，再备份当前库，关闭连接并原子替换；失败时恢复安全副本。
 5. 正式数据、备份、头像、访问配置、日志和临时导出始终跟随同一个仓库外数据目录。Windows 新安装使用 `%LOCALAPPDATA%/SUOWANG`；只有旧目录已经存在 `suowang.db` 时才继续使用 `D:/5Data/suowang`。两处都有数据库时停止并要求显式选择，不自动搬迁或合并。macOS 使用 `~/Library/Application Support/SUOWANG/`。
 
@@ -84,7 +85,7 @@ Node 单元测试、Playwright 浏览器测试和临时 smoke 都显式使用仓
 
 常规 CI 在 Linux、Windows 和 macOS 上分别用 Node 22/24 运行单元门禁与动态端口临时 smoke，在 Linux 执行浏览器测试，并在 Windows/macOS 执行 Electron 单元与开发态 E2E。Windows 与 macOS 候选工作流只接受完整 commit SHA：Windows 同时验证 Lite/Desktop 的 Portable、静默安装、直接 EXE/快捷方式启动、无可见命令壳、视觉资产、单实例、受控旧 schema 升级、卸载和数据保留；macOS 挂载最终 DMG、复制 `.app`、执行 packaged smoke、受控升级并检查无残留进程。候选只保存为短期 Actions artifact，不创建 Tag 或公开 Release。
 
-人工完成 Windows/macOS 安装、升级与未签名打开验收后，聚合发布工作流核对两个成功候选运行都来自同一 SHA，下载精确 artifact 并复验 SHA-256。它读取候选的真实签名状态，生成绑定版本、完整源 commit、Electron 版本、双平台签名状态和七个候选文件 SHA-256 的镜像清单，随后创建不可移动的 annotated Tag，在 Draft Release 中上传四个 Windows 发行物、两个 macOS 文件及镜像清单，核对名称齐全后才公开为 prerelease。任何既有 Tag 或 Release 都使流程失败，不允许 `--clobber`。
+人工完成 Windows/macOS 安装、升级与未签名打开验收后，聚合发布工作流核对完整 main CI 与两个成功候选运行都来自同仓库、同一 SHA，验证 workflow 路径与事件，下载精确 artifact 并复验 SHA-256。它读取候选的真实签名状态，生成绑定版本、完整源 commit、Electron 版本、双平台签名状态和七个候选文件 SHA-256 的镜像清单，随后创建不可移动的 annotated Tag，在 Draft Release 中上传四个 Windows 发行物、Windows 校验和、两个 macOS 文件及镜像清单，重新下载并逐字节比对后才公开为 prerelease。任何既有 Tag 或 Release 都使流程失败，不允许 `--clobber`。构建依赖的已知风险、输入约束和限时审查见 `security-review-beta.3.md`。
 
 ## 取舍
 

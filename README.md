@@ -10,7 +10,7 @@
 
 ## Windows 30 秒开始
 
-`0.2.0-beta.3` 是当前公开 Beta，可从 [GitHub Release](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.3) 下载。`0.2.0-beta.1` 的桌面包缺少道路视觉资产，请勿继续下载或镜像。
+当前可下载版本以 [GitHub Releases](https://github.com/xhonye/suowang/releases) 为准。以下是本分支 `0.2.0-beta.3` 的安装说明；若 Release 列表尚未出现这个版本，它仍是候选，不能把 Actions artifact 当作公开发行。`0.2.0-beta.1` 的桌面包缺少道路视觉资产，请勿继续下载或镜像。
 
 ### 推荐：轻量版
 

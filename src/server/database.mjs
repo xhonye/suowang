@@ -249,7 +249,7 @@ export class DatabaseRuntime {
   }
 
   async createDownloadBackup(date = new Date()) {
-    const path = join(this.tempDir, `suowang-export-${timestampKey(date)}.db`);
+    const path = join(this.tempDir, `suowang-export-${timestampKey(date)}-${randomUUID()}.db`);
     await this.backupTo(path);
     return path;
   }
@@ -285,10 +285,11 @@ export class DatabaseRuntime {
 
   async restoreFrom(sourcePath, date = new Date()) {
     this.validateRestoreFile(sourcePath);
-    const safetyBackup = join(this.backupsDir, `pre-restore-${timestampKey(date)}.db`);
+    const operationId = `${timestampKey(date)}-${randomUUID()}`;
+    const safetyBackup = join(this.backupsDir, `pre-restore-${operationId}.db`);
     await this.backupTo(safetyBackup);
 
-    const rollbackPath = join(this.tempDir, `rollback-${timestampKey(date)}.db`);
+    const rollbackPath = join(this.tempDir, `rollback-${operationId}.db`);
     this.db.pragma('wal_checkpoint(TRUNCATE)');
     this.db.close();
     removeIfPresent(`${this.databasePath}-wal`);
