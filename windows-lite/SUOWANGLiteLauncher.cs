@@ -8,9 +8,9 @@ internal static class SUOWANGLiteLauncher
     [STAThread]
     private static int Main()
     {
+        string root = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
         try
         {
-            string root = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
             string script = Path.Combine(root, "scripts", "start.ps1");
             string powershell = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.System),
@@ -46,6 +46,27 @@ internal static class SUOWANGLiteLauncher
         }
         catch (Exception error)
         {
+            try
+            {
+                string dataDir = Environment.GetEnvironmentVariable("SUOWANG_DATA_DIR");
+                if (String.IsNullOrWhiteSpace(dataDir))
+                {
+                    dataDir = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "SUOWANG"
+                    );
+                }
+                string logsDir = Path.Combine(dataDir, "logs");
+                Directory.CreateDirectory(logsDir);
+                File.WriteAllText(
+                    Path.Combine(logsDir, "latest-launcher-error.log"),
+                    "阶段：启动原生入口" + Environment.NewLine + "原因：" + error.Message
+                );
+            }
+            catch
+            {
+                // The dialog remains the final fallback when the log path is unavailable.
+            }
             MessageBox.Show(
                 error.Message,
                 "SUOWANG 启动失败",

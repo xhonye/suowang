@@ -49,7 +49,15 @@ function Invoke-LiteSmoke([string]$entry, [string]$dataDir, [string]$name) {
         Start-Sleep -Milliseconds 100
         $process.Refresh()
     }
-    if ($process.ExitCode -ne 0) { throw "$name launcher exited with $($process.ExitCode)." }
+    if ($process.ExitCode -ne 0) {
+        $failureLog = Join-Path $dataDir 'logs/latest-launcher-error.log'
+        $detail = if (Test-Path -LiteralPath $failureLog -PathType Leaf) {
+            ((Get-Content -LiteralPath $failureLog -Tail 20) -join [Environment]::NewLine).Trim()
+        } else {
+            'No launcher diagnostic log was created.'
+        }
+        throw "$name launcher exited with $($process.ExitCode). $detail"
+    }
     if ($visibleShells.Count -gt 0) { throw "$name exposed a PowerShell child window." }
 
     $health = $null

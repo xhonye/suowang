@@ -207,7 +207,24 @@ try {
         Start-Process -FilePath $appUrl
     }
 } catch {
-    $logPath = if ($stderrLog) { $stderrLog } else { '尚未建立日志文件' }
-    Show-StartError "阶段：$stage`n原因：$($_.Exception.Message)`n日志：$logPath`n下一步：请先按提示处理；若仍失败，请把日志内容发给维护者。"
+    $failureMessage = "阶段：$stage`n原因：$($_.Exception.Message)"
+    $failureLog = $null
+    try {
+        $failureDataDir = if ($dataDir) {
+            $dataDir
+        } elseif ($env:SUOWANG_DATA_DIR) {
+            $env:SUOWANG_DATA_DIR
+        } else {
+            Join-Path $env:LOCALAPPDATA 'SUOWANG'
+        }
+        $failureLogsDir = Join-Path $failureDataDir 'logs'
+        New-Item -ItemType Directory -Force -Path $failureLogsDir | Out-Null
+        $failureLog = Join-Path $failureLogsDir 'latest-launcher-error.log'
+        Set-Content -LiteralPath $failureLog -Value $failureMessage -Encoding UTF8
+    } catch {
+        $failureLog = $null
+    }
+    $logPath = if ($failureLog) { $failureLog } elseif ($stderrLog) { $stderrLog } else { '尚未建立日志文件' }
+    Show-StartError "$failureMessage`n日志：$logPath`n下一步：请先按提示处理；若仍失败，请把日志内容发给维护者。"
     exit 1
 }
