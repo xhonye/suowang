@@ -5,6 +5,21 @@ using System.Windows.Forms;
 
 internal static class SUOWANGLiteLauncher
 {
+    private static void WriteDiagnostic(string message)
+    {
+        string dataDir = Environment.GetEnvironmentVariable("SUOWANG_DATA_DIR");
+        if (String.IsNullOrWhiteSpace(dataDir))
+        {
+            dataDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "SUOWANG"
+            );
+        }
+        string logsDir = Path.Combine(dataDir, "logs");
+        Directory.CreateDirectory(logsDir);
+        File.WriteAllText(Path.Combine(logsDir, "latest-launcher-error.log"), message);
+    }
+
     [STAThread]
     private static int Main()
     {
@@ -32,6 +47,7 @@ internal static class SUOWANGLiteLauncher
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
+                RedirectStandardError = true,
             };
 
             using (Process process = Process.Start(startInfo))
@@ -40,7 +56,19 @@ internal static class SUOWANGLiteLauncher
                 {
                     throw new InvalidOperationException("无法启动所往。请重新安装后再试。");
                 }
+                string standardError = process.StandardError.ReadToEnd();
                 process.WaitForExit();
+                if (process.ExitCode != 0)
+                {
+                    string detail = String.IsNullOrWhiteSpace(standardError)
+                        ? "PowerShell did not return diagnostic text."
+                        : standardError.Trim();
+                    WriteDiagnostic(
+                        "阶段：启动 PowerShell 入口" + Environment.NewLine
+                        + "退出码：" + process.ExitCode + Environment.NewLine
+                        + "原因：" + detail
+                    );
+                }
                 return process.ExitCode;
             }
         }
@@ -48,20 +76,7 @@ internal static class SUOWANGLiteLauncher
         {
             try
             {
-                string dataDir = Environment.GetEnvironmentVariable("SUOWANG_DATA_DIR");
-                if (String.IsNullOrWhiteSpace(dataDir))
-                {
-                    dataDir = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                        "SUOWANG"
-                    );
-                }
-                string logsDir = Path.Combine(dataDir, "logs");
-                Directory.CreateDirectory(logsDir);
-                File.WriteAllText(
-                    Path.Combine(logsDir, "latest-launcher-error.log"),
-                    "阶段：启动原生入口" + Environment.NewLine + "原因：" + error.Message
-                );
+                WriteDiagnostic("阶段：启动原生入口" + Environment.NewLine + "原因：" + error.Message);
             }
             catch
             {

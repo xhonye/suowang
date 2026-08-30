@@ -142,6 +142,8 @@ test('Lite packaging uses a distinct installer identity and a no-console native 
   assert.match(launcher, /UseShellExecute = false/);
   assert.match(launcher, /CreateNoWindow = true/);
   assert.match(launcher, /WindowStyle = ProcessWindowStyle\.Hidden/);
+  assert.match(launcher, /RedirectStandardError = true/);
+  assert.match(launcher, /process\.StandardError\.ReadToEnd\(\)/);
 });
 
 test('packaged candidates require approved road assets in ASAR and decoded in the renderer', () => {
