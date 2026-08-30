@@ -129,6 +129,7 @@ test('Lite packaging uses a distinct installer identity and a no-console native 
   const build = read('scripts/build-windows-release.ps1');
   const verifier = read('scripts/verify-windows-lite-package.ps1');
   const startScript = read('scripts/start.ps1');
+  const startBytes = readFileSync(new URL('../scripts/start.ps1', import.meta.url));
   assert.match(installer, /AppId=\{\{43D37C7B-85BD-4690-B31A-9F468B06BE90\}/);
   assert.match(installer, /SUOWANG-Lite\.exe/);
   assert.match(build, /\/target:winexe/);
@@ -138,6 +139,7 @@ test('Lite packaging uses a distinct installer identity and a no-console native 
   assert.match(verifier, /VisibleShells/);
   assert.match(verifier, /latest-launcher-error\.log/);
   assert.match(startScript, /Set-Content -LiteralPath \$failureLog/);
+  assert.deepEqual([...startBytes.subarray(0, 3)], [0xef, 0xbb, 0xbf]);
   assert.match(launcher, /latest-launcher-error\.log/);
   assert.match(launcher, /UseShellExecute = false/);
   assert.match(launcher, /CreateNoWindow = true/);
