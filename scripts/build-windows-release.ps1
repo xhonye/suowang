@@ -163,7 +163,7 @@ $cscPath = @(
 ) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
 if (-not $cscPath) { throw 'The Windows .NET Framework C# compiler is required to build the Lite launcher.' }
 $liteLauncherPath = Join-Path $litePortableRoot 'SUOWANG-Lite.exe'
-& $cscPath /nologo /target:winexe /platform:x64 /reference:System.Windows.Forms.dll "/win32icon:$projectRoot/assets/brand/suowang-app-icon.ico" "/out:$liteLauncherPath" (Join-Path $projectRoot 'windows-lite/SUOWANGLiteLauncher.cs')
+& $cscPath /nologo /target:winexe /platform:x64 /codepage:65001 /reference:System.Windows.Forms.dll "/win32icon:$projectRoot/assets/brand/suowang-app-icon.ico" "/out:$liteLauncherPath" (Join-Path $projectRoot 'windows-lite/SUOWANGLiteLauncher.cs')
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $liteLauncherPath -PathType Leaf)) {
     throw 'Lite native launcher compilation failed.'
 }

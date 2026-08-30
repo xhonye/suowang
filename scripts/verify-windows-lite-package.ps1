@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Version,
     [string]$DistRoot,
     [switch]$VerifyShortcut
