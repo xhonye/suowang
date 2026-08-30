@@ -47,7 +47,6 @@ internal static class SUOWANGLiteLauncher
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
-                RedirectStandardError = true,
             };
 
             using (Process process = Process.Start(startInfo))
@@ -56,19 +55,7 @@ internal static class SUOWANGLiteLauncher
                 {
                     throw new InvalidOperationException("无法启动所往。请重新安装后再试。");
                 }
-                string standardError = process.StandardError.ReadToEnd();
                 process.WaitForExit();
-                if (process.ExitCode != 0)
-                {
-                    string detail = String.IsNullOrWhiteSpace(standardError)
-                        ? "PowerShell did not return diagnostic text."
-                        : standardError.Trim();
-                    WriteDiagnostic(
-                        "阶段：启动 PowerShell 入口" + Environment.NewLine
-                        + "退出码：" + process.ExitCode + Environment.NewLine
-                        + "原因：" + detail
-                    );
-                }
                 return process.ExitCode;
             }
         }
