@@ -138,6 +138,9 @@ test('Lite packaging uses a distinct installer identity and a no-console native 
   assert.match(verifier, /Get-PeSubsystem/);
   assert.match(verifier, /VisibleShells/);
   assert.match(verifier, /latest-launcher-error\.log/);
+  assert.match(verifier, /New-Object -ComObject WScript\.Shell/);
+  assert.match(verifier, /desktop-shortcut-target/);
+  assert.match(verifier, /AddSeconds\(45\)/);
   assert.match(startScript, /Set-Content -LiteralPath \$failureLog/);
   assert.deepEqual([...startBytes.subarray(0, 3)], [0xef, 0xbb, 0xbf]);
   assert.match(launcher, /latest-launcher-error\.log/);

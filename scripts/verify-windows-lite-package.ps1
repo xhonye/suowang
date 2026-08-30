@@ -40,7 +40,12 @@ function Invoke-LiteSmoke([string]$entry, [string]$dataDir, [string]$name) {
     $env:SUOWANG_SKIP_BROWSER = '1'
     $process = Start-Process -FilePath $entry -PassThru
     $visibleShells = @()
+    $launcherDeadline = (Get-Date).AddSeconds(45)
     while (-not $process.HasExited) {
+        if ((Get-Date) -ge $launcherDeadline) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            throw "$name launcher did not exit within 45 seconds."
+        }
         $children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$($process.Id)" -ErrorAction SilentlyContinue)
         foreach ($child in $children | Where-Object { $_.Name -match '^(powershell|pwsh|cmd)\.exe$' }) {
             $shellProcess = Get-Process -Id $child.ProcessId -ErrorAction SilentlyContinue
@@ -135,7 +140,22 @@ try {
     if ($VerifyShortcut) {
         $shortcutPath = Join-Path ([Environment]::GetFolderPath('Desktop')) '所往 SUOWANG（轻量版）.lnk'
         if (-not (Test-Path -LiteralPath $shortcutPath -PathType Leaf)) { throw 'Lite desktop shortcut was not created.' }
-        $shortcutResult = Invoke-LiteSmoke $shortcutPath $shortcutData 'desktop-shortcut'
+        $shortcutShell = New-Object -ComObject WScript.Shell
+        $shortcut = $shortcutShell.CreateShortcut($shortcutPath)
+        $resolvedTarget = [System.IO.Path]::GetFullPath($shortcut.TargetPath)
+        $expectedTarget = [System.IO.Path]::GetFullPath($installedExe)
+        if (-not $resolvedTarget.Equals($expectedTarget, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Lite desktop shortcut targets $resolvedTarget instead of $expectedTarget."
+        }
+        $resolvedWorkingDirectory = [System.IO.Path]::GetFullPath($shortcut.WorkingDirectory)
+        $expectedWorkingDirectory = [System.IO.Path]::GetFullPath($installRoot)
+        if (-not $resolvedWorkingDirectory.Equals($expectedWorkingDirectory, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Lite desktop shortcut has an invalid working directory: $resolvedWorkingDirectory."
+        }
+        if (-not [string]::IsNullOrWhiteSpace($shortcut.Arguments)) {
+            throw 'Lite desktop shortcut unexpectedly includes command-line arguments.'
+        }
+        $shortcutResult = Invoke-LiteSmoke $resolvedTarget $shortcutData 'desktop-shortcut-target'
     }
 
     & node (Join-Path $projectRoot 'scripts/create-upgrade-fixture.mjs') $upgradeData
