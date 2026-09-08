@@ -13,8 +13,9 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
     private Snapshot? snapshot;
     private bool busy, rendering, disposed;
     private readonly StepDraft draft = new();
-    private TextBlock? preview, title, context, status, runningLabel;
-    private Border? runningBadge;
+    private TextBlock? preview, title, context, status;
+    private Button? previewToggle;
+    private IWidgetContext? widgetContext;
     private TextBox? step, newTitle;
     private ComboBox? modes, choices;
     private Button? start, complete, save, cancel, add, launch, retry, open;
@@ -23,13 +24,14 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
 
     public override string Id => "com.suowang.nextstep";
     public override string Name => "所往 · 下一步";
-    public override int PreviewLogicalWidth => 180;
+    public override int PreviewLogicalWidth => 144;
     public override int FlyoutWidth => 340;
     public override int FlyoutHeight => 370;
     public override WidgetFlyoutBackdrop FlyoutBackdrop => WidgetFlyoutBackdrop.Mica;
 
     public override async Task InitializeAsync(IWidgetContext context)
     {
+        widgetContext = context;
         timer.Tick += async (_, _) => { if (!draft.IsDirty) await Refresh(); };
         timer.Start();
         await Refresh();
@@ -44,25 +46,27 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
     }
     public override UIElement CreatePreviewContent()
     {
-        preview = new TextBlock { FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
+        preview = new TextBlock { FontSize = 11, TextWrapping = TextWrapping.Wrap, MaxLines = 2,
+            TextAlignment = TextAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center };
-        var panel = new Grid { Width = PreviewLogicalWidth, ColumnSpacing = 7,
+        var panel = new Grid { Width = PreviewLogicalWidth, ColumnSpacing = 4,
             VerticalAlignment = VerticalAlignment.Center, Padding = new Thickness(8, 0, 8, 0) };
-        panel.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         panel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        panel.Children.Add(new FontIcon { Glyph = "\uE72A", FontSize = 14, Width = 14,
-            Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 87, 157, 201)) });
-        Grid.SetColumn(preview, 1);
-        panel.Children.Add(preview);
+        var details = new Button { Content = preview, Padding = new Thickness(0), MinWidth = 0,
+            HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            BorderThickness = new Thickness(0), Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0)) };
+        details.Click += (_, _) => widgetContext?.RequestOpenFlyout();
+        details.Tapped += (_, args) => args.Handled = true;
+        panel.Children.Add(details);
         panel.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        runningLabel = Text("执行中", 10);
-        runningLabel.FontWeight = FontWeights.SemiBold;
-        runningLabel.Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 30, 86, 120));
-        runningBadge = new Border { Child = runningLabel, Padding = new Thickness(5, 3, 5, 3),
-            CornerRadius = new CornerRadius(4), VerticalAlignment = VerticalAlignment.Center,
-            Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 203, 230, 248)),
-            Visibility = Visibility.Collapsed };
-        Grid.SetColumn(runningBadge, 2); panel.Children.Add(runningBadge);
+        previewToggle = new Button { Width = 28, Height = 28, MinWidth = 28, MinHeight = 28,
+            Padding = new Thickness(0), CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(0),
+            Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0)),
+            VerticalAlignment = VerticalAlignment.Center };
+        previewToggle.Click += async (_, _) => await ToggleStarted();
+        previewToggle.Tapped += (_, args) => args.Handled = true;
+        Grid.SetColumn(previewToggle, 1); panel.Children.Add(previewToggle);
         Render();
         return panel;
     }
@@ -114,11 +118,7 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
         var actions = new Grid { ColumnSpacing = 8 };
         actions.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         actions.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        start = Button("开始这一步", async () =>
-        {
-            if (draft.IsDirty || snapshot?.Current.Next is not Todo todo) return;
-            await Mutate("POST", $"api/todos/{todo.Id}/{(snapshot.Current.StartedTodoId == todo.Id ? "pause" : "start")}", new { });
-        });
+        start = Button("开始这一步", ToggleStarted);
         complete = Button("完成", async () =>
         {
             if (draft.IsDirty || snapshot?.Current.Next is not Todo todo) return;
@@ -176,6 +176,11 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
         return layout;
     }
     private Connection Client => connection ??= new Connection();
+    private async Task ToggleStarted()
+    {
+        if (busy || draft.IsDirty || snapshot?.Current.Next is not Todo todo) return;
+        await Mutate("POST", $"api/todos/{Uri.EscapeDataString(todo.Id)}/{(snapshot.Current.StartedTodoId == todo.Id ? "pause" : "start")}", new { });
+    }
     private Task Refresh() => Run(async () => { snapshot = await Client.Read(); message = ""; });
     private async Task<bool> Mutate(string method, string path, object body)
     {
@@ -206,7 +211,15 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
         {
             var mode = snapshot?.Current; var todo = mode?.Next;
             var running = todo != null && mode?.StartedTodoId == todo.Id;
-            if (runningBadge != null) runningBadge.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
+            if (previewToggle != null)
+            {
+                previewToggle.Content = new FontIcon { Glyph = running ? "\uE769" : "\uE768", FontSize = 14,
+                    Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 78, 131, 156)) };
+                previewToggle.IsEnabled = !busy && !draft.IsDirty && todo != null;
+                var actionLabel = todo == null ? "暂无可开始的事项" : running ? "进行中 · 点击暂停" : "暂停中 · 点击开始或继续";
+                ToolTipService.SetToolTip(previewToggle, actionLabel);
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(previewToggle, actionLabel);
+            }
             if (preview != null)
             {
                 preview.Text = snapshot == null ? "所往 · 未连接" : todo == null ? "所往 · 写下下一步"
@@ -219,7 +232,7 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
             title.Text = draft.IsDirty ? draft.Title : snapshot == null ? "连接所往" : todo?.Title ?? "接下来想做什么？";
             ToolTipService.SetToolTip(title, title.Text);
             context!.Text = draft.IsDirty && todo?.Id != draft.Id ? "未保存的编辑 · 原事项"
-                : mode == null ? "随手接续下一步" : $"{(running ? "▶ 执行中 · " : "")}{mode.Name} · {mode.Context}";
+                : mode == null ? "随手接续下一步" : $"{(running ? "进行中 · " : "")}{mode.Name} · {mode.Context}";
             modes.SelectedItem = modes.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == mode?.Id);
             taskPanel!.Visibility = todo != null || draft.IsDirty ? Visibility.Visible : Visibility.Collapsed;
             emptyPanel!.Visibility = snapshot != null && todo == null && !draft.IsDirty ? Visibility.Visible : Visibility.Collapsed;
@@ -240,6 +253,7 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
     }
     private void UpdateControls()
     {
+        if (previewToggle != null) previewToggle.IsEnabled = !busy && !draft.IsDirty && snapshot?.Current.Next != null;
         if (editActions == null || status == null) return;
         editActions.Visibility = draft.IsDirty ? Visibility.Visible : Visibility.Collapsed;
         foreach (var control in new Control?[] { modes, choices, start, complete, add, newTitle })
