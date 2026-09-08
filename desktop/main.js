@@ -390,8 +390,21 @@ async function runPackagedSmoke(window) {
     });
     const screenshotPath = process.env.SUOWANG_SMOKE_SCREENSHOT;
     if (screenshotPath) {
-      window.show();
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      window.showInactive();
+      await window.webContents.executeJavaScript(`(async () => {
+        const deadline = Date.now() + 10000;
+        while (Date.now() < deadline) {
+          const layer = document.querySelector('#loading-layer');
+          const style = layer && getComputedStyle(layer);
+          if (document.visibilityState === 'visible' && style?.visibility === 'hidden' && Number(style.opacity) === 0) {
+            // Hidden windows may finish the DOM before the first visible paint.
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            return;
+          }
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        throw new Error('The installed window did not become visibly ready for screenshot review.');
+      })()`);
       mkdirSync(dirname(screenshotPath), { recursive: true });
       writeFileSync(screenshotPath, (await window.webContents.capturePage()).toPNG(), { flag: 'w' });
       report.screenshotWritten = true;
