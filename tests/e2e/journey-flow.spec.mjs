@@ -59,20 +59,19 @@ test('active next-step background moves right without stretching or blocking con
         const style = getComputedStyle(el, '::before');
         return { x: new DOMMatrixReadOnly(style.transform).m41, opacity: Number(style.opacity) };
       };
-      const entry = sample(150);
-      const exit = sample(750);
+      const entry = sample(550);
+      const exit = sample(3300);
       const quiet = sample(2000);
       const nextQuiet = sample(4000);
-      animation.currentTime = 420;
+      animation.currentTime = 2100;
       return { running, entry, exit, quiet, nextQuiet, width: el.clientWidth };
     });
     expect(motion.running).toBe('running');
     expect(motion.exit.x - motion.entry.x).toBeGreaterThan(motion.width * .6);
     expect(motion.entry.opacity).toBe(1);
     expect(motion.exit.opacity).toBe(1);
-    expect(motion.quiet.opacity).toBe(0);
-    expect(motion.nextQuiet).toEqual(motion.quiet);
-    expect(motion.quiet.x).toBeCloseTo(motion.width, 0);
+    expect(motion.quiet.opacity).toBe(1);
+    expect(motion.nextQuiet.x).toBeGreaterThan(motion.quiet.x);
     expect((await page.locator('#priority-zone').boundingBox()).height).toBe(originalHeight);
     // Compare geometry relative to viewport after any automatic scrolling.
     expect((await page.locator('.road-base').boundingBox()).height).toBe(road.height);
@@ -96,4 +95,20 @@ test('active next-step background moves right without stretching or blocking con
   await page.locator('#priority-content').getByRole('button', { name: '完成 整理这一小步' }).click();
   await expect(flow).toBeHidden();
   expect((await snapshot(request)).states.find(state => state.id === 'work').startedTodoId).toBeNull();
+});
+
+test('external execution changes sync and reduced motion retains a clear status', async ({ page, request }) => {
+  await openDashboard(page);
+  await createMainline(page, '同步测试');
+  await createTodo(page, '外部开始');
+  const state = (await snapshot(request)).states.find(s => s.id === 'work');
+  await request.post(`/api/todos/${state.priorityTodoId}/start`, { data: {} });
+  await expect(page.locator('.priority-journey-state')).toHaveText('正在走这一步', { timeout: 8000 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.locator('.priority-flow')).toBeHidden();
+  await expect(page.locator('.priority-journey-state')).toBeVisible();
+  await expect(page.locator('#priority-zone')).toHaveClass(/is-running/);
+  await request.post(`/api/todos/${state.priorityTodoId}/pause`, { data: {} });
+  await expect(page.locator('.priority-journey-state')).toHaveCount(0, { timeout: 8000 });
+  await expect(page.locator('#priority-zone')).not.toHaveClass(/is-running/);
 });

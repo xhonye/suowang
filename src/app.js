@@ -337,6 +337,7 @@ function renderPriority(state) {
   const container = byId('priority-content');
   const stuckToggle = byId('stuck-toggle');
   byId('priority-flow').hidden = !(priority && !ui.stuckOpen && state.startedTodoId === priority.id);
+  byId('priority-zone').classList.toggle('is-running', Boolean(priority && !ui.stuckOpen && state.startedTodoId === priority.id));
   byId('priority-zone').classList.toggle('stuck-open', Boolean(priority && ui.stuckOpen));
   stuckToggle.hidden = !priority;
   stuckToggle.textContent = ui.stuckOpen ? '收起' : '卡住了？';
@@ -464,6 +465,7 @@ function renderHistory() {
           </div>
         </div>
         ${details}
+        ${item.type === 'todo' && item.notes ? `<details class="history-notes"><summary>备注</summary><p>${html(item.notes)}</p></details>` : ''}
       </article>
     `;
   }).join('');
@@ -606,6 +608,7 @@ function openContextMenu(type, id, x, y) {
     `
     : `
       ${choiceActions}
+      <button type="button" role="menuitem" data-context-action="edit-notes" data-target-id="${id}">${todo?.notes ? '查看 / 编辑备注' : '添加备注'}</button>
       ${todo?.kind === 'ongoing'
         ? (todo.completedToday ? `<button type="button" role="menuitem" data-context-action="undo-record" data-target-id="${id}">撤回今天</button>` : '')
         : `<button type="button" role="menuitem" data-context-action="make-ongoing" data-target-id="${id}">设为持续事项</button>`}
@@ -634,7 +637,7 @@ function openDialog({ kicker, title, message, fields = '', confirmLabel = '确�
   ui.dialogAction = onConfirm;
   ui.dialogSuccess = onSuccess;
   byId('action-dialog').showModal();
-  requestAnimationFrame(() => byId('dialog-fields').querySelector('input, select')?.focus());
+  requestAnimationFrame(() => byId('dialog-fields').querySelector('input, select, textarea')?.focus());
 }
 
 function closeEndPanel() {
@@ -966,7 +969,18 @@ function setupContextMenu() {
     if (!actionButton) return;
     const { contextAction: action, targetId: id } = actionButton.dataset;
     closeContextMenu(true);
-    if (action === 'complete' || action === 'abandon') {
+    if (action === 'edit-notes') {
+      const todo = todoById(id);
+      if (!todo) return;
+      openDialog({
+        kicker: '事项备注', title: todo.title,
+        message: '留下一点自己的想法。备注不会显示在事项列表或下一步卡片中。',
+        fields: `<label><span>备注</span><textarea class="todo-notes-editor" name="notes" maxlength="4000" rows="6" placeholder="例如：这件事为什么重要，或下次想记得的内容">${html(todo.notes ?? '')}</textarea></label>`,
+        confirmLabel: '保存备注',
+        onConfirm: ({ notes }) => mutate(() => api.updateTodo(id, { notes }), '备注已保存'),
+        onSuccess: () => document.querySelector(`[data-todo-menu="${id}"]`)?.focus({ preventScroll: true }),
+      });
+    } else if (action === 'complete' || action === 'abandon') {
       const mainline = mainlineById(id);
       if (mainline) await beginEndMainline(mainline, action === 'complete' ? 'completed' : 'abandoned');
     } else if (action === 'delete-mainline') {
@@ -1119,7 +1133,7 @@ function setupDialog() {
         dialog.close();
         await onSuccess?.(result);
       } else {
-        byId('dialog-fields').querySelector('input, select')?.focus();
+        byId('dialog-fields').querySelector('input, select, textarea')?.focus();
       }
     } catch (error) {
       showError('操作没有完成', error);
@@ -1352,6 +1366,7 @@ function setupExternalRefresh() {
     try {
       const snapshot = await api.snapshot();
       if (ui.snapshot !== previous || !canRefresh()) return;
+      if (JSON.stringify(snapshot) === JSON.stringify(previous)) return;
       ui.activeStateId = snapshot.settings.lastViewedStateId;
       applySnapshot(snapshot);
     } catch (error) {
@@ -1362,6 +1377,7 @@ function setupExternalRefresh() {
   };
   window.addEventListener('focus', refresh);
   document.addEventListener('visibilitychange', refresh);
+  window.setInterval(refresh, 3000);
 }
 
 async function initialize() {

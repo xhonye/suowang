@@ -8,12 +8,13 @@ namespace Suowang.Widget;
 
 public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
 {
-    private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(15) };
+    private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(3) };
     private Connection? connection;
     private Snapshot? snapshot;
     private bool busy, rendering, disposed;
     private readonly StepDraft draft = new();
-    private TextBlock? preview, title, context, status;
+    private TextBlock? preview, title, context, status, runningLabel;
+    private Border? runningBadge;
     private TextBox? step, newTitle;
     private ComboBox? modes, choices;
     private Button? start, complete, save, cancel, add, launch, retry, open;
@@ -53,6 +54,15 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
             Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 87, 157, 201)) });
         Grid.SetColumn(preview, 1);
         panel.Children.Add(preview);
+        panel.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        runningLabel = Text("执行中", 10);
+        runningLabel.FontWeight = FontWeights.SemiBold;
+        runningLabel.Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 30, 86, 120));
+        runningBadge = new Border { Child = runningLabel, Padding = new Thickness(5, 3, 5, 3),
+            CornerRadius = new CornerRadius(4), VerticalAlignment = VerticalAlignment.Center,
+            Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 203, 230, 248)),
+            Visibility = Visibility.Collapsed };
+        Grid.SetColumn(runningBadge, 2); panel.Children.Add(runningBadge);
         Render();
         return panel;
     }
@@ -195,10 +205,12 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
         try
         {
             var mode = snapshot?.Current; var todo = mode?.Next;
+            var running = todo != null && mode?.StartedTodoId == todo.Id;
+            if (runningBadge != null) runningBadge.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
             if (preview != null)
             {
                 preview.Text = snapshot == null ? "所往 · 未连接" : todo == null ? "所往 · 写下下一步"
-                    : $"{(mode!.StartedTodoId == todo.Id ? "▶ " : "")}{(string.IsNullOrWhiteSpace(todo.MinimalStep) ? todo.Title : todo.MinimalStep)}";
+                    : string.IsNullOrWhiteSpace(todo.MinimalStep) ? todo.Title : todo.MinimalStep;
                 ToolTipService.SetToolTip(preview, snapshot == null ? "点击连接所往" : todo == null ? "写下接下来想做的事"
                     : $"{mode!.Name} · {(mode.StartedTodoId == todo.Id ? "正在进行" : "下一步")}\n{todo.Title}{(string.IsNullOrWhiteSpace(todo.MinimalStep) ? "" : $"\n{todo.MinimalStep}")}");
             }
@@ -207,7 +219,7 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
             title.Text = draft.IsDirty ? draft.Title : snapshot == null ? "连接所往" : todo?.Title ?? "接下来想做什么？";
             ToolTipService.SetToolTip(title, title.Text);
             context!.Text = draft.IsDirty && todo?.Id != draft.Id ? "未保存的编辑 · 原事项"
-                : mode == null ? "随手接续下一步" : $"{mode.Name} · {mode.Context}";
+                : mode == null ? "随手接续下一步" : $"{(running ? "▶ 执行中 · " : "")}{mode.Name} · {mode.Context}";
             modes.SelectedItem = modes.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == mode?.Id);
             taskPanel!.Visibility = todo != null || draft.IsDirty ? Visibility.Visible : Visibility.Collapsed;
             emptyPanel!.Visibility = snapshot != null && todo == null && !draft.IsDirty ? Visibility.Visible : Visibility.Collapsed;
@@ -240,8 +252,8 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
             ? snapshot == null ? $"{message} 编辑仍保留。" : "有未保存的编辑，请先保存或取消。"
             : message;
     }
-    public async void OnFlyoutShown() { timer.Interval = TimeSpan.FromSeconds(5); await Refresh(); }
-    public void OnFlyoutHidden() { timer.Interval = TimeSpan.FromSeconds(15); }
+    public async void OnFlyoutShown() { await Refresh(); }
+    public void OnFlyoutHidden() { }
     public override ValueTask DisposeAsync()
     {
         disposed = true; timer.Stop(); connection?.Dispose(); return ValueTask.CompletedTask;

@@ -1,0 +1,1 @@
+ALTER TABLE todos ADD COLUMN notes TEXT NOT NULL DEFAULT '' CHECK (length(notes) <= 4000);

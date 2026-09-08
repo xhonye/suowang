@@ -86,7 +86,7 @@ test('server exposes a database-backed health check, snapshot, and static shell'
     app: 'suowang',
     version: packageMetadata.version,
     database: 'ready',
-    schemaVersion: 7,
+    schemaVersion: 8,
     pid: process.pid,
     accessMode: 'local',
   });
@@ -95,7 +95,7 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   const snapshot = await fetch(`${baseUrl}/api/snapshot`);
   assert.equal(snapshot.status, 200);
   const snapshotBody = await snapshot.json();
-  assert.deepEqual(snapshotBody.meta, { appVersion: packageMetadata.version, schemaVersion: 7 });
+  assert.deepEqual(snapshotBody.meta, { appVersion: packageMetadata.version, schemaVersion: 8 });
   assert.deepEqual(snapshotBody.states.map((state) => state.id), ['restore', 'work', 'life']);
 
   const home = await fetch(`${baseUrl}/`);

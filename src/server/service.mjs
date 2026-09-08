@@ -70,6 +70,7 @@ function mapTodo(row) {
     mainlineId: row.mainline_id,
     title: row.title,
     minimalStep: row.minimal_step,
+    notes: row.notes,
     kind: row.kind,
     completionCount: Number(row.completion_count ?? 0),
     completedToday: Boolean(row.completed_today),
@@ -604,7 +605,7 @@ export class SuowangService {
     });
   }
 
-  createTodo({ stateId, mainlineId = null, title, minimalStep = '', kind = 'single' }) {
+  createTodo({ stateId, mainlineId = null, title, minimalStep = '', notes = '', kind = 'single' }) {
     return this.mutate(() => {
       const state = this.assertState(stateId);
       if (mainlineId) {
@@ -619,14 +620,15 @@ export class SuowangService {
       }
       this.db.prepare(`
         INSERT INTO todos(
-          id, state_id, mainline_id, title, minimal_step, kind, status, position, created_at, ended_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, NULL)
+          id, state_id, mainline_id, title, minimal_step, notes, kind, status, position, created_at, ended_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, NULL)
       `).run(
         id,
         stateId,
         mainlineId,
         requiredText(title, '事项名称', 160),
         optionalText(minimalStep, '最小一步', 160),
+        optionalText(notes, '备注', 4000),
         kind,
         this.nextPosition(stateId, mainlineId),
         this.now(),
@@ -649,6 +651,10 @@ export class SuowangService {
     if (Object.hasOwn(changes, 'minimalStep')) {
       fields.push('minimal_step = ?');
       values.push(optionalText(changes.minimalStep, '最小一步', 160));
+    }
+    if (Object.hasOwn(changes, 'notes')) {
+      fields.push('notes = ?');
+      values.push(optionalText(changes.notes, '备注', 4000));
     }
     if (Object.hasOwn(changes, 'kind')) {
       if (!TODO_KINDS.has(changes.kind)) {
