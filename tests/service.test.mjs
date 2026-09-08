@@ -259,6 +259,21 @@ test('ongoing todos record at most once per local day and keep an honest count',
   assert.equal(runtime.db.prepare('SELECT COUNT(*) AS count FROM todo_occurrences').get().count, 0);
 });
 
+test('a new day leaves the next-step choice to the user while ongoing work becomes eligible again', (context) => {
+  const { service } = createServiceHarness(context);
+  let today = new Date(2026, 8, 8, 12);
+  service.clock = () => today;
+  const created = service.createTodo({ stateId: 'work', title: '舒展肩膀', kind: 'ongoing' });
+  const id = created.states.find((state) => state.id === 'work').stateTodos[0].id;
+  service.recordTodoOccurrence(id);
+  today = new Date(2026, 8, 9, 12);
+  const state = service.snapshot().states.find((item) => item.id === 'work');
+  assert.equal(state.priorityTodoId, null);
+  assert.equal(state.stateTodos[0].completedToday, false);
+  assert.equal(state.stateTodos[0].completionCount, 1);
+  assert.equal(service.setPriorityTodo(id).states.find((item) => item.id === 'work').priorityTodoId, id);
+});
+
 test('historical todos can be reopened without reviving a historical mainline', (context) => {
   const { service } = createServiceHarness(context);
   let snapshot = service.createMainline({ stateId: 'work', slotIndex: 1, name: '可撤回主线' });

@@ -22,5 +22,8 @@ test('boots without browser errors or misleading static identity', async ({ page
   await expect(page.locator('#daylight-icon')).toHaveText(/☀️|🌙/);
   await expect(page.locator('body')).not.toContainText('Honye');
   await expect(page.locator('body')).not.toContainText('专注中');
+  await page.getByRole('button', { name: '设置', exact: true }).click();
+  await expect(page.locator('#about-version')).toHaveText(APP_VERSION);
+  await expect(page.locator('.about-actions [data-github-target="repo"]')).toHaveCount(1);
   expect(errors).toEqual([]);
 });
