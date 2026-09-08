@@ -2,15 +2,15 @@
 
 ## 当前发布基线
 
-[0.2.0-beta.6](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.6) 已于 2026-09-08 公开为 Beta，不是稳定版晋级。不可变 Tag `v0.2.0-beta.6` 指向 `8b72319f18bb3a684c8af57beedf9055b8182292`；后续源码或文档变动不改变这批安装包。
+[0.2.0-beta.7](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.7) 已于 2026-09-08 公开为 Beta，不是稳定版晋级。不可变 Tag `v0.2.0-beta.7` 指向 `270ccb31abc4bc24d206223a2805c51429115a51`；后续源码或文档变动不改变这批安装包。
 
-- [聚合发布运行](https://github.com/xhonye/suowang/actions/runs/34176292335) 已通过：同 SHA 的完整 CI、Windows Lite/Desktop 与 Mac 候选通过后，在 Draft 集齐并回读校验 8 个附件，再一次性公开。
+- [聚合发布运行](https://github.com/xhonye/suowang/actions/runs/34178297046) 已通过：同 SHA 的完整 CI、Windows Lite/Desktop 与 Mac 候选通过后，在 Draft 集齐并回读校验 8 个附件，再一次性公开。
 - 本轮依据用户委托由 Agent 进行体验评估与发行。双平台实际安装升级检查通过，Agent 已审阅真实安装窗口截图；不表述为用户人工验收。早期无效截图、修正与验证记录见 [自主迭代记录](autonomous-iterations-2026-09-08.md)。
 - 安装包、镜像校验清单以该 Release 的附件为准；短期 Actions artifact、本地构建和旧候选不得替代已发布字节。仍未签名／未公证，已知构建依赖风险见 [安全复核](security-review-beta.3.md)。
 
 ## 当前已有
 
-2026-09-08 已发布三轮功能改善：beta.4 提供空态第一步，beta.5 提供可见事项菜单和合法选择，beta.6 保护失败编辑、中文输入与弹窗重试，并修复复制／恢复后的模式一致性。随后整理版 beta.7 已通过本地完整发行验证：104 项单元、26 项浏览器、桌面交互和真实 packaged smoke。整理合并重复代码与无引用样式，并使跨日空态先选择已有事项。完整过程见 [自主迭代记录](autonomous-iterations-2026-09-08.md)。
+2026-09-08 已发布三轮功能改善：beta.4 提供空态第一步，beta.5 提供可见事项菜单和合法选择，beta.6 保护失败编辑、中文输入与弹窗重试，并修复复制／恢复后的模式一致性。随后整理版 beta.7 已公开并通过完整发行验证：104 项单元、26 项浏览器、桌面交互和真实 packaged smoke。整理合并重复代码与无引用样式，并使跨日空态先选择已有事项，长名称也不会挤出选择按钮。完整过程见 [自主迭代记录](autonomous-iterations-2026-09-08.md)。
 
 2026-09-07 精修已纳入 beta.4：山水道路 Logo 统一到图标生成链路，包含 Windows ICO、窗口 PNG 和 favicon；macOS 图标构建共用同一母版。正文与辅助文字对比、品牌留白、卡片阴影、表单和行动按钮层级已精修。下一步长文本可内部滚动，操作区保持可点。实施记录见 `docs/visual-polish-plan-2026-09-07.md`。
 

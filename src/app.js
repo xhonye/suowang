@@ -349,7 +349,7 @@ function renderPriority(state) {
     container.innerHTML = `
       <div class="priority-empty">
         <strong>${available ? '准备好再出发' : doneToday ? '今天的持续事项已完成' : '从一件小事开始'}</strong>
-        <p>${available ? html(available.title) : doneToday ? '可以先到这里。有新的事情，再添一步。' : current ? '写下这条主线现在能做的一件事。' : '不必先想好整条主线，先写下现在能做的一件事。'}</p>
+        <p${available ? ' tabindex="0"' : ''}>${available ? html(available.title) : doneToday ? '可以先到这里。有新的事情，再添一步。' : current ? '写下这条主线现在能做的一件事。' : '不必先想好整条主线，先写下现在能做的一件事。'}</p>
         <button class="${doneToday ? 'secondary-action' : 'primary-action'}" type="button" ${available ? `data-stuck-select-todo="${available.id}"` : 'data-add-next-step'}>${available ? '选为下一步' : doneToday ? '再添一步' : '添加第一步'}</button>
       </div>
     `;

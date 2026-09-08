@@ -51,8 +51,9 @@ test('empty next step adds into the current mainline and quietly closes complete
   expect(state.stateTodos).toHaveLength(0);
 });
 
-test('an empty pointer with eligible existing work offers a choice instead of another new item', async ({ page, request }) => {
-  const response = await request.post('/api/todos', { data: { stateId: 'work', title: '舒展肩膀', kind: 'ongoing' } });
+test('an empty pointer with eligible existing work offers a reachable choice at all supported sizes', async ({ page, request }, testInfo) => {
+  const title = '把这件很长的事情拆成可以开始的一小步，'.repeat(8).slice(0, 160);
+  const response = await request.post('/api/todos', { data: { stateId: 'work', title, kind: 'ongoing' } });
   expect(response.ok()).toBeTruthy();
   // This snapshot shape occurs after all ongoing work was done and the local day changes.
   // The real clock transition and explicit selection are covered in the service test.
@@ -62,13 +63,21 @@ test('an empty pointer with eligible existing work offers a choice instead of an
     data.states.find((state) => state.id === 'work').priorityTodoId = null;
     await route.fulfill({ response, json: data });
   });
-  await openDashboard(page);
-  await expect(page.locator('#priority-zone')).toContainText('准备好再出发');
-  await expect(page.locator('#priority-zone')).toContainText('舒展肩膀');
-  await expect(page.getByRole('button', { name: '添加第一步' })).toHaveCount(0);
-  await page.unroute('**/api/snapshot');
-  await page.getByRole('button', { name: '选为下一步', exact: true }).click();
-  await expect(page.getByRole('button', { name: '开始 舒展肩膀' })).toBeFocused();
+  for (const [width, height] of [[1920, 1080], [2560, 1440], [320, 800]]) {
+    await page.setViewportSize({ width, height });
+    await openDashboard(page);
+    const zone = page.locator('#priority-zone');
+    await expect(zone).toContainText('准备好再出发');
+    await expect(zone).toContainText(title);
+    await expect(page.getByRole('button', { name: '添加第一步' })).toHaveCount(0);
+    const action = page.getByRole('button', { name: '选为下一步', exact: true });
+    const zoneBox = await zone.boundingBox();
+    const buttonBox = await action.boundingBox();
+    expect(buttonBox.y + buttonBox.height, `${width}px existing-item choice must fit`).toBeLessThanOrEqual(zoneBox.y + zoneBox.height);
+    await zone.screenshot({ path: testInfo.outputPath(`existing-choice-${width}.png`) });
+    await action.click();
+    await expect(zone.locator('[data-start-todo]')).toBeFocused();
+  }
   const state = (await snapshot(request)).states.find((item) => item.id === 'work');
   expect(state.stateTodos).toHaveLength(1);
   expect(state.priorityTodoId).toBe(state.stateTodos[0].id);
