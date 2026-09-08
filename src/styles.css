@@ -447,7 +447,7 @@ body.busy button, body.busy input, body.busy select { pointer-events: none; }
 .priority-minimal-step { font-size: 13px; line-height: 1.6; font-style: normal; }
 .priority-empty { height: 100%; align-content: center; justify-items: center; gap: 12px; padding: 16px 20px; color: var(--muted); text-align: center; line-height: 1.7; }
 .priority-empty strong { color: var(--ink); font-size: 15px; }
-.priority-empty p { margin: 0; }
+.priority-empty p { max-width: 100%; max-height: 5.1em; margin: 0; overflow: auto; overflow-wrap: anywhere; scrollbar-width: thin; }
 .priority-empty button { flex-shrink: 0; }
 .priority-footer { display: flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; gap: 11px; }
 .stuck-toggle { align-self: start; min-height: 30px; padding: 2px 0 0 8px; color: #6f858e; background: transparent; border: 0; cursor: pointer; font-size: 10px; text-decoration: underline; text-decoration-color: rgba(78, 131, 156, .22); text-underline-offset: 4px; }
