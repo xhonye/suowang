@@ -22,6 +22,7 @@ const ui = {
   drag: null,
   endAction: null,
   dialogAction: null,
+  dialogSuccess: null,
   contextMenuTarget: null,
   stuckOpen: false,
   stuckView: 'menu',
@@ -81,6 +82,11 @@ function showToast(message) {
 }
 
 function showError(title, error) {
+  if (byId('action-dialog').open) {
+    byId('dialog-error').textContent = `${title}：${error?.message ?? String(error)}`;
+    byId('dialog-error').hidden = false;
+    return;
+  }
   byId('error-title').textContent = title;
   byId('error-message').textContent = error?.message ?? String(error);
   byId('error-banner').hidden = false;
@@ -103,6 +109,8 @@ async function mutate(operation, successMessage) {
   try {
     const snapshot = await operation();
     applySnapshot(snapshot);
+    byId('error-banner').hidden = true;
+    byId('dialog-error').hidden = true;
     if (successMessage) showToast(successMessage);
     return snapshot;
   } catch (error) {
@@ -498,37 +506,66 @@ async function selectState(stateId, restoreFocus = false) {
 
 function beginInlineEdit(button, value, onSave, maxLength) {
   if (button.querySelector('input')) return;
+  const original = [...button.childNodes];
+  const scope = button.closest('[id]');
+  const attribute = button.hasAttribute('data-edit-mainline') ? 'data-edit-mainline' : 'data-edit-todo';
+  const selector = `[${attribute}="${button.getAttribute(attribute)}"][data-field="${button.dataset.field}"]`;
+  const restoreFocus = () => scope.querySelector(selector)?.focus({ preventScroll: true });
   button.classList.add('editing');
   const input = document.createElement('input');
   input.className = 'inline-editor';
+  input.setAttribute('aria-label', button.getAttribute('aria-label') || button.textContent.trim());
   input.value = value;
   input.maxLength = maxLength;
   button.replaceChildren(input);
   input.focus();
   input.select();
   let settled = false;
-  const cancel = () => {
-    if (settled) return;
+  let saving = false;
+  const restore = (keepFocus) => {
     settled = true;
-    renderAll();
+    button.classList.remove('editing');
+    button.replaceChildren(...original);
+    if (keepFocus) button.focus({ preventScroll: true });
   };
-  const save = async () => {
-    if (settled) return;
+  const save = async (keepFocus) => {
+    if (settled || saving) return;
     const nextValue = input.value.trim();
-    settled = true;
     if (nextValue === value.trim()) {
-      renderAll();
+      restore(keepFocus);
       return;
     }
-    const result = await onSave(nextValue);
-    if (!result) renderAll();
+    saving = true;
+    input.readOnly = true;
+    try {
+      const result = await onSave(nextValue);
+      if (result) {
+        settled = true;
+        if (keepFocus) restoreFocus();
+      } else {
+        input.setAttribute('aria-invalid', 'true');
+        input.setAttribute('aria-describedby', 'error-message');
+        input.focus({ preventScroll: true });
+      }
+    } finally {
+      saving = false;
+      input.readOnly = false;
+    }
   };
   input.addEventListener('click', (event) => event.stopPropagation());
   input.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') { event.preventDefault(); save(); }
-    if (event.key === 'Escape') { event.preventDefault(); cancel(); }
+    if (event.isComposing || event.keyCode === 229) return;
+    if (event.key === 'Enter') { event.preventDefault(); save(true); }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      if (!settled && !saving) {
+        byId('error-banner').hidden = true;
+        restore(true);
+      }
+    }
   });
-  input.addEventListener('blur', save, { once: true });
+  input.addEventListener('input', () => input.removeAttribute('aria-invalid'));
+  input.addEventListener('blur', () => save(false));
 }
 
 function beginTodoEdit(button) {
@@ -586,16 +623,18 @@ function openContextMenu(type, id, x, y) {
   menu.querySelector('button')?.focus();
 }
 
-function openDialog({ kicker, title, message, fields = '', confirmLabel = '确认', danger = false, onConfirm }) {
+function openDialog({ kicker, title, message, fields = '', confirmLabel = '确认', danger = false, onConfirm, onSuccess }) {
   byId('dialog-kicker').textContent = kicker;
   byId('dialog-title').textContent = title;
   byId('dialog-message').textContent = message;
   byId('dialog-fields').innerHTML = fields;
+  byId('dialog-error').hidden = true;
   const confirm = byId('dialog-confirm');
   confirm.textContent = confirmLabel;
   confirm.classList.toggle('danger-action', danger);
   confirm.classList.toggle('primary-action', !danger);
   ui.dialogAction = onConfirm;
+  ui.dialogSuccess = onSuccess;
   byId('action-dialog').showModal();
   requestAnimationFrame(() => byId('dialog-fields').querySelector('input, select')?.focus());
 }
@@ -645,9 +684,7 @@ function confirmDeleteMainline(mainline) {
     ` : '',
     confirmLabel: '确认删除',
     danger: true,
-    onConfirm: async (values) => {
-      await mutate(() => api.deleteMainline(mainline.id, values.todoPolicy || 'move_to_state'), '主线已删除');
-    },
+    onConfirm: (values) => mutate(() => api.deleteMainline(mainline.id, values.todoPolicy || 'move_to_state'), '主线已删除'),
   });
 }
 
@@ -658,9 +695,7 @@ function confirmDeleteTodo(todo) {
     message: '这条事项会被永久删除，不会进入行迹。',
     confirmLabel: '确认删除',
     danger: true,
-    onConfirm: async () => {
-      await mutate(() => api.deleteTodo(todo.id), '事项已删除');
-    },
+    onConfirm: () => mutate(() => api.deleteTodo(todo.id), '事项已删除'),
   });
 }
 
@@ -958,12 +993,12 @@ function setupContextMenu() {
         message: `把“${todo.title}”移到这个模式中的其他位置。`,
         fields: `<label><span>移到</span><select name="mainlineId">${destinations.map((item) => `<option value="${item.id}">${html(item.name)}</option>`).join('')}</select></label>`,
         confirmLabel: '移动事项',
-        onConfirm: async ({ mainlineId }) => {
+        onConfirm: ({ mainlineId }) => {
           const target = state.mainlines.find((item) => item.id === mainlineId);
           const position = (target?.todos ?? state.stateTodos).length + 1;
-          const snapshot = await mutate(() => api.moveTodo(id, { mainlineId: mainlineId || null, position }), '事项已移动');
-          if (snapshot) (document.querySelector(`[data-todo-menu="${id}"]`) ?? byId('state-todo-input')).focus({ preventScroll: true });
+          return mutate(() => api.moveTodo(id, { mainlineId: mainlineId || null, position }), '事项已移动');
         },
+        onSuccess: () => (document.querySelector(`[data-todo-menu="${id}"]`) ?? byId('state-todo-input')).focus({ preventScroll: true }),
       });
     } else if (action === 'abandon-todo') {
       await mutate(() => api.abandonTodo(id), '事项已放弃');
@@ -1069,21 +1104,38 @@ function setupEndPanel() {
 }
 
 function setupDialog() {
+  const dialog = byId('action-dialog');
+  let submitting = false;
+  dialog.addEventListener('click', (event) => {
+    if (!submitting && event.target.closest('[data-dialog-cancel]')) dialog.close();
+  });
   byId('action-dialog-form').addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (event.submitter?.value === 'cancel') {
-      ui.dialogAction = null;
-      byId('action-dialog').close();
-      return;
-    }
+    if (submitting) return;
     if (!ui.dialogAction) return;
     const values = Object.fromEntries(new FormData(event.currentTarget));
     const action = ui.dialogAction;
-    ui.dialogAction = null;
-    byId('action-dialog').close();
-    await action(values);
+    const onSuccess = ui.dialogSuccess;
+    submitting = true;
+    byId('dialog-confirm').disabled = true;
+    byId('dialog-error').hidden = true;
+    try {
+      const result = await action(values);
+      if (result) {
+        dialog.close();
+        await onSuccess?.(result);
+      } else {
+        byId('dialog-fields').querySelector('input, select')?.focus();
+      }
+    } catch (error) {
+      showError('操作没有完成', error);
+    } finally {
+      submitting = false;
+      byId('dialog-confirm').disabled = false;
+    }
   });
-  byId('action-dialog').addEventListener('close', () => { ui.dialogAction = null; });
+  dialog.addEventListener('cancel', (event) => { if (submitting) event.preventDefault(); });
+  dialog.addEventListener('close', () => { ui.dialogAction = null; ui.dialogSuccess = null; });
 }
 
 function setupHistory() {
@@ -1103,14 +1155,12 @@ function setupHistory() {
         kicker: '从行迹重新出发',
         title: '复制为新的独立主线',
         message: '新主线会获得新 ID，并预填主线目标、本阶段完成标准和本阶段时间范围；不会复制旧事项。',
-        fields: `<label><span>新的全局唯一名称</span><input name="name" maxlength="60" required value="${html(item.name)} · 新阶段" /></label>`,
+        fields: `<label><span>新主线名称（同模式内不重复）</span><input name="name" maxlength="60" required value="${html(item.name)} · 新阶段" /></label>`,
         confirmLabel: '创建新主线',
-        onConfirm: async ({ name }) => {
-          const snapshot = await mutate(() => api.copyMainline(item.id, name), '新主线已创建');
-          if (snapshot) {
-            ui.activeStateId = item.stateId;
-            navigate('dashboard');
-          }
+        onConfirm: ({ name }) => mutate(() => api.copyMainline(item.id, name), '新主线已创建'),
+        onSuccess: async () => {
+          await selectState(item.stateId);
+          navigate('dashboard');
         },
       });
       return;
@@ -1200,13 +1250,17 @@ function setupSettings() {
       confirmLabel: '备份当前数据并恢复',
       danger: true,
       onConfirm: async () => {
-        const snapshot = await mutate(() => api.restoreDatabase(file), '数据库已恢复');
+        const snapshot = await mutate(async () => {
+          const restored = await api.restoreDatabase(file);
+          ui.activeStateId = restored.settings.lastViewedStateId;
+          return restored;
+        }, '数据库已恢复');
         if (snapshot) {
-          ui.activeStateId = snapshot.settings.lastViewedStateId;
-          navigate('dashboard');
+          byId('restore-input').value = '';
         }
-        byId('restore-input').value = '';
+        return snapshot;
       },
+      onSuccess: () => navigate('dashboard'),
     });
   });
 

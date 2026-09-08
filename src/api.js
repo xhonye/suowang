@@ -1,5 +1,15 @@
+async function fetchLocal(path, options) {
+  try {
+    return await fetch(path, options);
+  } catch (cause) {
+    const error = new Error('暂时连接不到本地服务，请确认所往仍在运行。', { cause });
+    error.code = 'service_unreachable';
+    throw error;
+  }
+}
+
 async function request(path, { method = 'GET', body, headers = {} } = {}) {
-  const response = await fetch(path, {
+  const response = await fetchLocal(path, {
     method,
     headers: body === undefined ? headers : { 'content-type': 'application/json', ...headers },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -17,7 +27,7 @@ async function request(path, { method = 'GET', body, headers = {} } = {}) {
 }
 
 async function upload(path, file) {
-  const response = await fetch(path, {
+  const response = await fetchLocal(path, {
     method: 'POST',
     headers: { 'content-type': file.type || 'application/octet-stream' },
     body: file,

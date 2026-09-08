@@ -128,6 +128,7 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 .detail-field .placeholder { color: #97a4a7; }
 .detail-empty { grid-column: 1 / -1; display: grid; place-items: center; color: var(--quiet); font-size: 12px; }
 .inline-editor { width: 100%; min-width: 0; height: 34px; padding: 0 9px; background: white; border: 1px solid var(--signal); border-radius: 8px; }
+.inline-editor[aria-invalid="true"] { border-color: var(--danger); }
 
 .priority-zone { position: relative; z-index: 3; display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: stretch; overflow: hidden; background: linear-gradient(110deg, rgba(220, 235, 240, 0.72), rgba(251, 252, 250, 0.95) 36%); border: 1px solid rgba(78, 131, 156, 0.3); border-radius: 17px; box-shadow: 0 10px 28px rgba(45, 77, 88, 0.08); }
 .priority-zone.drop-active { border-style: dashed; border-color: var(--signal-strong); background: var(--signal-soft); }
@@ -268,6 +269,7 @@ html[data-desktop="true"] #avatar-input, html[data-desktop="true"] #restore-inpu
 
 .action-dialog { width: min(510px, calc(100% - 28px)); padding: 20px; color: var(--ink); background: var(--paper); border: 1px solid var(--line-strong); border-radius: 18px; box-shadow: 0 28px 90px rgba(30, 51, 59, 0.28); }
 .action-dialog::backdrop { background: rgba(25, 39, 45, 0.28); backdrop-filter: blur(3px); }
+.form-error { color: var(--danger); font-size: 13px; line-height: 1.6; }
 #dialog-fields { display: grid; gap: 10px; }
 #dialog-fields label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; }
 #dialog-fields input, #dialog-fields select { width: 100%; height: 40px; padding: 0 10px; background: white; border: 1px solid var(--line-strong); border-radius: 9px; }

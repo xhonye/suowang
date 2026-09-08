@@ -236,12 +236,13 @@
       </form>
     </aside>
 
-    <dialog class="action-dialog" id="action-dialog">
+    <dialog class="action-dialog" id="action-dialog" aria-labelledby="dialog-title">
       <form method="dialog" id="action-dialog-form">
-        <header><div><p id="dialog-kicker"></p><h2 id="dialog-title"></h2></div><button class="icon-button" value="cancel" aria-label="关闭">×</button></header>
+        <header><div><p id="dialog-kicker"></p><h2 id="dialog-title"></h2></div><button class="icon-button" type="button" data-dialog-cancel aria-label="关闭">×</button></header>
         <p id="dialog-message"></p>
         <div id="dialog-fields"></div>
-        <footer><button class="quiet-action" value="cancel">取消</button><button class="primary-action" id="dialog-confirm" value="default">确认</button></footer>
+        <p class="form-error" id="dialog-error" role="alert" hidden></p>
+        <footer><button class="quiet-action" type="button" data-dialog-cancel>取消</button><button class="primary-action" id="dialog-confirm" type="submit">确认</button></footer>
       </form>
     </dialog>
 
