@@ -2,17 +2,17 @@
 
 ## 当前发布基线
 
-[0.2.0-beta.3](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.3) 已于 2026-08-30 公开为 Beta，不是稳定版晋级。不可变 Tag `v0.2.0-beta.3` 指向 `43057bd83e8a0d3c660ae829c0a9bbcdd2d98ac3`；后续源码或文档变动不改变这批安装包。
+[0.2.0-beta.4](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.4) 已于 2026-09-08 公开为 Beta，不是稳定版晋级。不可变 Tag `v0.2.0-beta.4` 指向 `70364fd6db0959f00617f90fcc2ec6182eca4ac7`；后续源码或文档变动不改变这批安装包。
 
-- [聚合发布运行](https://github.com/xhonye/suowang/actions/runs/33304926772) 已通过：同 SHA 的完整 CI、Windows Lite/Desktop 与 Mac 候选通过后，在 Draft 集齐并回读校验 8 个附件，再一次性公开。
-- 人工试装依据维护者确认，不能表述为 Agent 独立现场验收；首次 Windows 桌面 CI 进程异常、同 SHA 重跑通过的记录仍保留在 [CI 运行](https://github.com/xhonye/suowang/actions/runs/33293749989) 中。
+- [聚合发布运行](https://github.com/xhonye/suowang/actions/runs/34174206788) 已通过：同 SHA 的完整 CI、Windows Lite/Desktop 与 Mac 候选通过后，在 Draft 集齐并回读校验 8 个附件，再一次性公开。
+- 本轮依据用户委托由 Agent 进行体验评估与发行。双平台实际安装升级检查通过，Agent 已审阅真实安装窗口截图；不表述为用户人工验收。早期无效截图、修正与验证记录见 [自主迭代记录](autonomous-iterations-2026-09-08.md)。
 - 安装包、镜像校验清单以该 Release 的附件为准；短期 Actions artifact、本地构建和旧候选不得替代已发布字节。仍未签名／未公证，已知构建依赖风险见 [安全复核](security-review-beta.3.md)。
 
 ## 当前已有
 
-2026-09-08 自主迭代候选 `0.2.0-beta.4`：下一步为空时可直接「添加第一步」，保存后聚焦「开始这一步」；当天持续事项全部完成时安静收束。本地 102 项单元测试、16 项浏览器测试、桌面交互与实际打包 smoke 已通过；公开状态由 GitHub Release 决定。完整过程见 [自主迭代记录](autonomous-iterations-2026-09-08.md)。
+2026-09-08 第一轮 `0.2.0-beta.4` 已发布：下一步为空时可直接「添加第一步」，保存后聚焦「开始这一步」；当天持续事项全部完成时安静收束。第二轮 `0.2.0-beta.5` 正在验证：可见事项菜单、触摸与键盘的选择和移动、持续事项当天的选择约束。完整过程见 [自主迭代记录](autonomous-iterations-2026-09-08.md)。
 
-2026-09-07 本地精修：山水道路 Logo 已统一到图标生成链路，包含 Windows ICO、窗口 PNG 和 favicon；macOS 图标构建共用同一母版。正文与辅助文字对比、品牌留白、卡片阴影、表单和行动按钮层级已精修。下一步长文本可内部滚动，操作区保持可点。此变更是本地工作版本，不改变上述公开 Beta 安装包。实施记录见 `docs/visual-polish-plan-2026-09-07.md`。
+2026-09-07 精修已纳入 beta.4：山水道路 Logo 统一到图标生成链路，包含 Windows ICO、窗口 PNG 和 favicon；macOS 图标构建共用同一母版。正文与辅助文字对比、品牌留白、卡片阴影、表单和行动按钮层级已精修。下一步长文本可内部滚动，操作区保持可点。实施记录见 `docs/visual-polish-plan-2026-09-07.md`。
 
 同日按用户最新反馈修正行动中背景：一组纯蓝色粗人字箭头块每隔数秒快速向右掠过，覆盖整张下一步卡片及标题区；每 4.2 秒以约 0.9 秒完成一轮掠过，其余时间隐藏；蓝色清楚可见，标题和控件附近淡出；尖端完整，不使用细线替代、双色描边或渐变闪光。开始按钮使用播放图标，暂停与完成保留，完成按钮统一为蓝色。卡片仍保持紧凑高度；暂停／完成时停止，编辑文字时暂缓流动，减少动态效果时保持静态。本机安装更新状态见 `docs/next-step-motion-2026-09-07.md`。
 

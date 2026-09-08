@@ -811,13 +811,22 @@ export class SuowangService {
     });
   }
 
+  assertPriorityEligible(todo, state) {
+    if (todo.mainline_id !== null && todo.mainline_id !== state.current_mainline_id) {
+      throw new AppError(409, 'priority_not_eligible', '下一步只能来自当前主线事项或其他事项。');
+    }
+    if (todo.kind === 'ongoing' && this.db.prepare(
+      'SELECT 1 FROM todo_occurrences WHERE todo_id = ? AND completed_on = ?',
+    ).get(todo.id, this.localDate())) {
+      throw new AppError(409, 'already_completed_today', '这件持续事项今天已经完成，可以换一件事，或先撤回今天的记录。');
+    }
+  }
+
   setPriorityTodo(id) {
     return this.mutate(() => {
       const todo = this.requireTodo(id, { active: true });
       const state = this.assertState(todo.state_id);
-      if (todo.mainline_id !== null && todo.mainline_id !== state.current_mainline_id) {
-        throw new AppError(409, 'priority_not_eligible', '下一步只能来自当前主线事项或其他事项。');
-      }
+      this.assertPriorityEligible(todo, state);
       this.db.prepare(`
         UPDATE states
         SET priority_todo_id = ?,
@@ -835,6 +844,7 @@ export class SuowangService {
       if (state.priority_todo_id !== id) {
         throw new AppError(409, 'todo_is_not_priority', '只能开始当前的下一步。');
       }
+      this.assertPriorityEligible(todo, state);
       this.db.prepare('UPDATE states SET started_todo_id = ? WHERE id = ?').run(id, todo.state_id);
       return this.snapshot();
     });

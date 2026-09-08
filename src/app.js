@@ -22,6 +22,7 @@ const ui = {
   drag: null,
   endAction: null,
   dialogAction: null,
+  contextMenuTarget: null,
   stuckOpen: false,
   stuckView: 'menu',
   expandedHistory: new Set(),
@@ -243,23 +244,25 @@ function todoRow(todo) {
       <div class="todo-actions">
         ${ongoing ? `<span class="todo-ongoing-count" title="${ongoingDescription}" aria-label="${ongoingDescription}">↻ ${todo.completionCount}</span>` : ''}
         <button class="complete-button ${ongoing ? 'ongoing-complete' : ''} ${todo.completedToday ? 'is-completed-today' : ''}" type="button" ${ongoing ? `data-record-todo="${todo.id}"` : `data-complete-todo="${todo.id}"`} ${todo.completedToday ? 'disabled' : ''} aria-label="${ongoing ? (todo.completedToday ? `今天已完成，累计 ${todo.completionCount} 次` : `记录今天完成 ${html(todo.title)}`) : `完成 ${html(todo.title)}`}">✓</button>
+        <button class="todo-more" type="button" data-todo-menu="${todo.id}" aria-label="${html(todo.title)}的更多操作" aria-haspopup="menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.65"/><circle cx="12" cy="12" r="1.65"/><circle cx="18" cy="12" r="1.65"/></svg>
+        </button>
       </div>
     </div>
   `;
 }
 
-function orderedActiveTodos(state) {
+function eligiblePriorityTodos(state) {
   const current = currentMainline(state);
   return [
     ...(current?.todos ?? []),
-    ...state.mainlines.filter((mainline) => mainline.id !== current?.id).flatMap((mainline) => mainline.todos),
     ...state.stateTodos,
-  ];
+  ].filter((todo) => !todo.completedToday);
 }
 
 function renderStuckPanel(state, priority) {
   if (ui.stuckView === 'todo') {
-    const alternatives = orderedActiveTodos(state).filter((todo) => todo.id !== priority.id);
+    const alternatives = eligiblePriorityTodos(state).filter((todo) => todo.id !== priority.id);
     return `
       <section class="stuck-panel stuck-picker" id="stuck-panel" aria-label="换一件事">
         <header class="stuck-panel-heading">
@@ -272,7 +275,7 @@ function renderStuckPanel(state, priority) {
               <strong>${html(todo.title)}</strong>
               <small>${html(todoSource(state, todo))}</small>
             </button>
-          `).join('') : '<p>这个模式暂时没有其他可选事项。</p>'}
+          `).join('') : '<p>当前主线与其他事项中，暂时没有别的可做事项。</p>'}
         </div>
       </section>
     `;
@@ -541,13 +544,21 @@ function beginTodoEdit(button) {
   );
 }
 
-function closeContextMenu() {
+function closeContextMenu(restoreFocus = false) {
   byId('context-menu').hidden = true;
+  const trigger = document.querySelector(ui.contextMenuTarget ?? '[data-no-menu-target]');
+  trigger?.setAttribute('aria-expanded', 'false');
+  if (restoreFocus === true) trigger?.focus({ preventScroll: true });
 }
 
 function openContextMenu(type, id, x, y) {
   const menu = byId('context-menu');
   const todo = type === 'todo' ? todoById(id) : null;
+  const state = todo ? stateById(ui.snapshot, todo.stateId) : null;
+  const choiceActions = todo ? `
+    ${state.priorityTodoId !== id && eligiblePriorityTodos(state).some((item) => item.id === id) ? `<button type="button" role="menuitem" data-context-action="set-priority" data-target-id="${id}">设为下一步</button>` : ''}
+    ${todo.mainlineId || state.mainlines.length ? `<button type="button" role="menuitem" data-context-action="move-todo" data-target-id="${id}">移动到…</button>` : ''}
+  ` : '';
   menu.innerHTML = type === 'mainline'
     ? `
       <button type="button" role="menuitem" data-context-action="complete" data-target-id="${id}">完成主线</button>
@@ -555,19 +566,23 @@ function openContextMenu(type, id, x, y) {
       <button class="danger" type="button" role="menuitem" data-context-action="delete-mainline" data-target-id="${id}">删除主线</button>
     `
     : todo?.kind === 'ongoing' ? `
+      ${choiceActions}
       ${todo.completedToday ? `<button type="button" role="menuitem" data-context-action="undo-record" data-target-id="${id}">撤回今天</button>` : ''}
       <button type="button" role="menuitem" data-context-action="complete-todo" data-target-id="${id}">完成事项</button>
       <button type="button" role="menuitem" data-context-action="abandon-todo" data-target-id="${id}">放弃事项</button>
       <button class="danger" type="button" role="menuitem" data-context-action="delete-todo" data-target-id="${id}">删除事项</button>
     ` : `
+      ${choiceActions}
       <button type="button" role="menuitem" data-context-action="make-ongoing" data-target-id="${id}">设为持续事项</button>
       <button type="button" role="menuitem" data-context-action="complete-todo" data-target-id="${id}">完成事项</button>
       <button type="button" role="menuitem" data-context-action="abandon-todo" data-target-id="${id}">放弃事项</button>
       <button class="danger" type="button" role="menuitem" data-context-action="delete-todo" data-target-id="${id}">删除事项</button>
     `;
+  ui.contextMenuTarget = `[data-${type === 'todo' ? 'todo' : 'mainline'}-menu="${id}"]`;
+  document.querySelector(ui.contextMenuTarget)?.setAttribute('aria-expanded', 'true');
   menu.hidden = false;
-  menu.style.left = `${Math.min(x, window.innerWidth - 175)}px`;
-  menu.style.top = `${Math.min(y, window.innerHeight - menu.offsetHeight - 10)}px`;
+  menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - menu.offsetWidth - 8))}px`;
+  menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - menu.offsetHeight - 8))}px`;
   menu.querySelector('button')?.focus();
 }
 
@@ -838,9 +853,13 @@ function setupDashboardEvents() {
       }
       const selectedTodo = event.target.closest('[data-stuck-select-todo]');
       if (selectedTodo) {
-        ui.stuckOpen = false;
-        ui.stuckView = 'menu';
         await mutate(() => api.setPriority(selectedTodo.dataset.stuckSelectTodo), '下一步已更新');
+        return;
+      }
+      const menuButton = event.target.closest('[data-todo-menu]');
+      if (menuButton) {
+        const rect = menuButton.getBoundingClientRect();
+        openContextMenu('todo', menuButton.dataset.todoMenu, rect.right, rect.bottom);
         return;
       }
       const selectedMainline = event.target.closest('[data-stuck-select-mainline]');
@@ -897,17 +916,55 @@ function setupDashboardEvents() {
 }
 
 function setupContextMenu() {
-  byId('context-menu').addEventListener('click', async (event) => {
+  const menu = byId('context-menu');
+  menu.addEventListener('keydown', (event) => {
+    const buttons = [...menu.querySelectorAll('button')];
+    const index = buttons.indexOf(document.activeElement);
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeContextMenu(true);
+    } else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+      event.preventDefault();
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
+        : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
+      buttons[next]?.focus();
+    } else if (event.key === 'Tab') {
+      closeContextMenu(true);
+    }
+  });
+  menu.addEventListener('click', async (event) => {
     const actionButton = event.target.closest('[data-context-action]');
     if (!actionButton) return;
     const { contextAction: action, targetId: id } = actionButton.dataset;
-    closeContextMenu();
+    closeContextMenu(true);
     if (action === 'complete' || action === 'abandon') {
       const mainline = mainlineById(id);
       if (mainline) await beginEndMainline(mainline, action === 'complete' ? 'completed' : 'abandoned');
     } else if (action === 'delete-mainline') {
       const mainline = mainlineById(id);
       if (mainline) confirmDeleteMainline(mainline);
+    } else if (action === 'set-priority') {
+      const snapshot = await mutate(() => api.setPriority(id), '下一步已更新');
+      if (snapshot) document.querySelector(`[data-start-todo="${id}"]`)?.focus({ preventScroll: true });
+    } else if (action === 'move-todo') {
+      const todo = todoById(id);
+      if (!todo) return;
+      const state = stateById(ui.snapshot, todo.stateId);
+      const destinations = [{ id: '', name: '其他事项' }, ...state.mainlines]
+        .filter((item) => item.id !== (todo.mainlineId ?? ''));
+      openDialog({
+        kicker: '调整归属',
+        title: '移动事项',
+        message: `把“${todo.title}”移到这个模式中的其他位置。`,
+        fields: `<label><span>移到</span><select name="mainlineId">${destinations.map((item) => `<option value="${item.id}">${html(item.name)}</option>`).join('')}</select></label>`,
+        confirmLabel: '移动事项',
+        onConfirm: async ({ mainlineId }) => {
+          const target = state.mainlines.find((item) => item.id === mainlineId);
+          const position = (target?.todos ?? state.stateTodos).length + 1;
+          const snapshot = await mutate(() => api.moveTodo(id, { mainlineId: mainlineId || null, position }), '事项已移动');
+          if (snapshot) (document.querySelector(`[data-todo-menu="${id}"]`) ?? byId('state-todo-input')).focus({ preventScroll: true });
+        },
+      });
     } else if (action === 'abandon-todo') {
       await mutate(() => api.abandonTodo(id), '事项已放弃');
     } else if (action === 'make-ongoing') {
@@ -922,7 +979,7 @@ function setupContextMenu() {
     }
   });
   document.addEventListener('pointerdown', (event) => {
-    if (!event.target.closest('#context-menu') && !event.target.closest('[data-mainline-menu]')) closeContextMenu();
+    if (!event.target.closest('#context-menu, [data-mainline-menu], [data-todo-menu]')) closeContextMenu();
   });
   window.addEventListener('blur', closeContextMenu);
 }

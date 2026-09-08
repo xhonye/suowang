@@ -10,11 +10,11 @@
 
 ## Windows 30 秒开始
 
-当前公开测试版是 [0.2.0-beta.3](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.3)，已于 2026-08-30 发布。以下安装包均可从该下载页取得；后续版本以 [GitHub Releases](https://github.com/xhonye/suowang/releases) 为准。`0.2.0-beta.1` 的桌面包缺少道路视觉资产，请勿继续下载或镜像。
+当前公开测试版是 [0.2.0-beta.4](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.4)，已于 2026-09-08 发布。以下安装包均可从该下载页取得；后续版本以 [GitHub Releases](https://github.com/xhonye/suowang/releases) 为准。`0.2.0-beta.1` 的桌面包缺少道路视觉资产，请勿继续下载或镜像。
 
 ### 推荐：轻量版
 
-1. 下载 `SUOWANG-Lite-Setup-0.2.0-beta.3.exe`。
+1. 下载 `SUOWANG-Lite-Setup-0.2.0-beta.4.exe`。
 2. 双击安装。
 3. 从桌面的「所往 SUOWANG（轻量版）」图标打开。
 
@@ -22,7 +22,7 @@
 
 ### 可选：独立桌面窗口
 
-如果你更喜欢没有地址栏的独立应用窗口，下载 `SUOWANG-Desktop-Setup-0.2.0-beta.3.exe`。它内置 Electron/Chromium，因此体积明显更大，但功能与数据模型相同。
+如果你更喜欢没有地址栏的独立应用窗口，下载 `SUOWANG-Desktop-Setup-0.2.0-beta.4.exe`。它内置 Electron/Chromium，因此体积明显更大，但功能与数据模型相同。
 
 两版都有 Portable ZIP：解压后分别双击 `SUOWANG-Lite.exe` 或 `SUOWANG.exe`；不要直接在压缩包内运行。Lite 与 Desktop 共享同一个 SQLite 数据目录，**不要同时打开两版**，实例锁会拒绝第二个入口以保护数据。
 
@@ -71,7 +71,7 @@ Windows 旧版若已经存在 `D:/5Data/suowang/suowang.db`，会继续使用这
 
 ## macOS（实验支持）
 
-仅支持 Apple Silicon（M1 及以后）。下载 `SUOWANG-0.2.0-beta.3-mac-arm64.dmg`，打开后把「所往 SUOWANG」拖入 Applications，再双击打开独立应用窗口。
+仅支持 Apple Silicon（M1 及以后）。下载 `SUOWANG-0.2.0-beta.4-mac-arm64.dmg`，打开后把「所往 SUOWANG」拖入 Applications，再双击打开独立应用窗口。
 
 当前公开 Beta 未签名、未公证。首次打开可能需要按住 Control 点击应用，选择“打开”并再次确认。暂不支持 Intel Mac、App Store 安装或自动更新。
 

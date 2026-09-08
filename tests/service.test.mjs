@@ -162,6 +162,31 @@ test('starting and pausing the next step keeps a persistent pointer that clears 
   assert.equal(work.priorityTodoId, first.id);
 });
 
+test('completed ongoing work cannot be selected or started again today and rejection preserves pointers', (context) => {
+  const { runtime, service } = createServiceHarness(context);
+  let today = new Date(2026, 8, 8, 12);
+  service.clock = () => today;
+  let data = service.createTodo({ stateId: 'work', title: '喝一杯水', kind: 'ongoing' });
+  const ongoing = data.states.find((state) => state.id === 'work').stateTodos[0];
+  data = service.createTodo({ stateId: 'work', title: '打开文档' });
+  const single = data.states.find((state) => state.id === 'work').stateTodos[1];
+  service.recordTodoOccurrence(ongoing.id);
+  service.startPriorityTodo(single.id);
+  const before = service.snapshot();
+  assert.throws(() => service.setPriorityTodo(ongoing.id), (error) => error.code === 'already_completed_today');
+  assert.deepEqual(service.snapshot(), before);
+
+  // Older versions could persist this invalid priority; starting must check it too.
+  runtime.db.prepare('UPDATE states SET priority_todo_id = ?, started_todo_id = NULL WHERE id = ?').run(ongoing.id, 'work');
+  assert.throws(() => service.startPriorityTodo(ongoing.id), (error) => error.code === 'already_completed_today');
+  assert.equal(service.snapshot().states.find((state) => state.id === 'work').startedTodoId, null);
+
+  today = new Date(2026, 8, 9, 12);
+  service.setPriorityTodo(ongoing.id);
+  data = service.startPriorityTodo(ongoing.id);
+  assert.equal(data.states.find((state) => state.id === 'work').startedTodoId, ongoing.id);
+});
+
 test('todos keep an optional minimal step through create, edit, priority, and history', (context) => {
   const { service } = createServiceHarness(context);
   let snapshot = service.createMainline({ stateId: 'work', slotIndex: 1, name: '写作' });
