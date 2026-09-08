@@ -1,0 +1,32 @@
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+ <PropertyGroup><VisualStudioVersion>17.0</VisualStudioVersion></PropertyGroup>
+ <ItemGroup Label="ProjectConfigurations">
+  <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>
+ </ItemGroup>
+ <PropertyGroup>
+  <WapProjPath Condition="'$(WapProjPath)'==''">$(MSBuildExtensionsPath)\Microsoft\DesktopBridge\</WapProjPath>
+  <PathToXAMLWinRTImplementations>Suowang.Widget\</PathToXAMLWinRTImplementations>
+ </PropertyGroup>
+ <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.props" />
+ <PropertyGroup>
+  <ProjectGuid>DB7302FD-A8B2-47E2-9034-BDF65DD4ACAB</ProjectGuid>
+  <TargetPlatformVersion>10.0.26100.0</TargetPlatformVersion>
+  <TargetPlatformMinVersion>10.0.22621.0</TargetPlatformMinVersion>
+  <AssetTargetFallback>net8.0-windows$(TargetPlatformVersion);$(AssetTargetFallback)</AssetTargetFallback>
+  <DefaultLanguage>zh-CN</DefaultLanguage>
+  <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+  <EntryPointProjectUniqueName>..\Widget\Widget.csproj</EntryPointProjectUniqueName>
+  <AppxBundlePlatforms>x64</AppxBundlePlatforms>
+ </PropertyGroup>
+ <ItemGroup>
+  <AppxManifest Include="Package.appxmanifest"><SubType>Designer</SubType></AppxManifest>
+  <Content Include="..\Widget\obj\widbar\plugin.json"><Link>Public\plugin.json</Link></Content>
+  <Content Include="obj\icons\*.png"><Link>Images\%(Filename)%(Extension)</Link></Content>
+  <ProjectReference Include="..\Widget\Widget.csproj">
+   <SkipGetTargetFrameworkProperties>True</SkipGetTargetFrameworkProperties>
+   <PublishProfile>Properties\PublishProfiles\win-x64.pubxml</PublishProfile>
+  </ProjectReference>
+  <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" />
+ </ItemGroup>
+ <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
+</Project>

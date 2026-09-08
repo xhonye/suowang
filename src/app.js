@@ -18,12 +18,12 @@ const ui = {
   activeStateId: null,
   page: 'dashboard',
   createSlot: null,
+  firstStepInputId: null,
   drag: null,
   endAction: null,
   dialogAction: null,
   stuckOpen: false,
   stuckView: 'menu',
-  departureTodoId: null,
   expandedHistory: new Set(),
 };
 const desktop = globalThis.suowangDesktop ?? null;
@@ -324,12 +324,22 @@ function renderPriority(state) {
   const priority = priorityTodo(state);
   const container = byId('priority-content');
   const stuckToggle = byId('stuck-toggle');
+  byId('priority-flow').hidden = !(priority && !ui.stuckOpen && state.startedTodoId === priority.id);
   byId('priority-zone').classList.toggle('stuck-open', Boolean(priority && ui.stuckOpen));
   stuckToggle.hidden = !priority;
   stuckToggle.textContent = ui.stuckOpen ? '收起' : '卡住了？';
   stuckToggle.setAttribute('aria-expanded', String(Boolean(priority && ui.stuckOpen)));
   if (!priority) {
-    container.innerHTML = '<p class="priority-empty">拖一条事项到这里，明确此刻的下一步。</p>';
+    const current = currentMainline(state);
+    const scopedTodos = [...(current?.todos ?? []), ...state.stateTodos];
+    const doneToday = scopedTodos.length > 0 && scopedTodos.every((todo) => todo.kind === 'ongoing' && todo.completedToday);
+    container.innerHTML = `
+      <div class="priority-empty">
+        <strong>${doneToday ? '今天的持续事项已完成' : '从一件小事开始'}</strong>
+        <p>${doneToday ? '可以先到这里。有新的事情，再添一步。' : current ? '写下这条主线现在能做的一件事。' : '不必先想好整条主线，先写下现在能做的一件事。'}</p>
+        <button class="${doneToday ? 'secondary-action' : 'primary-action'}" type="button" data-add-next-step>${doneToday ? '再添一步' : '添加第一步'}</button>
+      </div>
+    `;
     return;
   }
   if (ui.stuckOpen) {
@@ -337,13 +347,12 @@ function renderPriority(state) {
     return;
   }
   const started = state.startedTodoId === priority.id;
-  const departing = ui.departureTodoId === priority.id;
   const completionLabel = priority.kind === 'ongoing' ? '今天完成' : '完成这一步';
   const completionAriaLabel = priority.kind === 'ongoing'
     ? `记录今天完成 ${html(priority.title)}`
     : `完成 ${html(priority.title)}`;
   container.innerHTML = `
-    <div class="priority-card ${started ? 'is-started' : ''} ${departing ? 'is-departing' : ''}" tabindex="0" data-todo-id="${priority.id}" aria-label="${started ? '正在走：' : '下一步：'}${html(priority.title)}">
+    <div class="priority-card ${started ? 'is-started' : ''}" tabindex="0" data-todo-id="${priority.id}" aria-label="${started ? '正在走：' : '下一步：'}${html(priority.title)}">
       <div class="priority-copy">
         ${started ? '<p class="priority-journey-state">正在走这一步</p>' : ''}
         <button class="priority-title" type="button" data-edit-todo="${priority.id}" data-field="title" data-value="${html(priority.title)}">${html(priority.title)}</button>
@@ -365,8 +374,8 @@ function renderPriority(state) {
               </button>
             </div>`
           : `<button class="priority-start" type="button" data-start-todo="${priority.id}" aria-label="开始 ${html(priority.title)}">
+              <svg aria-hidden="true" viewBox="0 0 20 20"><path d="m7 4 9 6-9 6Z"/></svg>
               <span>开始这一步</span>
-              <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M4.5 10h10.2M11 6.3l3.7 3.7-3.7 3.7"/></svg>
             </button>`}
       </div>
     </div>
@@ -468,6 +477,7 @@ function focusStateTab(stateId) {
 
 async function selectState(stateId, restoreFocus = false) {
   if (!stateById(ui.snapshot, stateId)) return;
+  ui.firstStepInputId = null;
   ui.stuckOpen = false;
   ui.stuckView = 'menu';
   if (stateId === ui.activeStateId) {
@@ -654,13 +664,25 @@ function todoDropPosition(list, clientY) {
 
 function setupNavigation() {
   document.querySelectorAll('[data-page]').forEach((button) => {
-    button.addEventListener('click', () => navigate(button.dataset.page));
+    button.addEventListener('click', () => {
+      ui.firstStepInputId = null;
+      navigate(button.dataset.page);
+    });
   });
   document.querySelector('[data-page-link="dashboard"]').addEventListener('click', (event) => {
     event.preventDefault();
     navigate('dashboard');
   });
   byId('dismiss-error').addEventListener('click', () => { byId('error-banner').hidden = true; });
+}
+
+function finishQuickAdd(input, toggle) {
+  input.value = '';
+  toggle.setAttribute('aria-pressed', 'false');
+  if (ui.firstStepInputId === input.id) {
+    ui.firstStepInputId = null;
+    byId('priority-content').querySelector('[data-start-todo]')?.focus();
+  }
 }
 
 function setupDashboardEvents() {
@@ -761,7 +783,7 @@ function setupDashboardEvents() {
     const toggle = event.currentTarget.querySelector('.todo-kind-toggle');
     const kind = toggle.getAttribute('aria-pressed') === 'true' ? 'ongoing' : 'single';
     const snapshot = await mutate(() => api.createTodo({ stateId: activeState().id, mainlineId: current.id, title, kind }), kind === 'ongoing' ? '持续事项已添加' : '事项已添加');
-    if (snapshot) { input.value = ''; toggle.setAttribute('aria-pressed', 'false'); }
+    if (snapshot) finishQuickAdd(input, toggle);
   });
   byId('state-todo-form').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -771,7 +793,7 @@ function setupDashboardEvents() {
     const toggle = event.currentTarget.querySelector('.todo-kind-toggle');
     const kind = toggle.getAttribute('aria-pressed') === 'true' ? 'ongoing' : 'single';
     const snapshot = await mutate(() => api.createTodo({ stateId: activeState().id, title, kind }), kind === 'ongoing' ? '持续事项已添加' : '事项已添加');
-    if (snapshot) { input.value = ''; toggle.setAttribute('aria-pressed', 'false'); }
+    if (snapshot) finishQuickAdd(input, toggle);
   });
   document.querySelectorAll('.todo-kind-toggle').forEach((toggle) => {
     toggle.addEventListener('click', () => {
@@ -782,6 +804,13 @@ function setupDashboardEvents() {
 
   [byId('priority-content'), byId('mainline-todos'), byId('state-todos')].forEach((container) => {
     container.addEventListener('click', async (event) => {
+      if (event.target.closest('[data-add-next-step]')) {
+        const input = byId(currentMainline(activeState()) ? 'mainline-todo-input' : 'state-todo-input');
+        ui.firstStepInputId = input.id;
+        input.scrollIntoView({ block: 'center', behavior: 'instant' });
+        input.focus({ preventScroll: true });
+        return;
+      }
       if (event.target.closest('[data-stuck-back]')) {
         ui.stuckView = 'menu';
         renderPriority(activeState());
@@ -837,22 +866,11 @@ function setupDashboardEvents() {
       const start = event.target.closest('[data-start-todo]');
       if (start) {
         const id = start.dataset.startTodo;
-        ui.departureTodoId = id;
-        const snapshot = await mutate(() => api.startPriority(id), '已出发，先迈出这一小步');
-        if (!snapshot) {
-          ui.departureTodoId = null;
-          return;
-        }
-        window.setTimeout(() => {
-          if (ui.departureTodoId !== id) return;
-          ui.departureTodoId = null;
-          renderPriority(activeState());
-        }, 900);
+        await mutate(() => api.startPriority(id), '已出发，先迈出这一小步');
         return;
       }
       const pause = event.target.closest('[data-pause-todo]');
       if (pause) {
-        ui.departureTodoId = null;
         await mutate(() => api.pausePriority(pause.dataset.pauseTodo), '已暂停，事项仍留在下一步');
         return;
       }
@@ -1188,6 +1206,34 @@ function setup() {
   setupDialog();
   setupHistory();
   setupSettings();
+  setupExternalRefresh();
+}
+
+// A taskbar companion may change the same data while the cockpit is unfocused.
+// Never replace an in-progress edit or apply a response over a newer mutation.
+function setupExternalRefresh() {
+  let refreshing = false;
+  const canRefresh = () => ui.snapshot && ui.page === 'dashboard' && !document.hidden
+    && !document.body.classList.contains('busy') && !ui.drag && !ui.endAction
+    && !ui.createSlot && !document.querySelector('dialog[open], .editing')
+    && !document.activeElement?.matches('input, textarea, select, [contenteditable="true"]');
+  const refresh = async () => {
+    if (refreshing || !canRefresh()) return;
+    refreshing = true;
+    const previous = ui.snapshot;
+    try {
+      const snapshot = await api.snapshot();
+      if (ui.snapshot !== previous || !canRefresh()) return;
+      ui.activeStateId = snapshot.settings.lastViewedStateId;
+      applySnapshot(snapshot);
+    } catch (error) {
+      showError('最新事项暂未同步', error);
+    } finally {
+      refreshing = false;
+    }
+  };
+  window.addEventListener('focus', refresh);
+  document.addEventListener('visibilitychange', refresh);
 }
 
 async function initialize() {

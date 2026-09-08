@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 const requiredFiles = [
   'assets/brand/favicon.png',
   'assets/brand/suowang-app-icon.ico',
-  'assets/brand/suowang-app-icon.svg',
+  'assets/brand/suowang-scenic-mark-v1.png',
   'desktop/main.js',
   'desktop/preload.cjs',
   'desktop/desktop-policy.mjs',
@@ -17,6 +17,7 @@ const requiredFiles = [
   'scripts/build-windows-release.ps1',
   'scripts/create-upgrade-fixture.mjs',
   'scripts/install-electron-runtime.mjs',
+  'scripts/refresh-shortcut-icons.ps1',
   'scripts/verify-upgrade-fixture.mjs',
   'scripts/verify-windows-lite-package.ps1',
   'scripts/launcher-config.mjs',

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>所往 · 单色行动卡预览</title>
+<style>
+:root{color-scheme:light;--ink:#31596c;--line:rgba(49,89,108,.18);font-family:"Microsoft YaHei UI","Segoe UI",sans-serif;color:var(--ink);background:#f3f6f7}
+*{box-sizing:border-box}body{margin:0;padding:48px 16px}main{width:min(100%,460px);margin:auto}h1{font-size:22px;letter-spacing:.02em;margin:0 0 12px}.note{font-size:13px;line-height:1.8;opacity:.76;margin:0 0 26px}
+.next-step{height:252px;position:relative;isolation:isolate;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:#f7fafb;padding:20px;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:16px}
+.next-step::before{content:"";position:absolute;z-index:-1;inset:0 -64px;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='128' viewBox='0 0 64 128'%3E%3Cpath d='M-32-64 96 192' fill='none' stroke='%2331596c' stroke-width='1' opacity='.12'/%3E%3C/svg%3E");background-size:64px 128px;animation:flow 3.8s linear infinite}
+.next-step.paused::before{animation-play-state:paused;opacity:0}.next-step.completed::before{animation:none;opacity:0}
+.next-step.help-open::before{animation-play-state:paused}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}h2{font-size:17px;margin:0;font-weight:700}.stuck{font:inherit;font-size:11px;color:inherit;opacity:.7;border:0;background:transparent;padding:6px 0;cursor:pointer}
+.content{min-height:0;overflow:auto}.status-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;min-height:16px}.status{font-size:11px;letter-spacing:.04em;display:flex;align-items:center;gap:7px}.status::before{content:"";width:5px;height:5px;background:currentColor;border-radius:1px}.paused .status::before{background:transparent;outline:1px solid currentColor}.elapsed{font:12px/1 "Segoe UI",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.09em;opacity:.65}
+h3{font-size:21px;margin:0 0 9px;line-height:1.4}p.step{font-size:12px;line-height:1.7;margin:0;opacity:.78}.actions{display:flex;gap:10px;min-height:40px}button{color:inherit}button.action{display:flex;align-items:center;justify-content:center;gap:9px;min-height:40px;padding:0 16px;border:1px solid var(--line);border-radius:10px;background:rgba(247,250,251,.85);font:600 13px "Microsoft YaHei UI",sans-serif;cursor:pointer}.action svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}.action.complete{flex:1;border-color:rgba(49,89,108,.36)}.action.start{flex:1;background:var(--ink);color:white}.action:hover{box-shadow:inset 0 0 0 1px currentColor}.stuck:hover{opacity:1}button:focus-visible,input:focus-visible{outline:2px solid var(--ink);outline-offset:3px}[hidden]{display:none!important}
+.compare{display:flex;align-items:center;gap:8px;margin:24px 0 10px;font-size:13px}.compare input{accent-color:var(--ink);width:16px;height:16px}.fine{font-size:12px;line-height:1.8;opacity:.7;margin-top:8px}.reset{font:inherit;font-size:12px;background:transparent;border:0;text-decoration:underline;text-underline-offset:3px;padding:8px 0;cursor:pointer}.help{font-size:12px;line-height:1.8;margin:0;opacity:.78}
+@keyframes flow{from{transform:translateX(-32px)}to{transform:translateX(32px)}}
+@media(prefers-reduced-motion:reduce){.next-step::before{animation:none;opacity:0}}
+@media(max-width:360px){body{padding:28px 12px}.next-step{padding:16px;gap:14px}h3{font-size:19px}.action{padding-inline:12px!important}}
+</style>
+<main>
+<h1>单色 · 全卡片动效</h1>
+<p class="note">细线斜纹持续向右流动，覆盖标题、正文及按钮背后。单一蓝灰色，文字保持静止。</p>
+<section class="next-step" aria-label="下一步示例">
+ <header><h2>下一步</h2><button class="stuck" type="button" aria-expanded="false">卡住了？</button></header>
+ <div class="content">
+  <div class="status-row"><span class="status">正在走这一步</span><span class="elapsed" hidden aria-label="本次用时">00:00</span></div>
+  <div class="task"><h3>整理初稿</h3><p class="step">最小一步：打开草稿，先写一个小标题</p></div>
+  <p class="help" hidden>再小一点 · 换一件事<br>看看主线 · 先去恢复</p>
+ </div>
+ <div class="actions">
+  <button class="action toggle" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 5v10M13 5v10"/></svg><span>暂停</span></button>
+  <button class="action complete" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 10 3 3 7-7"/></svg><span>完成这一步</span></button>
+ </div>
+</section>
+<label class="compare"><input id="show-time" type="checkbox">对比：显示本次用时（可选提案）</label>
+<p class="fine">建议默认不显示计时。开始、暂停和完成可点击体验；计时仅为本页示意，不保存、不统计，也不影响正式事项。</p>
+<button class="reset" type="button">重新体验</button>
+</main>
+<script>
+const card=document.querySelector('.next-step'),toggle=document.querySelector('.toggle'),complete=document.querySelector('.complete'),status=document.querySelector('.status'),clock=document.querySelector('.elapsed'),stuck=document.querySelector('.stuck');
+let active=true,done=false,elapsed=0,last=performance.now(),help=false;
+function render(){card.classList.toggle('paused',!active);card.classList.toggle('completed',done);toggle.classList.toggle('start',!active);status.textContent=done?'这一步已完成':active?'正在走这一步':'准备好再出发';toggle.innerHTML=active?'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 5v10M13 5v10"/></svg><span>暂停</span>':'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 4 9 6-9 6Z"/></svg><span>开始这一步</span>';toggle.hidden=done;complete.hidden=!active||done;stuck.hidden=done;}
+function tick(){const now=performance.now();if(active&&!done)elapsed+=now-last;last=now;const secs=Math.floor(elapsed/1000);clock.textContent=String(Math.floor(secs/60)).padStart(2,'0')+':'+String(secs%60).padStart(2,'0');}
+toggle.onclick=()=>{tick();active=!active;render();};complete.onclick=()=>{tick();active=false;done=true;render();};document.querySelector('#show-time').onchange=e=>{clock.hidden=!e.target.checked;};stuck.onclick=()=>{help=!help;stuck.textContent=help?'收起':'卡住了？';stuck.setAttribute('aria-expanded',String(help));document.querySelector('.task').hidden=help;document.querySelector('.help').hidden=!help;card.classList.toggle('help-open',help);};document.querySelector('.reset').onclick=()=>{active=true;done=false;elapsed=0;last=performance.now();render();tick();};setInterval(tick,200);
+</script>
+</html>

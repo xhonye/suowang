@@ -155,7 +155,7 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.match(stylesSource, /\.page-stage\s*\{[^}]*height:\s*100%[^}]*overflow-y:\s*auto/);
   assert.match(shell, /class="road-chrome"/);
   assert.doesNotMatch(shell, /class="topbar"/);
-  assert.match(stylesSource, /\.quick-add button\s*\{[^}]*min-width:\s*44px[^}]*height:\s*32px[^}]*font-size:\s*10px/);
+  assert.match(stylesSource, /\.quick-add button\s*\{[^}]*min-width:\s*44px[^}]*height:\s*32px[^}]*font-size:\s*12px/);
   assert.match(stylesSource, /\.todo-row \.complete-button\s*\{[^}]*width:\s*32px[^}]*height:\s*32px[^}]*border-radius:\s*8px[^}]*font-size:\s*10px/);
   assert.match(stylesSource, /\.road-stage\s*\{[^}]*height:\s*clamp\(430px,\s*42vh,\s*460px\)/);
   assert.match(stylesSource, /\.road-image\s*\{[^}]*object-fit:\s*cover[^}]*object-position:\s*center 68%/);
@@ -167,7 +167,7 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.match(stylesSource, /env\(safe-area-inset-bottom\)/);
   assert.match(stylesSource, /--workspace-sky-crop/);
   assert.match(stylesSource, /data-workspace-density="max"/);
-  assert.match(stylesSource, /priority-departure/);
+  assert.match(stylesSource, /priority-flow-right/);
   assert.match(stylesSource, /\.mainline-slots:has\(\.create-mainline-form\)/);
   assert.doesNotMatch(stylesSource, /grid-auto-columns:\s*min\(82vw/);
   assert.match(stylesSource, /\.todo-list\s*\{[^}]*max-height:\s*230px/);

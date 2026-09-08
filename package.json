@@ -1,6 +1,6 @@
 {
   "name": "suowang",
-  "version": "0.2.0-beta.3",
+  "version": "0.2.0-beta.4",
   "type": "module",
   "description": "SUOWANG is a local-first mainline cockpit for real life.",
   "productName": "所往 SUOWANG",
@@ -40,6 +40,7 @@
     "scripts/cli.mjs",
     "scripts/configure-access.ps1",
     "scripts/install-shortcut.ps1",
+    "scripts/refresh-shortcut-icons.ps1",
     "scripts/launcher-config.mjs",
     "scripts/install-electron-runtime.mjs",
     "scripts/build-icons.mjs",

@@ -7,7 +7,9 @@ import sharp from 'sharp';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const brandDir = join(root, 'assets', 'brand');
-const source = join(brandDir, 'suowang-app-icon.svg');
+// The same approved scenic mark is used in the sidebar and every platform icon.
+// Keep the original PNG intact; platform outputs are only size conversions.
+const source = join(brandDir, 'suowang-scenic-mark-v1.png');
 
 mkdirSync(brandDir, { recursive: true });
 for (const size of [1024, 512, 256]) {

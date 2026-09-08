@@ -1,0 +1,6 @@
+**/bin/
+**/obj/
+**/AppPackages/
+**/BundleArtifacts/
+*.user
+*.pfx
