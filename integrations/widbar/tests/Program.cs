@@ -13,6 +13,24 @@ Check(mode.Choices.SequenceEqual(new[] { a }), "Choices exclude other mainlines 
 Check(mode.Next == a && mode.Context == "Mainline", "Current pointer selects exact item and context");
 Check((mode with { PriorityTodoId = "missing" }).Next == null, "Missing pointer never guesses a replacement");
 Check((mode with { PriorityTodoId = "b" }).Next == null, "Completed-today item cannot be offered as next step");
+var draft = new StepDraft();
+draft.Bind(a);
+Check(!draft.IsDirty && draft.Id == a.Id, "Opening an item does not create an unsaved edit");
+draft.Edit("A smaller first step");
+draft.Bind(a);
+Check(draft.IsDirty && draft.Text == "A smaller first step", "Refresh keeps the unsaved text");
+draft.Bind(null);
+Check(draft.IsDirty && draft.Id == a.Id, "Disconnect keeps the edit attached to the original item");
+draft.Bind(c);
+Check(draft.Id == a.Id && draft.Title == a.Title, "An external next-step change cannot retarget an edit");
+draft.Cancel(c);
+Check(!draft.IsDirty && draft.Id == c.Id && draft.Text == c.MinimalStep, "Explicit cancel adopts the current item");
+draft.Bind(a); draft.Edit("");
+Check(draft.IsDirty, "Clearing an existing minimal step is an edit");
+draft.Edit(a.MinimalStep);
+Check(!draft.IsDirty, "Returning to the original text removes the dirty state");
+draft.Edit("Saved step"); draft.Accept(); draft.Bind(c);
+Check(!draft.IsDirty && draft.Id == c.Id, "Acknowledged save releases the original edit");
 if (args.Length == 1)
 {
     // Only an explicit temporary directory supplied by the smoke runner is allowed.
@@ -26,6 +44,15 @@ if (args.Length == 1)
     var id = snap.Current.Next!.Id;
     snap = await client.Send("PATCH", $"api/todos/{id}", new { minimalStep = "Pick up a ruler" });
     Check(snap.Current.Next!.MinimalStep == "Pick up a ruler", "Minimal step saves through existing API");
+    draft.Bind(snap.Current.Next); draft.Edit(new string('x', 161));
+    var rejected = false;
+    try { await client.Send("PATCH", $"api/todos/{draft.Id}", new { minimalStep = draft.Text }); }
+    catch (IOException) { rejected = true; }
+    Check(rejected && draft.IsDirty && draft.Text.Length == 161, "Rejected save retains the edit for correction");
+    draft.Edit("Hold the ruler");
+    snap = await client.Send("PATCH", $"api/todos/{draft.Id}", new { minimalStep = draft.Text });
+    draft.Accept(); draft.Bind(snap.Current.Next);
+    Check(!draft.IsDirty && draft.Text == "Hold the ruler", "Corrected edit can be saved against the real service");
     snap = await client.Send("POST", $"api/todos/{id}/start", new { });
     Check(snap.Current.StartedTodoId == id, "Start persists");
     snap = await client.Send("POST", $"api/todos/{id}/pause", new { });

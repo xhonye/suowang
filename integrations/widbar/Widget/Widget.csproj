@@ -18,7 +18,7 @@
     <WidBarPluginName>所往 · 下一步</WidBarPluginName>
     <WidBarPluginDescription>随手接续下一步，共用所往本地数据。</WidBarPluginDescription>
     <WidBarPluginCategory>Utility</WidBarPluginCategory>
-    <WidBarPluginVersion>0.1.0</WidBarPluginVersion>
+    <WidBarPluginVersion>0.1.1</WidBarPluginVersion>
     <WidBarPluginPreviewWidth>180</WidBarPluginPreviewWidth>
     <WidBarPluginConfigurable>false</WidBarPluginConfigurable>
   </PropertyGroup>
