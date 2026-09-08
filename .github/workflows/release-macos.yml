@@ -87,13 +87,23 @@ jobs:
           test ! -e "$app_root/Contents/Resources/app/scripts/start.ps1"
 
           node scripts/create-upgrade-fixture.mjs "$data_dir"
-          SUOWANG_DATA_DIR="$data_dir" SUOWANG_SMOKE_REPORT="$report" "$executable" --smoke-test
+          evidence_dir="$PWD/dist/release-evidence"
+          SUOWANG_DATA_DIR="$data_dir" SUOWANG_SMOKE_REPORT="$report" SUOWANG_SMOKE_SCREENSHOT="$evidence_dir/installed-upgrade.png" "$executable" --smoke-test
+          cp "$report" "$evidence_dir/installed-upgrade.json"
           node -e "const r=require('$report'); if(r.status!=='passed'||!r.rendererLoaded||!r.databaseWrite) process.exit(1)"
           node scripts/verify-upgrade-fixture.mjs "$data_dir"
           if pgrep -f "$executable" >/dev/null; then
             echo 'macOS packaged smoke left a process running.' >&2
             exit 1
           fi
+
+      - name: Retain installation evidence for release review
+        uses: actions/upload-artifact@v6
+        with:
+          name: SUOWANG-macos-evidence-${{ env.CANDIDATE_SHORT_SHA }}
+          path: dist/release-evidence/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload immutable macOS candidate artifacts
         uses: actions/upload-artifact@v6

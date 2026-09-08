@@ -101,6 +101,7 @@ jobs:
             $report = Join-Path $testRoot "$name-report.json"
             $env:SUOWANG_DATA_DIR = $data
             $env:SUOWANG_SMOKE_REPORT = $report
+            $env:SUOWANG_SMOKE_SCREENSHOT = Join-Path $PWD "dist/release-evidence/$name.png"
             $process = Start-Process -FilePath $exe -ArgumentList '--smoke-test' -PassThru -WindowStyle Hidden
             $seenChildren = @()
             while (-not $process.HasExited) {
@@ -111,6 +112,7 @@ jobs:
             if ($process.ExitCode -ne 0) { throw "$name smoke exited with $($process.ExitCode)" }
             if ($seenChildren | Where-Object { $_ -match '^(powershell|pwsh|cmd)\.exe$' }) { throw "$name launched a command shell." }
             $result = Get-Content -LiteralPath $report -Raw | ConvertFrom-Json
+            Copy-Item -LiteralPath $report -Destination (Join-Path $PWD "dist/release-evidence/$name.json")
             if (
               $result.status -ne 'passed' -or
               -not $result.rendererLoaded -or
@@ -191,10 +193,19 @@ jobs:
             Get-Process -Name SUOWANG -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
             Remove-Item Env:SUOWANG_DATA_DIR -ErrorAction SilentlyContinue
             Remove-Item Env:SUOWANG_SMOKE_REPORT -ErrorAction SilentlyContinue
+            Remove-Item Env:SUOWANG_SMOKE_SCREENSHOT -ErrorAction SilentlyContinue
             if ([System.IO.Path]::GetFullPath($testRoot).StartsWith([System.IO.Path]::GetFullPath($env:RUNNER_TEMP))) {
               Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
             }
           }
+
+      - name: Retain installation evidence for release review
+        uses: actions/upload-artifact@v6
+        with:
+          name: SUOWANG-Windows-evidence-${{ env.CANDIDATE_SHORT_SHA }}
+          path: dist/release-evidence/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload immutable Windows candidate artifacts
         uses: actions/upload-artifact@v6
