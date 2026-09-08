@@ -183,6 +183,17 @@
                 </form>
               </section>
 
+              <section id="desktop-close-settings" class="settings-card" hidden>
+                <header><p>桌面应用</p><h2>关闭窗口时</h2></header>
+                <label for="desktop-close-behavior">右上角 × 的行为</label>
+                <select id="desktop-close-behavior">
+                  <option value="tray">收起到托盘（默认）</option>
+                  <option value="quit">退出程序</option>
+                </select>
+                <p class="settings-intro">收起后仍在后台运行，WidBar 可以继续使用。点击托盘图标重新打开，右键菜单可退出所往。</p>
+                <small id="desktop-close-status" role="status" aria-live="polite"></small>
+              </section>
+
               <section class="settings-card data-settings">
                 <header><p>本地数据</p><h2>备份与恢复</h2></header>
                 <div class="export-actions">

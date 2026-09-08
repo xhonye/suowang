@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 const channels = Object.freeze({
   getDesktopInfo: 'suowang:get-desktop-info',
+  setCloseBehavior: 'suowang:set-close-behavior',
   getVersionInfo: 'suowang:get-version-info',
   openGitHubTarget: 'suowang:open-github-target',
   openDataDirectory: 'suowang:open-data-directory',
@@ -12,6 +13,7 @@ const channels = Object.freeze({
 
 contextBridge.exposeInMainWorld('suowangDesktop', Object.freeze({
   getDesktopInfo: () => ipcRenderer.invoke(channels.getDesktopInfo),
+  setCloseBehavior: (value) => ipcRenderer.invoke(channels.setCloseBehavior, value),
   getVersionInfo: () => ipcRenderer.invoke(channels.getVersionInfo),
   openGitHubTarget: (target) => ipcRenderer.invoke(channels.openGitHubTarget, target),
   openDataDirectory: () => ipcRenderer.invoke(channels.openDataDirectory),

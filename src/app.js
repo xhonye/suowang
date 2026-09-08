@@ -1284,6 +1284,29 @@ function setupSettings() {
 
 async function setupDesktopMetadata() {
   if (!desktop) return;
+  if (desktop.setCloseBehavior) {
+    const select = byId('desktop-close-behavior');
+    try {
+      const info = await desktop.getDesktopInfo();
+      select.value = info.closeBehavior;
+      byId('desktop-close-settings').hidden = false;
+      let saved = select.value;
+      select.addEventListener('change', async () => {
+        select.disabled = true;
+        const status = byId('desktop-close-status');
+        status.textContent = '正在保存…';
+        try {
+          const result = await desktop.setCloseBehavior(select.value);
+          saved = result.closeBehavior;
+          status.textContent = '已保存';
+        } catch (error) {
+          select.value = saved;
+          status.textContent = '保存失败，请重试';
+          showError('关闭偏好没有保存', error);
+        } finally { select.disabled = false; }
+      });
+    } catch (error) { showError('关闭偏好读取失败', error); }
+  }
   document.documentElement.dataset.desktop = 'true';
   byId('open-data-directory').hidden = false;
   const avatarButton = byId('avatar-form').querySelector('button[type="submit"]');

@@ -24,6 +24,7 @@
 html { height: 100%; overflow: hidden; scroll-behavior: smooth; }
 body { min-width: 280px; height: 100%; margin: 0; overflow: hidden; color: var(--ink); background: var(--fog); font-family: var(--body-font); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 button, input, select, textarea { color: inherit; font: inherit; }
+#desktop-close-behavior { display: block; width: 100%; margin: 10px 0; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 10px; background: white; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 3px solid rgba(78, 131, 156, 0.36); outline-offset: 3px; }
 button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }

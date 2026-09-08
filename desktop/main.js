@@ -4,6 +4,8 @@ import {
   dialog,
   ipcMain,
   Menu,
+  Tray,
+  nativeImage,
   screen,
   session,
   shell,
@@ -27,6 +29,7 @@ import {
 import { createDesktopLogger } from './logging.mjs';
 import { activateExistingWindow } from './single-instance.mjs';
 import { loadWindowState, saveWindowState } from './window-state.mjs';
+import { loadCloseBehavior, saveCloseBehavior, validateCloseBehavior } from './close-behavior.mjs';
 
 const PRODUCT_NAME = '所往 SUOWANG';
 const APP_USER_MODEL_ID = 'com.xhonye.suowang';
@@ -42,6 +45,8 @@ let dataDir = null;
 let resourceRoot = null;
 let buildInfo = null;
 let quitting = false;
+let tray = null;
+let closeBehavior = 'tray';
 let startupFailureVisible = false;
 
 app.setName(PRODUCT_NAME);
@@ -124,6 +129,27 @@ function focusMainWindow() {
   activateExistingWindow(mainWindow);
 }
 
+function ensureTray() {
+  if (tray && !tray.isDestroyed()) return;
+  const image = nativeImage.createFromPath(join(resourceRoot, 'assets', 'brand', 'suowang-app-icon-256.png'));
+  if (image.isEmpty()) throw new Error('无法加载托盘图标，窗口将保持打开。');
+  const created = new Tray(image.resize({ width: 20, height: 20 }));
+  try {
+    created.setToolTip('所往 SUOWANG · 后台运行');
+    created.setContextMenu(Menu.buildFromTemplate([
+      { label: '打开所往', click: focusMainWindow },
+      { type: 'separator' },
+      { label: '退出所往', click: () => app.quit() },
+    ]));
+    created.on('click', focusMainWindow);
+    created.on('double-click', focusMainWindow);
+    tray = created;
+  } catch (error) {
+    created.destroy();
+    throw error;
+  }
+}
+
 function applyRendererBoundary(window, origin) {
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', (event, target) => {
@@ -187,11 +213,27 @@ function createMainWindow(origin) {
   window.once('ready-to-show', () => {
     if (!isSmokeTest) window.show();
   });
-  window.on('close', () => {
+  window.on('close', (event) => {
     if (window.isDestroyed()) return;
     const bounds = window.isMaximized() ? window.getNormalBounds() : window.getBounds();
     saveWindowState(statePath, { ...bounds, maximized: window.isMaximized() });
+    if (quitting || isSmokeTest) return;
+    event.preventDefault();
+    if (closeBehavior === 'quit') {
+      app.quit();
+      return;
+    }
+    try {
+      ensureTray();
+      window.hide();
+    } catch (error) {
+      safeError('tray-unavailable', error);
+      void dialog.showMessageBox(window, { type: 'error', title: PRODUCT_NAME,
+        message: '暂时无法收起到托盘，窗口仍保持打开。',
+        detail: '你可以在设置中将关闭行为改为退出程序。' });
+    }
   });
+  window.on('session-end', () => app.quit());
   window.on('closed', () => {
     if (mainWindow === window) mainWindow = null;
   });
@@ -223,7 +265,14 @@ function installIpcHandlers() {
     });
   };
 
-  handle(IPC_CHANNELS.getDesktopInfo, () => ({ desktop: true, platform: process.platform, localFirst: true }));
+  handle(IPC_CHANNELS.getDesktopInfo, () => ({ desktop: true, platform: process.platform, localFirst: true, closeBehavior }));
+  handle(IPC_CHANNELS.setCloseBehavior, (value) => {
+    validateCloseBehavior(value);
+    if (value === 'tray') ensureTray();
+    closeBehavior = saveCloseBehavior(join(dataDir, 'desktop-preferences.json'), value);
+    if (value === 'quit' && tray) { tray.destroy(); tray = null; }
+    return { closeBehavior };
+  });
   handle(IPC_CHANNELS.getVersionInfo, () => ({
     productName: PRODUCT_NAME,
     version: APP_VERSION,
@@ -442,6 +491,14 @@ async function boot() {
   buildInfo = readBuildInfo(resourceRoot, APP_VERSION);
   logger = createDesktopLogger(dataDir);
   logger.info('startup');
+  try {
+    closeBehavior = loadCloseBehavior(join(dataDir, 'desktop-preferences.json'));
+  } catch (error) {
+    safeError('desktop-preferences-invalid', error);
+    closeBehavior = 'quit';
+    await dialog.showMessageBox({ type: 'warning', title: PRODUCT_NAME,
+      message: '关闭偏好读取失败，本次关闭窗口将退出程序。', detail: '请在设置中重新选择关闭行为。' });
+  }
   installApplicationMenu();
   installProcessFailureHandlers();
   app.setAboutPanelOptions({ applicationName: PRODUCT_NAME, applicationVersion: APP_VERSION, version: buildInfo.shortCommit });
@@ -481,6 +538,7 @@ if (ownsApplicationInstance) {
     if (quitting || !runningServer) return;
     event.preventDefault();
     quitting = true;
+    if (tray) { tray.destroy(); tray = null; }
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close();
     const active = runningServer;
     runningServer = null;

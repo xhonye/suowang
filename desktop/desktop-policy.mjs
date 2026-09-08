@@ -11,6 +11,7 @@ export const EXPORT_KINDS = Object.freeze({
 
 export const IPC_CHANNELS = Object.freeze({
   getDesktopInfo: 'suowang:get-desktop-info',
+  setCloseBehavior: 'suowang:set-close-behavior',
   getVersionInfo: 'suowang:get-version-info',
   openGitHubTarget: 'suowang:open-github-target',
   openDataDirectory: 'suowang:open-data-directory',
