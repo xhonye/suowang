@@ -21,10 +21,10 @@ test('start, refresh, pause and complete keep journey semantics distinct', async
   expect(data.states.find((state) => state.id === 'work').startedTodoId).toBeNull();
 
   await page.getByRole('button', { name: '开始 第一步' }).click();
-  await page.locator('#priority-content').getByRole('button', { name: '完成 第一步' }).click();
+  await page.locator('#priority-content').getByRole('button', { name: '记录今天完成 第一步' }).click();
   await expect(page.locator('#priority-content')).toContainText('接棒事项');
   data = await snapshot(request);
-  expect(data.history.some((item) => item.name === '第一步' && item.status === 'completed')).toBeTruthy();
+  expect(data.states.find(s => s.id === 'work').mainlines[0].todos[0].completionCount).toBe(1);
 });
 
 test('active next-step background moves right without stretching or blocking controls', async ({ page, request }, testInfo) => {
@@ -92,7 +92,7 @@ test('active next-step background moves right without stretching or blocking con
   await expect(flow).toBeHidden();
   await page.locator('#stuck-toggle').click();
   await expect(flow).toBeVisible();
-  await page.locator('#priority-content').getByRole('button', { name: '完成 整理这一小步' }).click();
+  await page.locator('#priority-content').getByRole('button', { name: '记录今天完成 整理这一小步' }).click();
   await expect(flow).toBeHidden();
   expect((await snapshot(request)).states.find(state => state.id === 'work').startedTodoId).toBeNull();
 });

@@ -59,7 +59,6 @@ export async function editMainlineField(page, field, value) {
 
 export async function createTodo(page, title, { ongoing = false, scope = 'mainline' } = {}) {
   const form = page.locator(scope === 'mainline' ? '#mainline-todo-form' : '#state-todo-form');
-  if (ongoing) await form.locator('.todo-kind-toggle').click();
   await form.locator('input').fill(title);
   await form.getByRole('button', { name: '添加', exact: true }).click();
   await expect(page.locator(`[data-todo-id] .todo-title`, { hasText: title })).toBeVisible();

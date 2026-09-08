@@ -178,8 +178,6 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.52; }
 .quick-add input { min-width: 0; height: 32px; padding: 0 10px; background: rgba(242, 246, 245, 0.74); border: 1px solid transparent; border-radius: 8px; font-size: 12px; }
 .quick-add input:focus { background: white; border-color: var(--signal); }
 .quick-add button { min-width: 44px; height: 32px; padding: 0 10px; color: var(--signal-strong); background: var(--signal-soft); border: 0; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 650; }
-.quick-add .todo-kind-toggle { padding-inline: 10px; color: var(--muted); background: rgba(238, 243, 242, .76); }
-.quick-add .todo-kind-toggle[aria-pressed="true"] { color: var(--signal-strong); background: rgba(205, 228, 237, .82); box-shadow: inset 0 0 0 1px rgba(78, 131, 156, .24); }
 
 .page-heading { padding: 8px 0 24px; }
 .page-heading h1 { margin-top: 5px; font-size: 32px; }

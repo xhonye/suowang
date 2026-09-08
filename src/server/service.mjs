@@ -605,7 +605,7 @@ export class SuowangService {
     });
   }
 
-  createTodo({ stateId, mainlineId = null, title, minimalStep = '', notes = '', kind = 'single' }) {
+  createTodo({ stateId, mainlineId = null, title, minimalStep = '', notes = '', kind = 'ongoing' }) {
     return this.mutate(() => {
       const state = this.assertState(stateId);
       if (mainlineId) {
@@ -629,7 +629,7 @@ export class SuowangService {
         requiredText(title, '事项名称', 160),
         optionalText(minimalStep, '最小一步', 160),
         optionalText(notes, '备注', 4000),
-        kind,
+        'ongoing',
         this.nextPosition(stateId, mainlineId),
         this.now(),
       );
@@ -753,7 +753,7 @@ export class SuowangService {
       const mainlineId = originalMainline?.id ?? null;
       this.db.prepare(`
         UPDATE todos
-        SET mainline_id = ?, status = 'active', position = ?, ended_at = NULL
+        SET mainline_id = ?, status = 'active', kind = 'ongoing', position = ?, ended_at = NULL
         WHERE id = ?
       `).run(mainlineId, this.nextPosition(todo.state_id, mainlineId), id);
       this.reconcilePointers(todo.state_id, state.current_mainline_id, state.priority_todo_id);

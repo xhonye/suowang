@@ -30,7 +30,7 @@ test('an existing v1 database gains minimal steps, ongoing-item support, and wor
 
   upgradedRuntime = new DatabaseRuntime({ dataDir, migrationsDir });
   const todo = upgradedRuntime.db.prepare('SELECT title, minimal_step, notes, kind FROM todos WHERE id = ?').get('td_legacy');
-  assert.deepEqual(todo, { title: '旧事项', minimal_step: '', notes: '', kind: 'single' });
+  assert.deepEqual(todo, { title: '旧事项', minimal_step: '', notes: '', kind: 'ongoing' });
   assert.ok(upgradedRuntime.db.prepare(`
     SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'todo_occurrences'
   `).get());
@@ -38,9 +38,9 @@ test('an existing v1 database gains minimal steps, ongoing-item support, and wor
   assert.equal(upgradedRuntime.db.prepare('SELECT workspace_density FROM app_settings WHERE singleton = 1').get().workspace_density, 'small');
   assert.equal(upgradedRuntime.db.prepare('SELECT started_todo_id FROM states WHERE id = ?').get('work').started_todo_id, null);
   assert.equal(upgradedRuntime.db.prepare('SELECT display_name FROM app_settings WHERE singleton = 1').get().display_name, 'Honye');
-  assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 8);
+  assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 9);
 
-  const migrationBackups = readdirSync(join(dataDir, 'backups')).filter((name) => name.startsWith('pre-migrate-v1-to-v8-'));
+  const migrationBackups = readdirSync(join(dataDir, 'backups')).filter((name) => name.startsWith('pre-migrate-v1-to-v9-'));
   assert.equal(migrationBackups.length, 1);
   const backup = new Database(join(dataDir, 'backups', migrationBackups[0]), { readonly: true, fileMustExist: true });
   try {
@@ -78,7 +78,7 @@ test('a v0.1.2-style database rekeys mainline names without changing visible fac
   oldRuntime.close();
 
   upgradedRuntime = new DatabaseRuntime({ dataDir, migrationsDir });
-  assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 8);
+  assert.equal(upgradedRuntime.db.prepare('SELECT MAX(version) AS version FROM schema_migrations').get().version, 9);
   assert.deepEqual(
     upgradedRuntime.db.prepare('SELECT id, name, normalized_name FROM mainlines ORDER BY id').all(),
     [

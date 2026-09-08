@@ -122,7 +122,7 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
         complete = Button("完成", async () =>
         {
             if (draft.IsDirty || snapshot?.Current.Next is not Todo todo) return;
-            await Mutate("POST", $"api/todos/{todo.Id}/{(todo.Kind == "ongoing" ? "record" : "complete")}", new { });
+            await Mutate("POST", $"api/todos/{todo.Id}/record", new { });
         });
         start.HorizontalAlignment = HorizontalAlignment.Stretch;
         start.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
@@ -225,7 +225,7 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
             emptyPanel!.Visibility = snapshot != null && todo == null && !draft.IsDirty ? Visibility.Visible : Visibility.Collapsed;
             if (step!.Text != draft.Text) step.Text = draft.Text;
             start!.Content = todo != null && mode?.StartedTodoId == todo.Id ? "暂停" : "开始这一步";
-            complete!.Content = todo?.Kind == "ongoing" ? "今天完成" : "完成";
+            complete!.Content = "今天完成";
             choices!.Items.Clear();
             foreach (var t in mode?.Choices ?? []) choices.Items.Add(new ComboBoxItem { Tag = t.Id, Content = t.Title });
             choices.SelectedIndex = -1;

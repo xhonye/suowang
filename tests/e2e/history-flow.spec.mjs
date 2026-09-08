@@ -7,7 +7,8 @@ test('completed items can be reopened and historical mainlines copied with a new
   await openDashboard(page);
   await createMainline(page, '阶段实验');
   await createTodo(page, '可撤回事项');
-  await page.getByRole('button', { name: '完成 可撤回事项' }).click();
+  await page.getByRole('button', { name: '可撤回事项的更多操作' }).click();
+  await page.getByRole('menuitem', { name: '结束事项' }).click();
 
   await page.getByRole('button', { name: '行迹' }).click();
   await expect(page.locator('#history-list')).toContainText('可撤回事项');

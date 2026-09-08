@@ -86,7 +86,7 @@ test('server exposes a database-backed health check, snapshot, and static shell'
     app: 'suowang',
     version: packageMetadata.version,
     database: 'ready',
-    schemaVersion: 8,
+    schemaVersion: 9,
     pid: process.pid,
     accessMode: 'local',
   });
@@ -95,7 +95,7 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   const snapshot = await fetch(`${baseUrl}/api/snapshot`);
   assert.equal(snapshot.status, 200);
   const snapshotBody = await snapshot.json();
-  assert.deepEqual(snapshotBody.meta, { appVersion: packageMetadata.version, schemaVersion: 8 });
+  assert.deepEqual(snapshotBody.meta, { appVersion: packageMetadata.version, schemaVersion: 9 });
   assert.deepEqual(snapshotBody.states.map((state) => state.id), ['restore', 'work', 'life']);
 
   const home = await fetch(`${baseUrl}/`);
@@ -146,7 +146,7 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.match(appSource, /data-start-todo/);
   assert.match(appSource, /data-pause-todo/);
   assert.match(shell, /id="workspace-density-form"/);
-  assert.equal(shell.match(/class="todo-kind-toggle"/g)?.length, 2);
+  assert.doesNotMatch(shell, /todo-kind-toggle/);
 
   const styles = await fetch(`${baseUrl}/src/styles.css`);
   assert.equal(styles.status, 200);
@@ -184,7 +184,7 @@ test('server exposes a database-backed health check, snapshot, and static shell'
   assert.doesNotMatch(appSource, />进行中</);
   assert.match(appSource, /<span class="mainline-state">当前主线<\/span>/);
   assert.match(appSource, /<circle cx="6" cy="12" r="1\.65"\/>/);
-  assert.match(appSource, />完成事项<\/button>/);
+  assert.match(appSource, />结束事项<\/button>/);
   assert.match(appSource, />放弃事项<\/button>/);
   assert.match(appSource, /本阶段完成标准/);
   assert.match(appSource, /本阶段时间范围/);

@@ -14,7 +14,7 @@ test('boots without browser errors or misleading static identity', async ({ page
 
   const health = await (await request.get('/health')).json();
   expect(health).toMatchObject({
-    status: 'ok', app: 'suowang', version: APP_VERSION, database: 'ready', schemaVersion: 8, accessMode: 'local',
+    status: 'ok', app: 'suowang', version: APP_VERSION, database: 'ready', schemaVersion: 9, accessMode: 'local',
   });
   expect(health.pid).toBeGreaterThan(0);
   await expect(page.locator('#greeting')).toHaveText(/^(早上好|上午好|中午好|下午好|晚上好|夜深了)，所往用户$/);

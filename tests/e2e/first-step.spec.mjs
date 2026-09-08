@@ -38,7 +38,7 @@ test('empty next step adds into the current mainline and quietly closes complete
   await expect(page.getByRole('textbox', { name: '添加当前主线事项' })).toBeFocused();
   await createTodo(page, '收好水杯', { ongoing: true });
   await page.getByRole('button', { name: '记录今天完成 收好水杯' }).click();
-  await expect(page.locator('#priority-zone')).toContainText('今天的持续事项已完成');
+  await expect(page.locator('#priority-zone')).toContainText('今天的事项已做过');
   await expect(page.locator('#priority-zone')).not.toContainText('拖');
   await page.getByRole('button', { name: '再添一步' }).click();
   const input = page.getByRole('textbox', { name: '添加当前主线事项' });

@@ -237,7 +237,7 @@ function renderCurrentDetail(state) {
 
 function todoRow(todo) {
   const ongoing = todo.kind === 'ongoing';
-  const ongoingDescription = `持续事项，累计 ${todo.completionCount} 次`;
+  const ongoingDescription = `事项，已做 ${todo.completionCount} 天`;
   const minimalStep = todo.minimalStep ? `
     <span class="todo-separator" aria-hidden="true">｜</span>
     <button class="todo-minimal-step" type="button" data-edit-todo="${todo.id}" data-field="minimalStep" data-value="${html(todo.minimalStep)}">${html(todo.minimalStep)}</button>
@@ -252,7 +252,7 @@ function todoRow(todo) {
       </div>
       <div class="todo-actions">
         ${ongoing ? `<span class="todo-ongoing-count" title="${ongoingDescription}" aria-label="${ongoingDescription}">↻ ${todo.completionCount}</span>` : ''}
-        <button class="complete-button ${ongoing ? 'ongoing-complete' : ''} ${todo.completedToday ? 'is-completed-today' : ''}" type="button" ${ongoing ? `data-record-todo="${todo.id}"` : `data-complete-todo="${todo.id}"`} ${todo.completedToday ? 'disabled' : ''} aria-label="${ongoing ? (todo.completedToday ? `今天已完成，累计 ${todo.completionCount} 次` : `记录今天完成 ${html(todo.title)}`) : `完成 ${html(todo.title)}`}">✓</button>
+        <button class="complete-button ${ongoing ? 'ongoing-complete' : ''} ${todo.completedToday ? 'is-completed-today' : ''}" type="button" ${ongoing ? `data-record-todo="${todo.id}"` : `data-complete-todo="${todo.id}"`} ${todo.completedToday ? 'disabled' : ''} aria-label="${ongoing ? (todo.completedToday ? `今天已完成，已做 ${todo.completionCount} 天` : `记录今天完成 ${html(todo.title)}`) : `完成 ${html(todo.title)}`}">✓</button>
         <button class="todo-more" type="button" data-todo-menu="${todo.id}" aria-label="${html(todo.title)}的更多操作" aria-haspopup="menu" aria-expanded="false">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.65"/><circle cx="12" cy="12" r="1.65"/><circle cx="18" cy="12" r="1.65"/></svg>
         </button>
@@ -349,7 +349,7 @@ function renderPriority(state) {
     const doneToday = scopedTodos.length > 0 && scopedTodos.every((todo) => todo.kind === 'ongoing' && todo.completedToday);
     container.innerHTML = `
       <div class="priority-empty">
-        <strong>${available ? '准备好再出发' : doneToday ? '今天的持续事项已完成' : '从一件小事开始'}</strong>
+        <strong>${available ? '准备好再出发' : doneToday ? '今天的事项已做过' : '从一件小事开始'}</strong>
         <p${available ? ' tabindex="0"' : ''}>${available ? html(available.title) : doneToday ? '可以先到这里。有新的事情，再添一步。' : current ? '写下这条主线现在能做的一件事。' : '不必先想好整条主线，先写下现在能做的一件事。'}</p>
         <button class="${doneToday ? 'secondary-action' : 'primary-action'}" type="button" ${available ? `data-stuck-select-todo="${available.id}"` : 'data-add-next-step'}>${available ? '选为下一步' : doneToday ? '再添一步' : '添加第一步'}</button>
       </div>
@@ -375,7 +375,7 @@ function renderPriority(state) {
         </button>
       </div>
       <div class="priority-footer">
-        ${priority.kind === 'ongoing' ? `<span class="priority-ongoing-count" title="持续事项，累计 ${priority.completionCount} 次" aria-label="持续事项，累计 ${priority.completionCount} 次">↻ ${priority.completionCount}</span>` : ''}
+        ${priority.kind === 'ongoing' ? `<span class="priority-ongoing-count" title="事项，已做 ${priority.completionCount} 天" aria-label="事项，已做 ${priority.completionCount} 天">↻ ${priority.completionCount}</span>` : ''}
         ${started
           ? `<div class="priority-running-actions">
               <button class="priority-pause" type="button" data-pause-todo="${priority.id}" aria-label="暂停 ${html(priority.title)}">
@@ -452,9 +452,9 @@ function renderHistory() {
     return `
       <article class="history-item history-item-${item.type}">
         <div class="history-summary">
-          <strong>${html(item.name)}${item.type === 'todo' && item.kind === 'ongoing' ? `<small class="history-ongoing-count">持续 · 累计 ${item.completionCount} 次</small>` : ''}${item.type === 'todo' && item.minimalStep ? `<small class="history-minimal-step"> ｜ ${html(item.minimalStep)}</small>` : ''}</strong>
+          <strong>${html(item.name)}${item.type === 'todo' && item.kind === 'ongoing' ? `<small class="history-ongoing-count">已做 ${item.completionCount} 天</small>` : ''}${item.type === 'todo' && item.minimalStep ? `<small class="history-minimal-step"> ｜ ${html(item.minimalStep)}</small>` : ''}</strong>
           <span class="history-meta">${typeLabel(item.type)}</span>
-          <span class="history-status">${statusLabel(item.status)}</span>
+          <span class="history-status">${item.type === 'todo' && item.status === 'completed' ? '已结束' : statusLabel(item.status)}</span>
           <span class="history-meta">${html(stateName(ui.snapshot, item.stateId))}</span>
           <span class="history-meta">${formatEndedAt(item.endedAt)}</span>
           <div class="history-actions">
@@ -609,10 +609,8 @@ function openContextMenu(type, id, x, y) {
     : `
       ${choiceActions}
       <button type="button" role="menuitem" data-context-action="edit-notes" data-target-id="${id}">${todo?.notes ? '查看 / 编辑备注' : '添加备注'}</button>
-      ${todo?.kind === 'ongoing'
-        ? (todo.completedToday ? `<button type="button" role="menuitem" data-context-action="undo-record" data-target-id="${id}">撤回今天</button>` : '')
-        : `<button type="button" role="menuitem" data-context-action="make-ongoing" data-target-id="${id}">设为持续事项</button>`}
-      <button type="button" role="menuitem" data-context-action="complete-todo" data-target-id="${id}">完成事项</button>
+      ${todo?.completedToday ? `<button type="button" role="menuitem" data-context-action="undo-record" data-target-id="${id}">撤回今天</button>` : ''}
+      <button type="button" role="menuitem" data-context-action="complete-todo" data-target-id="${id}">结束事项</button>
       <button type="button" role="menuitem" data-context-action="abandon-todo" data-target-id="${id}">放弃事项</button>
       <button class="danger" type="button" role="menuitem" data-context-action="delete-todo" data-target-id="${id}">删除事项</button>
     `;
@@ -727,9 +725,8 @@ function setupNavigation() {
   byId('dismiss-error').addEventListener('click', () => { byId('error-banner').hidden = true; });
 }
 
-function finishQuickAdd(input, toggle) {
+function finishQuickAdd(input) {
   input.value = '';
-  toggle.setAttribute('aria-pressed', 'false');
   if (ui.firstStepInputId === input.id) {
     ui.firstStepInputId = null;
     byId('priority-content').querySelector('[data-start-todo]')?.focus();
@@ -834,18 +831,10 @@ function setupDashboardEvents() {
       const input = event.currentTarget.querySelector('input');
       const title = input.value.trim();
       if (!title || (mainlineScope && !current)) return;
-      const toggle = event.currentTarget.querySelector('.todo-kind-toggle');
-      const kind = toggle.getAttribute('aria-pressed') === 'true' ? 'ongoing' : 'single';
-      const snapshot = await mutate(() => api.createTodo({ stateId: state.id, mainlineId: current?.id ?? null, title, kind }), kind === 'ongoing' ? '持续事项已添加' : '事项已添加');
-      if (snapshot) finishQuickAdd(input, toggle);
+      const snapshot = await mutate(() => api.createTodo({ stateId: state.id, mainlineId: current?.id ?? null, title }), '事项已添加');
+      if (snapshot) finishQuickAdd(input);
     });
   }
-  document.querySelectorAll('.todo-kind-toggle').forEach((toggle) => {
-    toggle.addEventListener('click', () => {
-      const pressed = toggle.getAttribute('aria-pressed') === 'true';
-      toggle.setAttribute('aria-pressed', String(!pressed));
-    });
-  });
 
   [byId('priority-content'), byId('mainline-todos'), byId('state-todos')].forEach((container) => {
     container.addEventListener('click', async (event) => {
@@ -1010,12 +999,10 @@ function setupContextMenu() {
       });
     } else if (action === 'abandon-todo') {
       await mutate(() => api.abandonTodo(id), '事项已放弃');
-    } else if (action === 'make-ongoing') {
-      await mutate(() => api.updateTodo(id, { kind: 'ongoing' }), '已设为持续事项');
     } else if (action === 'undo-record') {
       await mutate(() => api.undoTodoRecord(id), '今天的完成记录已撤回');
     } else if (action === 'complete-todo') {
-      await mutate(() => api.completeTodo(id), '事项已完成并进入行迹');
+      await mutate(() => api.completeTodo(id), '事项已结束并进入行迹');
     } else if (action === 'delete-todo') {
       const todo = todoById(id);
       if (todo) confirmDeleteTodo(todo);

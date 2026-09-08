@@ -67,7 +67,8 @@ test('secure desktop window preserves the complete local workflow', async () => 
 
     await createMainline(page, '桌面壳验收');
     await createTodo(page, '完成独立窗口');
-    await page.getByRole('button', { name: '完成 完成独立窗口' }).first().click();
+    await page.getByRole('button', { name: '完成独立窗口的更多操作' }).click();
+    await page.getByRole('menuitem', { name: '结束事项' }).click();
     await page.locator('[data-page="history"]').click();
     await expect(page.locator('#history-list')).toContainText('完成独立窗口');
 

@@ -27,7 +27,7 @@ test('notes stay hidden, preserve failed edits, persist and remain readable in h
   await expect(editor).toHaveValue(notes);
   await page.getByRole('button', { name: '取消', exact: true }).click();
   await page.getByRole('button', { name: '资产配置的更多操作' }).click();
-  await page.getByRole('menuitem', { name: '完成事项', exact: true }).click();
+  await page.getByRole('menuitem', { name: '结束事项', exact: true }).click();
   await page.getByRole('button', { name: '行迹', exact: true }).click();
   await page.locator('.history-notes summary').click();
   await expect(page.locator('.history-notes p')).toHaveText(notes);
