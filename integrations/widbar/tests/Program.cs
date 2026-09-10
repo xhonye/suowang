@@ -13,6 +13,10 @@ Check(mode.Choices.SequenceEqual(new[] { a }), "Choices exclude other mainlines 
 Check(mode.Next == a && mode.Context == "Mainline", "Current pointer selects exact item and context");
 Check((mode with { PriorityTodoId = "missing" }).Next == null, "Missing pointer never guesses a replacement");
 Check((mode with { PriorityTodoId = "b" }).Next == null, "Completed-today item cannot be offered as next step");
+var slots = mode with { Mainlines = [new("third", "Third", [c], 3), new("first", "First", [a], 1)], CurrentMainlineId = "first" };
+Check(slots.MainlineAt(1)?.Id == "first" && slots.MainlineAt(3)?.Id == "third", "Mainline slots follow native slotIndex rather than array order");
+Check(slots.MainlineAt(2) == null, "Empty mainline slot stays empty");
+Check(slots.CurrentMainline?.Id == "first", "Displayed mainline follows confirmed current pointer");
 var draft = new StepDraft();
 draft.Bind(a);
 Check(!draft.IsDirty && draft.Id == a.Id, "Opening an item does not create an unsaved edit");
@@ -63,5 +67,32 @@ if (args.Length == 1)
     var ongoing = snap.Current.Next!.Id;
     snap = await client.Send("POST", $"api/todos/{ongoing}/record", new { });
     Check(snap.Current.Next == null && snap.Current.StateTodos.Any(t => t.Id == ongoing && t.CompletedToday), "Ongoing completes today without ending item");
+    snap = await client.Send("PATCH", "api/app-state", new { lastViewedStateId = "work" });
+    for (var slot = 1; slot <= 3; slot++)
+        if (snap.Current.MainlineAt(slot) == null)
+            snap = await client.Send("POST", "api/mainlines", new { stateId = "work", name = $"Widget mainline {slot}", slotIndex = slot });
+    var first = snap.Current.MainlineAt(1)!.Id;
+    var second = snap.Current.MainlineAt(2)!.Id;
+    Check(snap.Current.MainlineAt(3) != null, "All three native mainline slots deserialize");
+    snap = await client.Send("POST", $"api/mainlines/{first}/current", new { });
+    Check(snap.Current.CurrentMainlineId == first && snap.Current.StartedTodoId == null, "Mainline selection persists without starting");
+    snap = await client.Send("POST", "api/todos", new { stateId = "work", mainlineId = first, title = "Selector A" });
+    var selectorA = snap.Current.CurrentMainline!.Todos.Single(t => t.Title == "Selector A").Id;
+    snap = await client.Send("POST", "api/todos", new { stateId = "work", mainlineId = first, title = "Selector B" });
+    var selectorB = snap.Current.CurrentMainline!.Todos.Single(t => t.Title == "Selector B").Id;
+    snap = await client.Send("POST", $"api/todos/{selectorA}/priority", new { });
+    snap = await client.Send("POST", $"api/todos/{selectorA}/start", new { });
+    snap = await client.Send("POST", $"api/todos/{selectorB}/priority", new { });
+    Check(snap.Current.Next?.Id == selectorB && snap.Current.StartedTodoId == null, "Selecting another item stops old running pointer without auto-start");
+    snap = await client.Send("POST", $"api/todos/{selectorB}/start", new { });
+    Check(snap.Current.StartedTodoId == selectorB, "Preview start targets the newly selected item");
+    snap = await client.Send("POST", $"api/todos/{selectorB}/pause", new { });
+    Check(snap.Current.Next?.Id == selectorB && snap.Current.StartedTodoId == null, "Preview pause preserves selected item");
+    snap = await client.Send("POST", $"api/mainlines/{second}/current", new { });
+    Check(snap.Current.CurrentMainlineId == second && !snap.Current.Choices.Any(t => t.Id == selectorB), "Changing mainline replaces eligible item list");
+    var wrongMainlineRejected = false;
+    try { await client.Send("POST", $"api/todos/{selectorB}/priority", new { }); }
+    catch (IOException) { wrongMainlineRejected = true; }
+    Check(wrongMainlineRejected, "Old mainline item cannot be selected from stale UI");
 }
 Console.WriteLine($"{count} checks passed");

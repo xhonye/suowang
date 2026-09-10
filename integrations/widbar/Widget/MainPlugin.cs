@@ -1,5 +1,4 @@
-using Microsoft.UI.Text;
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using WidBar.SDK;
@@ -11,42 +10,45 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(3) };
     private Connection? connection;
     private Snapshot? snapshot;
-    private bool busy, rendering, disposed;
-    private readonly StepDraft draft = new();
-    private TextBlock? preview, title, context, status;
+    private bool busy, refreshing, disposed;
+    private int actionRevision;
+    private TextBlock? preview, status;
     private Button? previewToggle;
     private IWidgetContext? widgetContext;
-    private TextBox? step, newTitle;
-    private ComboBox? modes, choices;
-    private Button? start, complete, save, cancel, add, launch, retry, open;
-    private StackPanel? taskPanel, emptyPanel, editActions;
+    private readonly Dictionary<string, Button> modeButtons = new();
+    private readonly Dictionary<int, Button> mainlineButtons = new();
+    private readonly Dictionary<string, Button> todoButtons = new();
+    private StackPanel? todoList;
+    private string? todoListKey;
+    private Button? launch, retry, open;
     private string message = "点击连接所往";
 
     public override string Id => "com.suowang.nextstep";
     public override string Name => "所往 · 下一步";
     public override int PreviewLogicalWidth => 144;
-    public override int FlyoutWidth => 340;
-    public override int FlyoutHeight => 370;
+    public override int FlyoutWidth => 320;
+    public override int FlyoutHeight => 360;
     public override WidgetFlyoutBackdrop FlyoutBackdrop => WidgetFlyoutBackdrop.Mica;
 
     public override async Task InitializeAsync(IWidgetContext context)
     {
         widgetContext = context;
-        timer.Tick += async (_, _) => { if (!draft.IsDirty) await Refresh(); };
+        timer.Tick += async (_, _) => await Refresh();
         timer.Start();
         await Refresh();
     }
-    private static TextBlock Text(string value, double size = 13) => new()
+    private static TextBlock Text(string value, double size = 12) => new()
         { Text = value, FontSize = size, TextWrapping = TextWrapping.Wrap };
     private static Button Button(string text, Func<Task> action)
     {
-        var button = new Button { Content = text, Padding = new Thickness(12, 7, 12, 7) };
+        var button = new Button { Content = text, FontSize = 12, MinHeight = 36, Padding = new Thickness(12, 6, 12, 6) };
         button.Click += async (_, _) => await action();
         return button;
     }
     public override UIElement CreatePreviewContent()
     {
         preview = new TextBlock { FontSize = 11, TextWrapping = TextWrapping.Wrap, MaxLines = 2,
+            RenderTransform = new TranslateTransform { Y = 0 },
             TextAlignment = TextAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center };
@@ -72,85 +74,31 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
     }
     public override UIElement CreateFlyoutContent()
     {
-        var panel = new StackPanel { Spacing = 8 };
-        modes = new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch, PlaceholderText = "选择模式" };
-        foreach (var (id, name) in new[] { ("restore", "恢复模式"), ("work", "工作模式"), ("life", "生活模式") })
-            modes.Items.Add(new ComboBoxItem { Tag = id, Content = name });
-        modes.SelectionChanged += async (_, _) =>
+        var navigation = new StackPanel { Spacing = 6 };
+        var modeRow = ThreeColumns();
+        var modeIndex = 0;
+        foreach (var (id, name) in new[] { ("restore", "恢复"), ("work", "工作"), ("life", "生活") })
         {
-            if (rendering || draft.IsDirty || modes.SelectedItem is not ComboBoxItem selected) return;
-            await Mutate("PATCH", "api/app-state", new { lastViewedStateId = (string)selected.Tag });
-        };
-        panel.Children.Add(modes);
-        context = Text("", 12); context.Opacity = .75; context.MaxLines = 1;
-        context.TextTrimming = TextTrimming.CharacterEllipsis; panel.Children.Add(context);
-        title = Text("下一步", 18); title.FontWeight = FontWeights.SemiBold;
-        title.MaxLines = 2; title.TextTrimming = TextTrimming.WordEllipsis; panel.Children.Add(title);
-
-        taskPanel = new StackPanel { Spacing = 10 };
-        step = new TextBox { PlaceholderText = "写一个更容易开始的最小一步", MaxLength = 160,
-            Header = "最小一步", AcceptsReturn = false };
-        step.TextChanged += (_, _) =>
+            var button = SelectorButton(name, () => SelectMode(id));
+            modeButtons.Add(id, button);
+            Grid.SetColumn(button, modeIndex++); modeRow.Children.Add(button);
+        }
+        navigation.Children.Add(modeRow);
+        var mainlineRow = ThreeColumns();
+        for (var slot = 1; slot <= 3; slot++)
         {
-            if (rendering) return;
-            draft.Edit(step.Text); UpdateControls();
-        };
-        taskPanel.Children.Add(step);
-        save = Button("保存", async () =>
-        {
-            if (draft.Id == null || !draft.IsDirty) return;
-            await Run(async () =>
-            {
-                snapshot = await Client.Send("PATCH", $"api/todos/{Uri.EscapeDataString(draft.Id)}", new { minimalStep = draft.Text });
-                draft.Accept(); message = "已保存";
-            });
-            if (draft.IsDirty) step.Focus(FocusState.Programmatic);
-            else start?.Focus(FocusState.Programmatic);
-        });
-        cancel = Button("取消", () =>
-        {
-            draft.Cancel(snapshot?.Current.Next); message = ""; Render();
-            if (snapshot?.Current.Next != null) step.Focus(FocusState.Programmatic);
-            return Task.CompletedTask;
-        });
-        editActions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        editActions.Children.Add(save); editActions.Children.Add(cancel); taskPanel.Children.Add(editActions);
-        var actions = new Grid { ColumnSpacing = 8 };
-        actions.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        actions.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        start = Button("开始这一步", ToggleStarted);
-        complete = Button("完成", async () =>
-        {
-            if (draft.IsDirty || snapshot?.Current.Next is not Todo todo) return;
-            await Mutate("POST", $"api/todos/{todo.Id}/record", new { });
-        });
-        start.HorizontalAlignment = HorizontalAlignment.Stretch;
-        start.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
-        Grid.SetColumn(complete, 1);
-        actions.Children.Add(start); actions.Children.Add(complete);
-        taskPanel.Children.Add(actions);
-        panel.Children.Add(taskPanel);
-
-        emptyPanel = new StackPanel { Spacing = 8 };
-        newTitle = new TextBox { PlaceholderText = "写下接下来想做的事", MaxLength = 160 };
-        emptyPanel.Children.Add(newTitle);
-        add = Button("添加到其他事项", async () =>
-        {
-            if (snapshot == null || string.IsNullOrWhiteSpace(newTitle.Text)) return;
-            var ok = await Mutate("POST", "api/todos", new { stateId = snapshot.Current.Id, title = newTitle.Text.Trim() });
-            if (ok) newTitle.Text = "";
-        });
-        emptyPanel.Children.Add(add); panel.Children.Add(emptyPanel);
-
-        choices = new ComboBox { PlaceholderText = "换一件", HorizontalAlignment = HorizontalAlignment.Stretch };
-        choices.SelectionChanged += async (_, _) =>
-        {
-            if (rendering || draft.IsDirty || choices.SelectedItem is not ComboBoxItem item) return;
-            await Mutate("POST", $"api/todos/{item.Tag}/priority", new { });
-        };
-        panel.Children.Add(choices);
+            var slotIndex = slot;
+            var button = SelectorButton("空位", () => SelectMainline(slotIndex));
+            mainlineButtons.Add(slotIndex, button);
+            Grid.SetColumn(button, slot - 1); mainlineRow.Children.Add(button);
+        }
+        navigation.Children.Add(mainlineRow);
+        todoList = new StackPanel { Spacing = 6 };
         var footer = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        open = Button("打开驾驶舱 ↗", async () => await Run(async () => { await Client.Open(); }));
+        open = Button("所往 ↗", async () => await Run(async () => { await Client.Open(); }));
+        open.FontSize = 12; open.Padding = new Thickness(0, 4, 0, 4);
+        open.BorderThickness = new Thickness(0);
+        open.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
         launch = Button("启动所往", async () => await Run(async () =>
         {
             Client.Launch(); message = "正在启动…"; Render();
@@ -167,34 +115,208 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
         footer.Children.Add(open); footer.Children.Add(launch); footer.Children.Add(retry);
         status = Text("", 12); status.Opacity = .8;
         var bottom = new StackPanel { Spacing = 6 }; bottom.Children.Add(footer); bottom.Children.Add(status);
-        var layout = new Grid { Padding = new Thickness(16), RowSpacing = 10 };
+        var layout = new Grid { Padding = new Thickness(16), RowSpacing = 6, MaxHeight = FlyoutHeight };
+        layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         layout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        layout.Children.Add(new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
-        Grid.SetRow(bottom, 1); layout.Children.Add(bottom);
+        layout.Children.Add(navigation);
+        var listScroll = new ScrollViewer { Content = todoList, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        Grid.SetRow(listScroll, 1); layout.Children.Add(listScroll);
+        Grid.SetRow(bottom, 2); layout.Children.Add(bottom);
         Render();
         return layout;
     }
+    private static Grid ThreeColumns()
+    {
+        var grid = new Grid { ColumnSpacing = 6 };
+        for (var index = 0; index < 3; index++)
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        return grid;
+    }
+
+    private static Button SelectorButton(string label, Func<Task> action)
+    {
+        var button = Button(label, action);
+        button.Content = new TextBlock
+        {
+            Text = label, FontSize = 12, MaxLines = 2, TextWrapping = TextWrapping.Wrap,
+            TextTrimming = TextTrimming.CharacterEllipsis, TextAlignment = TextAlignment.Center,
+        };
+        AddTruncatedTitleHint(button);
+        button.MinWidth = 0; button.Padding = new Thickness(5, 6, 5, 6);
+        button.HorizontalAlignment = HorizontalAlignment.Stretch;
+        button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+        return button;
+    }
+
+    private static void SelectionStyle(Button button, bool selected)
+    {
+        if (button.Tag is bool previous && previous == selected) return;
+        button.Tag = selected;
+        button.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(selected ? (byte)255 : (byte)0, 78, 131, 156));
+        button.BorderBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(selected ? (byte)180 : (byte)40, 78, 131, 156));
+        button.Foreground = selected ? new SolidColorBrush(Microsoft.UI.Colors.White)
+            : (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"];
+        foreach (var state in new[] { "PointerOver", "Pressed" })
+        {
+            button.Resources["ButtonBackground" + state] = button.Background;
+            button.Resources["ButtonForeground" + state] = button.Foreground;
+            button.Resources["ButtonBorderBrush" + state] = button.BorderBrush;
+        }
+        button.BorderThickness = new Thickness(1);
+        button.CornerRadius = new CornerRadius(6);
+    }
+
+    private async Task SelectMode(string id)
+    {
+        if (busy || snapshot == null || snapshot.Current.Id == id) return;
+        await Mutate("PATCH", "api/app-state", new { lastViewedStateId = id });
+    }
+
+    private async Task SelectMainline(int slot)
+    {
+        if (busy || snapshot?.Current.MainlineAt(slot) is not { } mainline ||
+            mainline.Id == snapshot.Current.CurrentMainlineId) return;
+        await Mutate("POST", $"api/mainlines/{Uri.EscapeDataString(mainline.Id)}/current", new { });
+    }
+
+    private async Task SelectTodo(string id)
+    {
+        if (busy || snapshot == null || snapshot.Current.PriorityTodoId == id ||
+            !snapshot.Current.Choices.Any(todo => todo.Id == id)) return;
+        await Mutate("POST", $"api/todos/{Uri.EscapeDataString(id)}/priority", new { });
+    }
+
+    private void RenderNavigation(Mode? mode)
+    {
+        foreach (var pair in modeButtons)
+        {
+            var label = pair.Key == "restore" ? "恢复" : pair.Key == "work" ? "工作" : "生活";
+            var selected = pair.Key == mode?.Id;
+            ((TextBlock)pair.Value.Content).Text = label;
+            SelectionStyle(pair.Value, selected);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(pair.Value, label + "模式" + (selected ? "，当前" : ""));
+        }
+        foreach (var pair in mainlineButtons)
+        {
+            var mainline = mode?.MainlineAt(pair.Key);
+            var selected = mainline != null && mainline.Id == mode!.CurrentMainlineId;
+            ((TextBlock)pair.Value.Content).Text = mainline == null ? "空位" : mainline.Name;
+            SelectionStyle(pair.Value, selected);
+
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(pair.Value,
+                $"主线 {pair.Key}：{mainline?.Name ?? "空位"}" + (selected ? "，当前" : ""));
+        }
+        var mainlineTodos = mode?.CurrentMainline?.Todos ?? [];
+        var stateTodos = mode?.StateTodos ?? [];
+        var key = System.Text.Json.JsonSerializer.Serialize(new { mode = mode?.Id, mainline = mode?.CurrentMainlineId, mainlineTodos, stateTodos });
+        if (key != todoListKey)
+        {
+            todoListKey = key;
+            todoList!.Children.Clear(); todoButtons.Clear();
+            if (mode == null) todoList.Children.Add(Text("尚未连接", 13));
+            else if (mainlineTodos.Count == 0)
+                todoList.Children.Add(Text(mode.CurrentMainline == null ? "选择主线" : "暂无事项", 12));
+            foreach (var todo in mainlineTodos) AddTodoRow(todo);
+            if (stateTodos.Count > 0)
+            {
+                var label = Text("其他事项", 11); label.Opacity = .6; label.Margin = new Thickness(0, 6, 0, 0);
+                todoList.Children.Add(label);
+                foreach (var todo in stateTodos) AddTodoRow(todo);
+            }
+        }
+        foreach (var todo in mainlineTodos.Concat(stateTodos))
+        {
+            var selected = todo.Id == mode?.PriorityTodoId;
+            var running = selected && todo.Id == mode?.StartedTodoId;
+            var button = todoButtons[todo.Id];
+            SelectionStyle(button, selected);
+            var state = todo.CompletedToday ? "，今天已完成" : running ? "，当前事项，进行中" : selected ? "，当前事项" : "，点击设为当前事项";
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, todo.Title + state);
+        }
+        UpdateSelectionEnabled();
+    }
+
+    private void AddTodoRow(Todo todo)
+    {
+        var button = Button("", () => SelectTodo(todo.Id));
+        button.HorizontalAlignment = HorizontalAlignment.Stretch;
+        button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+        button.Padding = new Thickness(10, 8, 10, 8);
+        var titleText = Text(todo.Title); titleText.MaxLines = 2;
+        titleText.TextTrimming = TextTrimming.CharacterEllipsis;
+        button.Content = titleText;
+        AddTruncatedTitleHint(button);
+        todoButtons.Add(todo.Id, button);
+        todoList!.Children.Add(button);
+    }
+
+    private static void AddTruncatedTitleHint(Button button)
+    {
+        button.PointerEntered += (_, _) =>
+        {
+            if (button.Content is TextBlock label)
+                ToolTipService.SetToolTip(button, label.IsTextTrimmed ? label.Text : null);
+        };
+    }
+
+    private void UpdateSelectionEnabled()
+    {
+        var available = !busy && snapshot != null;
+        foreach (var button in modeButtons.Values) button.IsEnabled = available;
+        foreach (var pair in mainlineButtons) pair.Value.IsEnabled = available && snapshot!.Current.MainlineAt(pair.Key) != null;
+        var eligible = snapshot?.Current.Choices.Select(todo => todo.Id).ToHashSet() ?? [];
+        foreach (var pair in todoButtons) pair.Value.IsEnabled = available && eligible.Contains(pair.Key);
+    }
+
     private Connection Client => connection ??= new Connection();
     private async Task ToggleStarted()
     {
-        if (busy || draft.IsDirty || snapshot?.Current.Next is not Todo todo) return;
+        if (busy || snapshot?.Current.Next is not Todo todo) return;
         await Mutate("POST", $"api/todos/{Uri.EscapeDataString(todo.Id)}/{(snapshot.Current.StartedTodoId == todo.Id ? "pause" : "start")}", new { });
     }
-    private Task Refresh() => Run(async () => { snapshot = await Client.Read(); message = ""; });
+    private Task Refresh() => RefreshFrom(() => Client.Read());
+
+    // Background reads must not toggle command progress or interrupt an in-flight
+    // user action. A read started before that action cannot replace its result.
+    internal async Task RefreshFrom(Func<Task<Snapshot>> read)
+    {
+        if (busy || refreshing || disposed) return;
+        refreshing = true;
+        var revision = actionRevision;
+        try
+        {
+            var next = await read();
+            if (disposed || revision != actionRevision) return;
+            var changed = snapshot == null || System.Text.Json.JsonSerializer.Serialize(snapshot)
+                != System.Text.Json.JsonSerializer.Serialize(next) || message != "";
+            snapshot = next; message = "";
+            if (changed) Render();
+        }
+        catch (Exception e)
+        {
+            if (disposed || revision != actionRevision) return;
+            var error = e is IOException ? e.Message : "暂未连接，请启动所往或重试。";
+            var changed = snapshot != null || message != error;
+            snapshot = null; message = error;
+            if (changed) Render();
+        }
+        finally { refreshing = false; }
+    }
     private async Task<bool> Mutate(string method, string path, object body)
     {
         var success = false;
         await Run(async () =>
         {
             snapshot = await Client.Send(method, path, body);
-            message = "已保存"; success = true;
+            message = ""; success = true;
         });
         return success;
     }
     private async Task Run(Func<Task> action)
     {
         if (busy || disposed) return;
+        actionRevision++;
         busy = true; Render();
         try { await action(); }
         catch (Exception e)
@@ -206,65 +328,33 @@ public sealed class MainPlugin : WidgetPluginBase, IWidgetFlyoutLifecycle
     }
     private void Render()
     {
-        rendering = true;
-        try
+        var mode = snapshot?.Current; var todo = mode?.Next;
+        var running = todo != null && mode?.StartedTodoId == todo.Id;
+        if (previewToggle != null)
         {
-            var mode = snapshot?.Current; var todo = mode?.Next;
-            var running = todo != null && mode?.StartedTodoId == todo.Id;
-            if (previewToggle != null)
-            {
-                previewToggle.Content = new FontIcon { Glyph = running ? "\uE769" : "\uE768", FontSize = 14,
+            if (previewToggle.Content is not FontIcon)
+                previewToggle.Content = new FontIcon { FontSize = 14,
                     Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 78, 131, 156)) };
-                previewToggle.IsEnabled = !busy && !draft.IsDirty && todo != null;
-                var actionLabel = todo == null ? "暂无可开始的事项" : running ? "进行中 · 点击暂停" : "暂停中 · 点击开始或继续";
-                ToolTipService.SetToolTip(previewToggle, actionLabel);
-                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(previewToggle, actionLabel);
-            }
-            if (preview != null)
-            {
-                preview.Text = snapshot == null ? "所往 · 未连接" : todo == null ? "所往 · 写下下一步"
-                    : string.IsNullOrWhiteSpace(todo.MinimalStep) ? todo.Title : todo.MinimalStep;
-                ToolTipService.SetToolTip(preview, snapshot == null ? "点击连接所往" : todo == null ? "写下接下来想做的事"
-                    : $"{mode!.Name} · {(mode.StartedTodoId == todo.Id ? "正在进行" : "下一步")}\n{todo.Title}{(string.IsNullOrWhiteSpace(todo.MinimalStep) ? "" : $"\n{todo.MinimalStep}")}");
-            }
-            if (title == null || modes == null) return;
-            draft.Bind(todo);
-            title.Text = draft.IsDirty ? draft.Title : snapshot == null ? "连接所往" : todo?.Title ?? "接下来想做什么？";
-            ToolTipService.SetToolTip(title, title.Text);
-            context!.Text = draft.IsDirty && todo?.Id != draft.Id ? "未保存的编辑 · 原事项"
-                : mode == null ? "随手接续下一步" : $"{(running ? "进行中 · " : "")}{mode.Name} · {mode.Context}";
-            modes.SelectedItem = modes.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == mode?.Id);
-            taskPanel!.Visibility = todo != null || draft.IsDirty ? Visibility.Visible : Visibility.Collapsed;
-            emptyPanel!.Visibility = snapshot != null && todo == null && !draft.IsDirty ? Visibility.Visible : Visibility.Collapsed;
-            if (step!.Text != draft.Text) step.Text = draft.Text;
-            start!.Content = todo != null && mode?.StartedTodoId == todo.Id ? "暂停" : "开始这一步";
-            complete!.Content = "今天完成";
-            choices!.Items.Clear();
-            foreach (var t in mode?.Choices ?? []) choices.Items.Add(new ComboBoxItem { Tag = t.Id, Content = t.Title });
-            choices.SelectedIndex = -1;
-            choices.Visibility = mode?.Choices.Any() == true ? Visibility.Visible : Visibility.Collapsed;
-            launch!.Visibility = snapshot == null ? Visibility.Visible : Visibility.Collapsed;
-            retry!.Visibility = snapshot == null ? Visibility.Visible : Visibility.Collapsed;
-            open!.Visibility = snapshot == null ? Visibility.Collapsed : Visibility.Visible;
-            launch.IsEnabled = retry.IsEnabled = !busy;
-            UpdateControls();
+            ((FontIcon)previewToggle.Content).Glyph = running ? "\uE769" : "\uE768";
+            previewToggle.IsEnabled = !busy && todo != null;
+            var actionLabel = todo == null ? "暂无可开始的事项" : running ? "进行中 · 点击暂停" : "暂停中 · 点击开始或继续";
+            ToolTipService.SetToolTip(previewToggle, actionLabel);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(previewToggle, actionLabel);
         }
-        finally { rendering = false; }
-    }
-    private void UpdateControls()
-    {
-        if (previewToggle != null) previewToggle.IsEnabled = !busy && !draft.IsDirty && snapshot?.Current.Next != null;
-        if (editActions == null || status == null) return;
-        editActions.Visibility = draft.IsDirty ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var control in new Control?[] { modes, choices, start, complete, add, newTitle })
-            if (control != null) control.IsEnabled = !busy && snapshot != null && !draft.IsDirty;
-        step!.IsEnabled = !busy && (snapshot?.Current.Next != null || draft.IsDirty);
-        save!.IsEnabled = !busy && draft.IsDirty && snapshot != null;
-        cancel!.IsEnabled = !busy;
-        open!.IsEnabled = !busy && snapshot != null;
-        status.Text = busy ? "正在处理…" : draft.IsDirty
-            ? snapshot == null ? $"{message} 编辑仍保留。" : "有未保存的编辑，请先保存或取消。"
-            : message;
+        if (preview != null)
+        {
+            preview.Text = snapshot == null ? "所往 · 未连接" : todo == null ? "所往 · 选择事项" : todo.Title;
+            ToolTipService.SetToolTip(preview, snapshot == null ? "点击连接所往" : todo == null ? "选择接下来想做的事"
+                : $"{mode!.Name} · {(running ? "正在进行" : "当前事项")}\n{todo.Title}");
+        }
+        if (todoList == null) return;
+        RenderNavigation(mode);
+        launch!.Visibility = retry!.Visibility = snapshot == null ? Visibility.Visible : Visibility.Collapsed;
+        open!.Visibility = snapshot == null ? Visibility.Collapsed : Visibility.Visible;
+        launch.IsEnabled = retry.IsEnabled = !busy;
+        open.IsEnabled = !busy && snapshot != null;
+        status!.Text = message;
+        status.Visibility = string.IsNullOrEmpty(status.Text) ? Visibility.Collapsed : Visibility.Visible;
     }
     public async void OnFlyoutShown() { await Refresh(); }
     public void OnFlyoutHidden() { }

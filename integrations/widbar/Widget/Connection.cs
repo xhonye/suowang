@@ -5,10 +5,12 @@ using System.Text.Json;
 namespace Suowang.Widget;
 
 public sealed record Todo(string Id, string Title, string MinimalStep, string Kind, bool CompletedToday);
-public sealed record Mainline(string Id, string Name, List<Todo> Todos);
+public sealed record Mainline(string Id, string Name, List<Todo> Todos, int SlotIndex = 0);
 public sealed record Mode(string Id, string Name, string? CurrentMainlineId, string? PriorityTodoId,
     string? StartedTodoId, List<Mainline> Mainlines, List<Todo> StateTodos)
 {
+    public Mainline? CurrentMainline => Mainlines.FirstOrDefault(m => m.Id == CurrentMainlineId);
+    public Mainline? MainlineAt(int slot) => Mainlines.FirstOrDefault(m => m.SlotIndex == slot);
     public IEnumerable<Todo> Choices => Mainlines.Where(m => m.Id == CurrentMainlineId)
         .SelectMany(m => m.Todos).Concat(StateTodos).Where(t => !t.CompletedToday);
     public Todo? Next => Choices.FirstOrDefault(t => t.Id == PriorityTodoId);
