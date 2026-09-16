@@ -12,7 +12,7 @@
 
 ## 下载与开始
 
-**Windows 推荐轻量版：**在[下载页](https://github.com/xhonye/suowang/releases)选择最新版本的 **SUOWANG-Lite-Setup** 安装包。
+**Windows 推荐轻量版**：在[下载页](https://github.com/xhonye/suowang/releases)选择最新版本的 **SUOWANG-Lite-Setup** 安装包。
 
 1. 双击安装，可勾选“创建桌面快捷方式”。
 2. 安装完成后勾选“启动所往”，或双击桌面图标。
