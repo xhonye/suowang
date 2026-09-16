@@ -1,4 +1,4 @@
-#define AppName "所往 SUOWANG"
+﻿#define AppName "所往 SUOWANG"
 #ifndef AppVersion
   #define AppVersion "0.1.1"
 #endif
@@ -32,8 +32,11 @@ RestartApplications=no
 [Files]
 Source: "..\dist\windows\{#PortableName}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[Tasks]
+Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "快捷方式："
+
 [Icons]
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; IconFilename: "{app}\{#AppExe}"
+Name: "{autodesktop}\{#AppName}"; Tasks: desktopicon; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; IconFilename: "{app}\{#AppExe}"
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; IconFilename: "{app}\{#AppExe}"
 Name: "{group}\卸载 {#AppName}"; Filename: "{uninstallexe}"
 

@@ -1,175 +1,59 @@
-# 所往 SUOWANG
+<p align="center">
+  <img src="docs/assets/brand-header.png" width="860" alt="所往 SUOWANG · 行有所往">
+</p>
 
-> **行有所往。**
+<p align="center"><strong>充分参与这一次人生。</strong><br>知所往 · 择其径 · 行其事。</p>
 
-> **知所往 · 择其径 · 行其事。**
+<p align="center"><a href="https://github.com/xhonye/suowang/releases">下载所往</a> · <a href="docs/beta-test-guide.md">使用指南</a> · <a href="https://github.com/xhonye/suowang/issues/new/choose">反馈问题</a></p>
 
-**所往是一个本地优先的人生主线驾驶舱。** 它帮助你在脑子很乱的时候，仍然看清自己处于什么模式、当前主要往哪里走，以及现在具体迈哪一步。
+所往是一个**本地优先的人生主线驾驶舱**。在恢复、工作、生活三个模式之间，选定当前主线，看清下一步；如果难以开始，就把它缩成更小的一步。
 
-![所往 0.2 Public Beta 驾驶舱，画面使用中性演示数据](docs/assets/suowang-0.2.0-beta.1-cockpit.png)
+![所往驾驶舱，画面使用中性演示数据](docs/assets/suowang-0.2.0-beta.1-cockpit.png)
 
-## Windows 30 秒开始
+## 下载与开始
 
-当前公开测试版是 [0.2.0-beta.7](https://github.com/xhonye/suowang/releases/tag/v0.2.0-beta.7)，已于 2026-09-08 发布。以下安装包均可从该下载页取得；后续版本以 [GitHub Releases](https://github.com/xhonye/suowang/releases) 为准。`0.2.0-beta.1` 的桌面包缺少道路视觉资产，请勿继续下载或镜像。
+**Windows 推荐轻量版：**在[下载页](https://github.com/xhonye/suowang/releases)选择最新版本的 **SUOWANG-Lite-Setup** 安装包。
 
-### 推荐：轻量版
+1. 双击安装，可勾选“创建桌面快捷方式”。
+2. 安装完成后勾选“启动所往”，或双击桌面图标。
+3. 所往会在默认浏览器打开，**不弹出命令行窗口，也不用安装 Node.js**。
 
-1. 下载 `SUOWANG-Lite-Setup-0.2.0-beta.7.exe`。
-2. 双击安装。
-3. 从桌面的「所往 SUOWANG（轻量版）」图标打开。
+关闭网页后，轻量后台仍在运行；下次点击图标继续使用，已保存的进度还在。启动失败时会弹出处理提示。
 
-轻量版自带运行环境，**不需要 Node.js、npm 或命令行**。双击后不会弹出终端，会在你的默认浏览器中打开所往；程序和数据仍只在本机运行。Windows 首次运行未签名测试版时，可能会要求你确认来源。
+想要独立应用窗口，可选择 **Desktop Setup**。macOS 的 M1 及以后机型选择 **mac-arm64.dmg**，将应用拖入 Applications。免安装版本请完整解压后再运行。轻量版和桌面版共用数据，请不要同时打开。
 
-### 可选：独立桌面窗口
+当前为公开测试版，安装包尚未签名，macOS 尚未公证，首次打开可能需要系统确认。[安装帮助](docs/beta-test-guide.md)
 
-如果你更喜欢没有地址栏的独立应用窗口，下载 `SUOWANG-Desktop-Setup-0.2.0-beta.7.exe`。它内置 Electron/Chromium，因此体积明显更大，但功能与数据模型相同。
+## 把注意力放回眼前
 
-两版都有 Portable ZIP：解压后分别双击 `SUOWANG-Lite.exe` 或 `SUOWANG.exe`；不要直接在压缩包内运行。Lite 与 Desktop 共享同一个 SQLite 数据目录，**不要同时打开两版**，实例锁会拒绝第二个入口以保护数据。
+- **恢复、工作、生活**：每种模式各自记住当前主线和下一步。
+- **少量主线，明确取舍**：每种模式最多三条进行中的主线。
+- **先迈出一步**：开始、暂停、今天完成；难以启动时，写下一个最小步骤。
+- **留下行迹**：结束的主线与事项留在行迹中，没有连续打卡、积分或缺卡惩罚。
 
-## 数据只在本机
+## 你的数据留在本机
 
-- 无账号、无云同步、无遥测、无运行时 AI。
-- Windows 新安装默认保存在 `%LOCALAPPDATA%/SUOWANG`。
-- 应用每天在同一设备自动备份；这能防常见误操作，**不能替代异地备份**。
-- 重要数据请定期在设置中“导出 SQLite”，并保存到另一台设备或可信同步位置。
-- 反馈问题时不要上传数据库、备份、私人事项或未脱敏截图。
+无账号、无云同步、无遥测，也不依赖运行时 AI。数据自动保存在本机，卸载程序不会删除进度。
 
-Windows 旧版若已经存在 `D:/5Data/suowang/suowang.db`，会继续使用这个**历史兼容目录**，不会自动搬迁。新用户不会使用该路径；两个目录同时存在数据库时，应用会停止并要求你明确选择，避免错误合并。
+应用每天自动备份；重要数据仍请在设置中“导出 SQLite”，另存一份到其他设备。反馈时不要上传数据库、备份或私人事项。[备份与恢复](docs/operator-runbook.md)
 
-## 它解决什么
+## 从哪里开始
 
-所往帮助你快速回答四个问题：
-
-1. 我现在处于什么模式？
-2. 我当前主要往哪里走？
-3. 我现在具体做什么？
-4. 如果知道要做却启动不了，怎样把第一步降到足够简单？
-
-产品心智模型只有：
-
-```text
-模式 → 主线 → 事项
-       ↓
-    当前主线
-       ↓
-     下一步
-       ↓
-    最小一步（可选）
-```
-
-它不是 Todo List、习惯打卡器、完整人生决策系统、项目管理器、KPI 仪表盘、RPG 或 AI 聊天窗口。
-
-## 当前能力
-
-- 恢复、工作、生活三个永久模式，各自记忆当前主线和下一步。
-- 每个模式最多三条进行中主线；主线和事项支持创建、编辑、排序、完成、放弃与纠错删除。
-- 事项可以填写一个非必填的“最小一步”；下一步可以开始、暂停或完成，不记录时长和专注统计。
-- 持续事项每天最多记录一次并保留累计次数，没有连续天数、提醒、积分或缺卡惩罚。
-- 行迹保存已完成或放弃的事实；误点的事项可以撤回。
-- SQLite migration、每日备份、SQLite 完整导出、JSON 可读导出与整库恢复。
-- 桌面与 320px 手机布局；同一 Tailnet 内可选手机访问。
-
-## macOS（实验支持）
-
-仅支持 Apple Silicon（M1 及以后）。下载 `SUOWANG-0.2.0-beta.7-mac-arm64.dmg`，打开后把「所往 SUOWANG」拖入 Applications，再双击打开独立应用窗口。
-
-当前公开 Beta 未签名、未公证。首次打开可能需要按住 Control 点击应用，选择“打开”并再次确认。暂不支持 Intel Mac、App Store 安装或自动更新。
-
-## 使用与反馈
-
-- [Public Beta 使用与测试指南](docs/beta-test-guide.md)
-- [简短反馈模板](docs/beta-feedback-template.md)
-- [报告 Bug 或提交使用反馈](https://github.com/xhonye/suowang/issues/new/choose)
-- [备份、恢复与故障处理](docs/operator-runbook.md)
-
-请先确认问题发生在 GitHub Release 的正式资产中，并附上完整版本号和操作系统。不要发送私人数据库或事项内容。
-
-## 高级使用
-
-### 源码运行
-
-源码路径只支持 Node 22 或 Node 24 LTS：
-
-```powershell
-Set-Location -LiteralPath '<path-to-suowang>'
-npm install
-npm start
-```
-
-浏览器打开 `http://127.0.0.1:2037/`。普通 Windows 用户应优先使用自包含 Lite 安装包；需要独立窗口时再选择 Desktop 安装包。
-
-开发桌面壳可运行 `npm run desktop:start`；完整桌面门禁为 `npm run test:desktop` 与 `npm run verify:desktop`。浏览器模式和桌面模式共享同一服务、migration、数据库路径与页面。
-
-### npm / 本地 Agent
-
-当前没有发布 npm registry 包；普通用户请使用 GitHub Release 的自包含安装包。未来只有在 `npm view` 能查到对应版本后，才使用：
-
-```powershell
-npm view suowang@0.2.0-beta.3 version
-npm install --ignore-scripts --global suowang@0.2.0-beta.3
-suowang install-shortcut
-```
-
-本地 Agent 安装时不得读取、移动或覆盖既有 `SUOWANG_DATA_DIR`。仓库权限安装与 CLI 细节见 [本地运维手册](docs/operator-runbook.md)。
-
-### 手机通过 Tailscale 访问
-
-电脑和手机登录同一个 Tailscale 后，在电脑运行：
-
-```powershell
-suowang access tailscale
-```
-
-该模式只额外监听本机 Tailscale 地址，不监听普通局域网或公网。SUOWANG 没有应用级账号认证，只能供你信任的 Tailnet 设备使用。恢复仅本机模式：
-
-```powershell
-suowang access local
-```
-
-## 验证与发行边界
-
-```powershell
-npm test
-npm run test:e2e
-npm run smoke:temp
-npm run release:check
-```
-
-测试使用独立临时数据库和动态端口，不复用个人运行服务。候选安装包必须由同一个完整 commit SHA 构建并通过双平台门禁；人工安装与升级验收完成后，才允许创建不可移动 Tag 和公开 Release。已发布资产禁止覆盖。
-
-## 产品原则与来路
-
-- **稳定界面，动态内容**：形成空间记忆，不必每次重新理解 UI。
-- **主线意味着取舍**：同时可以推进几条主线，但此刻只选择一条当前主线。
-- **下一步必须清楚**：它是注意力指针，不是新的事项状态。
-- **启动入口足够低**：用可选的最小一步降低行动摩擦。
-- **本地事实优先**：SQLite 是业务数据唯一真源，AI 只参与造驾驶舱。
-
-> 当用户认知能力只剩 30% 时，这个页面仍然必须很好用。
-
-### 项目起因
+最初想做的，是让人在脑子很乱的时候，也能看清眼前的一步。
 
 ![所往项目起因的早期反馈，身份信息已经脱敏](docs/assets/origin-feedback-redacted.png)
 
-### 早期概念图
-
 ![所往人生主线页面早期概念图](docs/assets/early-mainline-concept.png)
 
-这张图记录了最初的产品方向，不是当前界面。图中的 Alex、事项和统计均为概念占位；Timeline、NOW 和部分功能已被当前产品合同替换。
+*上图记录最初的方向，使用概念占位内容，不代表当前界面。*
 
-## 文档
+<details>
+<summary>更多文档与源码运行</summary>
 
-- [产品模型](docs/product-brief.md)
-- [视觉合同](docs/visual-contract.md)
-- [架构与数据流](docs/architecture.md)
-- [本地接口速查](docs/integration-guide.md)
-- [当前实施交接](docs/handoff.md)
-- [版本记录](CHANGELOG.md)
-- [桌面壳验收合同](DESKTOP_SHELL_READINESS.md)
-- [公开发行合同](PUBLIC_RELEASE_READINESS.md)
-- [第三方依赖声明](THIRD_PARTY_NOTICES.md)
-- [安全问题报告](SECURITY.md)
+使用 Node 22 或 24 LTS，在项目目录运行 `npm install`、`npm start`，再打开 `http://127.0.0.1:2037/`。
 
-核心技术栈为 Vanilla JS + CSS + Node HTTP + `better-sqlite3`；Electron 仅承担桌面窗口与系统集成。无 React、Vue、Tailwind、ORM、Tauri、云服务、账号、遥测或运行时 AI。
+[产品模型](docs/product-brief.md) · [架构](docs/architecture.md) · [本地运维与手机访问](docs/operator-runbook.md) · [版本记录](CHANGELOG.md) · [发行验收](PUBLIC_RELEASE_READINESS.md) · [安全报告](SECURITY.md)
 
-本项目使用 [Apache License 2.0](LICENSE)。
+</details>
+
+[Apache License 2.0](LICENSE)

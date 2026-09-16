@@ -41,3 +41,12 @@
 运行 `npm run release:check`、`npm run verify:desktop`，在同一新 SHA 上重新完成跨平台 CI、Lite/Desktop 安装包与 macOS DMG 候选验证，并复核实际资产 SHA-256。安装／卸载自动化在一次性 runner 执行，不覆盖日常安装注册信息。
 
 人工 Windows／Apple Silicon 安装升级、未签名首次打开与退出体验仍是独立门槛。自动 smoke、绿色 CI 或本报告不能代替人工结果；没有对应证据，不应填 `INSTALL_VERIFIED` 或发布最终 Tag。未签名／未公证与缺少异地备份的限制保持如实告知。
+
+
+## 2026-09-16 Beta.8 复核补记
+
+全量审计新增 [GHSA-7pqw-9j4j-h8q3](https://github.com/advisories/GHSA-7pqw-9j4j-h8q3)：`extract-zip <= 2.0.1` 遇到同名符号链接及普通文件条目时，可能向解压目录外写入。上游 advisory 仍无修复版本；此处不声称修复，也不使用降级 Forge 的自动建议。
+
+现场依赖链为 `@electron-forge/cli → core → @electron/packager → extract-zip@2.0.1`，仅开发依赖。`forge.config.mjs` 仍将 archive SHA-256 固定到锁定 Electron 包的 `checksums.json`；发行构建只解压通过该校验的 Electron 归档，不接收用户 ZIP。用户发行包继续排除这些构建工具，生产依赖审计为零。
+
+在原有审查范围内增加这一个精确 advisory、精确版本的构建例外，仍于 **2026-09-30** 到期，不延长时限。测试继续拒绝运行时节点、未知 advisory 与过期审查。剩余供应链风险与前述边界相同，并在 CI 输出中保留告警。

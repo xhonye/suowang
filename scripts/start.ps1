@@ -223,7 +223,10 @@ try {
 
     $stage = '打开所往'
     if ($env:SUOWANG_SKIP_BROWSER -ne '1') {
-        Start-Process -FilePath $appUrl
+        try { Start-Process -FilePath $appUrl -ErrorAction Stop }
+        catch {
+            throw "本地后台已启动，但无法打开默认浏览器。请复制此地址到浏览器：$appUrl。也可在 Windows 设置中选择默认浏览器后重试。原因：$($_.Exception.Message)"
+        }
     }
 } catch {
     $failureMessage = "阶段：$stage`n原因：$($_.Exception.Message)"

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 // Temporary, explicit build-only risk review. This is not a claim that upstream is patched.
 const reviewed = new Map([
   ['https://github.com/advisories/GHSA-jmr9-qjv8-65gv', { name: 'extract-zip', version: '2.0.1' }],
+  ['https://github.com/advisories/GHSA-7pqw-9j4j-h8q3', { name: 'extract-zip', version: '2.0.1' }],
   ['https://github.com/advisories/GHSA-w3rx-r6r6-pgpr', { name: 'image-size', version: '0.7.5' }],
   ['https://github.com/advisories/GHSA-5p2g-fcmc-qvqq', { name: 'image-size', version: '0.7.5' }],
 ]);

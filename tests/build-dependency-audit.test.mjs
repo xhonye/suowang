@@ -18,3 +18,13 @@ test('build advisory exceptions are exact, dev-only and expire', () => {
   unknown.vulnerabilities['extract-zip'].via[0].url = 'https://github.com/advisories/new-advisory';
   assert.throws(() => auditBuildReport(unknown, lock, options), /Unreviewed/);
 });
+
+
+test('reviewed duplicate-entry symlink advisory remains exact, dev-only and time-limited', () => {
+  const duplicate = structuredClone(report);
+  const duplicateUrl = 'https://github.com/advisories/GHSA-7pqw-9j4j-h8q3';
+  duplicate.vulnerabilities['extract-zip'].via = [{ url: duplicateUrl }];
+  assert.deepEqual(auditBuildReport(duplicate, lock, options), [duplicateUrl]);
+  assert.throws(() => auditBuildReport(duplicate, { packages: { 'node_modules/extract-zip': { version: '2.0.1' } } }, options), /Runtime vulnerability/);
+  assert.throws(() => auditBuildReport(duplicate, lock, { now: new Date('2026-09-30T00:00:00Z') }), /expired/);
+});

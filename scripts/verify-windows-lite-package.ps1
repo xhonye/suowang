@@ -1,7 +1,8 @@
 ﻿param(
     [string]$Version,
     [string]$DistRoot,
-    [switch]$VerifyShortcut
+    [switch]$VerifyShortcut,
+    [switch]$OpenBrowser
 )
 
 $ErrorActionPreference = 'Stop'
@@ -39,7 +40,7 @@ function Invoke-LiteSmoke([string]$entry, [string]$dataDir, [string]$name, [stri
     $env:SUOWANG_DATA_DIR = $dataDir
     $env:SUOWANG_PORT = [string]$port
     $env:SUOWANG_ACCESS = 'local'
-    $env:SUOWANG_SKIP_BROWSER = '1'
+    $env:SUOWANG_SKIP_BROWSER = if ($OpenBrowser -and $name -eq 'isolated-shortcut') { '0' } else { '1' }
     $process = Start-Process -FilePath $entry -PassThru
     $visibleShells = @()
     $launcherDeadline = (Get-Date).AddSeconds(45)
@@ -101,6 +102,12 @@ function Invoke-LiteSmoke([string]$entry, [string]$dataDir, [string]$name, [stri
     if ($owner.Name -ine 'node.exe' -or $owner.CommandLine -notmatch 'scripts[/\\]serve\.mjs' -or -not $owner.ExecutablePath.Equals($expectedNode, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw "$name health PID was not the bundled SUOWANG service."
     }
+    if ($name -eq 'installed') {
+        $again = Start-Process -FilePath $entry -PassThru
+        if (-not $again.WaitForExit(45000) -or $again.ExitCode -ne 0) { throw 'Repeated launch failed.' }
+        $reusedHealth = Invoke-RestMethod -Uri $healthUrl -TimeoutSec 2
+        if ($reusedHealth.pid -ne $health.pid) { throw 'Repeated launch replaced the existing service.' }
+    }
     Stop-Process -Id $health.pid
     for ($attempt = 0; $attempt -lt 50 -and (Get-Process -Id $health.pid -ErrorAction SilentlyContinue); $attempt++) {
         Start-Sleep -Milliseconds 100
@@ -134,7 +141,7 @@ try {
         '/NORESTART',
         "/DIR=$installRoot"
     )
-    if (-not $VerifyShortcut) { $setupArguments += '/NOICONS' }
+    if (-not $VerifyShortcut) { $setupArguments += @('/NOICONS', '/TASKS=') } else { $setupArguments += '/TASKS=desktopicon' }
     $setupProcess = Start-Process -FilePath $setupPath -ArgumentList $setupArguments -Wait -PassThru -WindowStyle Hidden
     if ($setupProcess.ExitCode -ne 0) { throw "Lite Setup exited with $($setupProcess.ExitCode)." }
     $installedExe = Join-Path $installRoot 'SUOWANG-Lite.exe'
@@ -144,6 +151,14 @@ try {
     }
     if ((Get-PeSubsystem $installedExe) -ne 2) { throw 'Installed Lite launcher is not a Windows GUI executable.' }
     $installedResult = Invoke-LiteSmoke $installedExe $installedData 'installed'
+
+    $isolatedShortcut = Join-Path $testRoot 'SUOWANG.lnk'
+    $shell = New-Object -ComObject WScript.Shell
+    $link = $shell.CreateShortcut($isolatedShortcut)
+    $link.TargetPath = $installedExe
+    $link.WorkingDirectory = $installRoot
+    $link.Save()
+    $isolatedShortcutResult = Invoke-LiteSmoke $isolatedShortcut $shortcutData 'isolated-shortcut' $installRoot
 
     $shortcutResult = $null
     if ($VerifyShortcut) {
@@ -157,6 +172,9 @@ try {
     $upgradeResult = Invoke-LiteSmoke $installedExe $upgradeData 'installed-upgrade'
     & node (Join-Path $projectRoot 'scripts/verify-upgrade-fixture.mjs') $upgradeData
     if ($LASTEXITCODE -ne 0) { throw 'Lite upgrade fixture verification failed.' }
+    $resumeResult = Invoke-LiteSmoke $installedExe $upgradeData 'saved-progress-restart'
+    & node (Join-Path $projectRoot 'scripts/verify-upgrade-fixture.mjs') $upgradeData
+    if ($LASTEXITCODE -ne 0) { throw 'Saved progress changed after restart.' }
 
     $uninstallProcess = Start-Process -FilePath $uninstaller -ArgumentList @(
         '/VERYSILENT',
@@ -172,8 +190,10 @@ try {
 
     $portableResult
     $installedResult
+    $isolatedShortcutResult
     if ($shortcutResult) { $shortcutResult }
     $upgradeResult
+    $resumeResult
     [pscustomobject]@{ Entry = 'uninstall'; DatabasePreserved = $true; InstallRemoved = -not (Test-Path -LiteralPath $installedExe) }
 }
 finally {

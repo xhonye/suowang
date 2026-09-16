@@ -163,6 +163,9 @@ jobs:
             node scripts/verify-upgrade-fixture.mjs $installedData
 
             $env:SUOWANG_DATA_DIR = Join-Path $testRoot 'single-instance-data'
+            # This branch verifies the saved quit preference; tray close/restore is covered by desktop E2E.
+            New-Item -ItemType Directory -Force -Path $env:SUOWANG_DATA_DIR | Out-Null
+            @{ closeBehavior = 'quit' } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $env:SUOWANG_DATA_DIR 'desktop-preferences.json') -Encoding utf8NoBOM
             $first = Start-Process -FilePath $installedExe -PassThru -WindowStyle Hidden
             $lock = Join-Path $env:SUOWANG_DATA_DIR 'instance.lock'
             for ($i = 0; $i -lt 100 -and -not (Test-Path -LiteralPath $lock); $i++) { Start-Sleep -Milliseconds 100 }
