@@ -442,7 +442,7 @@ export class SuowangService {
       this.db.prepare(`
         UPDATE states SET current_mainline_id = NULL, priority_todo_id = NULL, started_todo_id = NULL WHERE id = ?
       `).run(mainline.state_id);
-      this.reconcilePointers(mainline.state_id, id, keepPriority);
+      this.reconcilePointers(mainline.state_id, id, keepPriority, state.started_todo_id);
       return this.snapshot();
     });
   }
@@ -525,7 +525,8 @@ export class SuowangService {
       const currentId = state.current_mainline_id === id
         ? this.firstActiveMainline(mainline.state_id, id)
         : state.current_mainline_id;
-      this.reconcilePointers(mainline.state_id, currentId, preferredPriorityId, preferredStartedId);
+      const nextStartedId = activeTodos.some((todo) => todo.id === preferredStartedId) ? null : preferredStartedId;
+      this.reconcilePointers(mainline.state_id, currentId, preferredPriorityId, nextStartedId);
       return this.snapshot();
     });
   }
@@ -563,7 +564,8 @@ export class SuowangService {
       const currentId = state.current_mainline_id === id
         ? this.firstActiveMainline(mainline.state_id, id)
         : state.current_mainline_id;
-      this.reconcilePointers(mainline.state_id, currentId, preferredPriorityId, preferredStartedId);
+      const nextStartedId = boundTodos.some((todo) => todo.id === preferredStartedId) ? null : preferredStartedId;
+      this.reconcilePointers(mainline.state_id, currentId, preferredPriorityId, nextStartedId);
       return this.snapshot();
     });
   }
