@@ -789,7 +789,7 @@ export class SuowangService {
       if (!Number.isInteger(requestedPosition) || requestedPosition < 1) {
         throw new AppError(400, 'validation_error', '事项排序位置必须是正整数。');
       }
-      if (state.priority_todo_id === id) {
+      if (state.priority_todo_id === id && mainlineId !== todo.mainline_id) {
         this.db.prepare('UPDATE states SET priority_todo_id = NULL, started_todo_id = NULL WHERE id = ?').run(todo.state_id);
       }
       const oldMainlineId = todo.mainline_id;
